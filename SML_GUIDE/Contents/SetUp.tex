@@ -1,0 +1,103 @@
+ROS controller for IRIS+
+========================
+
+A small guide to setting up and running this project.
+
+\#\# Install ROS
+
+Follow the [official instructions](http://wiki.ros.org/indigo/Installation/Ubuntu) for ROS Indigo.
+After configuring the Ubuntu repositories and keys, this includes installing the full desktop install via
+~~~~
+sudo apt-get install ros-indigo-desktop-full
+~~~~
+(This might download more than 1GB of packages)
+
+Then initialize  rosdep 
+~~~~
+sudo rosdep init
+rosdep update
+~~~~
+
+Make sure the ROS environment variables are set when bash-terminals are launched.
+To do this, add  source /opt/ros/indigo/setup.bash .
+You can do this, by executing
+~~~~
+echo "source /opt/ros/indigo/setup.bash" >> ~/.bashrc
+source ~/.bashrc
+~~~~
+in a terminal window.
+
+The installation of rosinstall (package  python-rosinstall ) is not required.
+
+\#\# Setup Workspace
+
+(for more detailed instructions see the [official ROS tutorial](http://wiki.ros.org/ROS/Tutorials/InstallingandConfiguringROSEnvironment)).
+Create a workspace folder and make sure it contains a folder named  src .
+In this  src  folder run  catkin\_init\_workspace  and make sure this directory is in the  ROS\_PACKAGE\_PATH  variable.
+You can check this with  echo \$ROS\_PACKAGE\_PATH .
+If the directory is missing (which is likely), add the line
+~~~~
+export ROS\_PACKAGE\_PATH=~/[your ros workspace]/src:\${ROS\_PACKAGE\_PATH}
+~~~~
+to the file  ~/.bashrc .
+
+Copy the relevant folders (currently  guad\_control ,  mavros  and  gui ) into the  src  folder.
+To make sure that you mavros can access your USB port, you might need to add your user to the group  dialout  by executing  sudo usermod -a -G dialout \$USER .
+
+Install the ROS control toolbox
+ sudo apt-get install ros-indigo-control-toolbox 
+
+
+Do NOT do this:
+Make sure mavros is installed ( sudo apt-get install ros-indigo-mavros ) and run
+
+\#\# Build Project
+
+~~~~
+catkin\_make
+~~~~
+
+\#\# Run Project
+
+\#\#\# Without Mavros
+
+In two terminal windows (both in the workspace root), run
+~~~~
+source ./devel/setup.bash
+roslaunch quad\_control iris1.launch
+~~~~
+and
+~~~~
+source ./devel/setup.bash
+rqt --standalone  tabbedGUI --args Iris1/
+~~~~
+
+\#\#\# With Mavros
+
+If you want to connect to an actual quadcopter, run the following three blocks, each in his own terminal window in the workspace root:
+~~~~
+source ./devel/setup.bash
+roslaunch quad\_control iris1\_mavros.launch
+~~~~
+,
+~~~~
+source ./devel/setup.bash
+roslaunch mavros apm2.launch
+~~~~
+and 
+~~~~
+source ./devel/setup.bash
+rqt --standalone  tabbedGUI --args Iris1/
+~~~~
+
+\#\# Uninstall ROS
+
+Only if needed:
+
+To uninstall ROS and remove all configuration files, execute the following commands
+~~~~
+sudo apt-get purge ros-indigo*
+sudo apt-get purge python-rosdep python-rospkg python-rosinstall
+sudo apt-get autoremove
+~~~~
+and remove all lines in  ~/.bashrc  concerning ROS.

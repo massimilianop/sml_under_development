@@ -1,0 +1,303 @@
+\newcommand{\sss}[1]{\scriptscriptstyle {#1}}
+\newcommand{\s}[1] {{\scriptscriptstyle #1}}
+\newcommand{\tp}{^{\sss{T}}}
+\newcommand{\tps}{^{* \sss{T}}}
+\newcommand{\ud}{\mathrm{d}}
+
+% signum function
+\newcommand{\sign}[2][{}]{\ensuremath{\text{sign}^{#1}\left(#2\right)}}
+
+% Rotation Matrix 1->2
+\newcommand{\matrot}[2]{\,{}_{\sss{\mathcal{#1}}}^{\sss{\mathcal{#2}}}  \text{R}\,}
+\newcommand{\matrotdot}[2]{\,{}_{\sss{\mathcal{#1}}}^{\sss{\mathcal{#2}}}  \dot{\text{R}} \,}
+
+% Point #1 underscore #2 in frame #3
+\newcommand{\ptframe}[3]{{}^{\sss{\mathcal{#2}}} {#1} _{\sss{\mathcal{#3}}}}
+
+% frame {X}
+\newcommand{\fr}[1]{\{\mathcal{#1}\}}
+
+\newcommand{\x}{\ensuremath{\times}}
+
+% Bold symbols
+\newcommand{\ba}{\boldsymbol{\alpha}}
+\newcommand{\bbeta}{\boldsymbol{\beta}}
+\newcommand{\bd}{\boldsymbol{\delta}}
+\newcommand{\boldeta}{\boldsymbol{\eta}}
+\newcommand{\bg}{\boldsymbol{\gamma}}
+\newcommand{\bl}{\boldsymbol{\lambda}}
+\newcommand{\bp}{\boldsymbol{\pi}}
+\newcommand{\bmu}{\boldsymbol{\mu}}
+\newcommand{\bt}{\boldsymbol{\theta}}
+\newcommand{\btau}{\boldsymbol{\tau}}
+\newcommand{\bo}{\boldsymbol{\omega}}
+\newcommand{\bxi}{\boldsymbol{\xi}}
+\newcommand{\bzeta}{\boldsymbol{\zeta}}
+
+\newcommand{\twocol}[2]
+ {\begin{bmatrix}
+    {#1} \\
+    {#2}
+  \end{bmatrix}}
+
+\newcommand{\tworow}[2]
+ {\begin{bmatrix} {#1}&{#2} \end{bmatrix}}
+ 
+ \newcommand{\twocolp}[2]
+ {\begin{pmatrix}
+    {#1} \\
+    {#2}
+  \end{pmatrix}}
+  
+  \newcommand{\tworowp}[2]
+ {\begin{pmatrix} {#1}&{#2} \end{pmatrix}}
+ 
+ 
+ \newcommand{\threecol}[3]
+ {\begin{bmatrix}
+    {#1} \\
+    {#2} \\
+    {#3}
+  \end{bmatrix}}
+
+\newcommand{\threerow}[3]
+ {\begin{bmatrix} {#1}&{#2}&{#3} \end{bmatrix}}
+ 
+
+% vector , matrix , field
+\renewcommand{\v}[1]{\ensuremath{\mathbf{#1}}}
+\newcommand{\vect}[1]{\mathbf{#1}}
+\newcommand{\mat}[1]{#1}
+\newcommand{\field}[1]{\mathbb{#1}}
+
+% Sets
+\newcommand{\complexs}[0]{\mathbb{C}}
+\newcommand{\reals}[0]{\mathbb{R}}
+\newcommand{\integers}[0]{\mathbb{Z}}
+\newcommand{\naturals}[0]{\mathbb{N}}
+\newcommand{\sphere}[0]{\mathbb{S}}
+
+\newcommand{\Rn}[1][n]{\mathbb{R}^{#1}}
+
+% Style
+\newcommand{\mc}[1]{\ensuremath{\mathcal{#1}}}
+\newcommand{\mb}[1]{\ensuremath{\mathbf{#1}}}
+\newcommand{\mr}[1]{\ensuremath{\mathrm{#1}}}
+\newcommand{\mf}[1]{\ensuremath{\mathfrak{#1}}}
+
+% Functions 
+\newcommand{\abs}[1]{\left\lvert{#1}\right\rvert}
+% norm of vector
+\newcommand{\norm}[1]{\left\|{#1}\right\|}
+% Skew matrix
+\newcommand{\sk}[1]{\mathcal{S}\left({#1}\right)}
+% Skew inverse
+\newcommand{\invsk}[1]{\mathcal{S}^{-1}\left({#1}\right)}
+% projection onto orthogonal plane
+\newcommand{\OP}[1]{\Pi\left({#1}\right)}
+
+% Graph
+\DeclareMathOperator{\gr}{gr}
+% Statistics
+\DeclareMathOperator{\var}{var}
+\DeclareMathOperator{\dist}{dist}
+
+% Matrix 
+\DeclareMathOperator{\tr}{tr}
+\DeclareMathOperator{\diag}{diag}
+
+% Differential
+\DeclareMathOperator{\hess}{Hess}
+\DeclareMathOperator{\grad}{grad}
+\DeclareMathOperator{\ad}{ad}
+\DeclareMathOperator{\Ad}{Ad}
+\DeclareMathOperator{\vlft}{vlft}
+
+\newcommand{\T}{\ensuremath{\mathsf{T}}}
+\newcommand{\Q}{\ensuremath{\mathsf{Q}}}
+
+\newcommand{\tq}{\T\Q}
+\newcommand{\tqs}{\T^*\Q}
+
+\newcommand{\tse}{\ensuremath{\T\text{SE}}}
+
+\newcommand{\fext}{\ensuremath{F_\text{ext}}}
+
+
+% Differential Geometry commands
+\newcommand{\inner}[2]{\langle \! \langle {#1},{#2} \rangle \! \rangle}
+\newcommand{\natapp}[2]{\langle {#1},{#2} \rangle }
+
+\newcommand{\nablag}{\ensuremath{\stackrel{\mathfrak{g}}{\nabla}}}
+\newcommand{\nablagg}{\ensuremath{\stackrel{\s{\gg}}{\nabla}}}
+\newcommand{\nablagi}{\ensuremath{\stackrel{\s{\gg_\ii}}{\nabla}}}
+
+\DeclareMathOperator{\lieder}{\mathcal{L}}
+\newcommand{\liebra}[2]{\left[ {#1},{#2} \right] }
+
+% Derivada Total
+\newcommand{\der}[2]{\frac{d #1}{d #2}}
+
+% Derivada Parcial
+\newcommand{\derPar}[2]{\frac{\partial #1}{\partial #2}}
+
+% Derivada Parcial avaliada em trim
+\newcommand{\derParTrim}[2]{\left.\frac{\partial #1}{\partial #2}\right|_{c}}
+
+% Graus
+%\newcommand{\degree}{\ensuremath{^\circ}}
+
+\newcommand{\hinf}{\ensuremath{\mathcal{H}_\infty}}
+\newcommand{\htwo}{\ensuremath{\mathcal{H}_2}}
+
+%% \theoremstyle{plain} %% This is the default
+\newtheorem{thm}{Theorem}
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{assum}[thm]{Assumption}
+\newtheorem{ax}[thm]{Axiom}
+\newtheorem{res}[thm]{Result}
+% \newtheorem{prob}{Problem statement}
+\newtheorem{prob}{Problem}
+\newtheorem{rem}[thm]{Remark}
+
+% \theoremstyle{definition}
+\newtheorem{defn}{Definition}
+
+% \theoremstyle{remark}
+% \newtheorem{rem}{Remark}[section]
+% \newtheorem*{notation}{Notation}
+
+\newcommand{\Rpan}{R_{\text{pan}}}
+\newcommand{\Rtilt}{R_{\text{tilt}}}
+
+%MathBold Characters
+%Format: \"letter"mb
+\newcommand{\amb}{\mathbf{a}}
+\newcommand{\bmb}{\mathbf{b}}
+\newcommand{\cmb}{\mathbf{c}}
+\newcommand{\dmb}{\mathbf{d}}
+\newcommand{\emb}{\mathbf{e}}
+\newcommand{\fmb}{\mathbf{f}}
+\newcommand{\gmb}{\mathbf{g}}
+\newcommand{\hmb}{\mathbf{h}}
+\newcommand{\imb}{\mathbf{i}}
+\newcommand{\jmb}{\mathbf{j}}
+\newcommand{\kmb}{\mathbf{k}}
+\newcommand{\lmb}{\mathbf{l}}
+\newcommand{\mmb}{\mathbf{m}}
+\newcommand{\nmb}{\mathbf{n}}
+\newcommand{\omb}{\mathbf{o}}
+\renewcommand{\pmb}{\mathbf{p}}
+\newcommand{\qmb}{\mathbf{q}}
+\newcommand{\rmb}{\mathbf{r}}
+\newcommand{\smb}{\mathbf{s}}
+\newcommand{\tmb}{\mathbf{t}}
+\newcommand{\umb}{\mathbf{u}}
+\newcommand{\vmb}{\mathbf{v}}
+\newcommand{\wmb}{\mathbf{w}}
+\newcommand{\xmb}{\mathbf{x}}
+\newcommand{\ymb}{\mathbf{y}}
+\newcommand{\zmb}{\mathbf{z}}
+\newcommand{\Amb}{\mathbf{A}} 
+\newcommand{\Bmb}{\mathbf{B}}
+\newcommand{\Cmb}{\mathbf{C}}
+\newcommand{\Dmb}{\mathbf{D}}
+\newcommand{\Emb}{\mathbf{E}}
+\newcommand{\Fmb}{\mathbf{F}} 
+\newcommand{\Gmb}{\mathbf{G}} 
+\newcommand{\Hmb}{\mathbf{H}} 
+\newcommand{\Imb}{\mathbf{I}}
+\newcommand{\Jmb}{\mathbf{J}} 
+\newcommand{\Kmb}{\mathbf{K}} 
+\newcommand{\Lmb}{\mathbf{L}}
+\newcommand{\Mmb}{\mathbf{M}} 
+\newcommand{\Nmb}{\mathbf{N}} 
+\newcommand{\Omb}{\mathbf{O}} 
+\newcommand{\Pmb}{\mathbf{P}} 
+\newcommand{\Qmb}{\mathbf{Q}} 
+\newcommand{\Rmb}{\mathbf{R}} 
+\newcommand{\Smb}{\mathbf{S}} 
+\newcommand{\Tmb}{\mathbf{T}} 
+\newcommand{\Umb}{\mathbf{U}} 
+\newcommand{\Vmb}{\mathbf{V}} 
+\newcommand{\Wmb}{\mathbf{W}}
+\newcommand{\Xmb}{\mathbf{X}} 
+\newcommand{\Ymb}{\mathbf{Y}} 
+\newcommand{\Zmb}{\mathbf{Z}} 
+
+%Matrizes
+\newcommand{\zmatT}{\mathbf{0}_{3\times 3}} 	 %zeros matrix
+\newcommand{\IdmatT}{\mathbf{I}_{3\times 3}} 	  %identity 3x3 matrix
+\newcommand{\Idmat}{\mathbf{I}} 							%identity matrix
+\newcommand{\Rmat}{\ensuremath{\mathcal{R}}} 	%rotation matrix
+\newcommand{\omatT}{\mathbf{1}_{3\times 3}} 	 %ones matrix 			
+
+%Special Matrices compact notation
+\newcommand{\zvec}{\mathbf{0}} 				%zeros vector
+\newcommand{\onesvec}{\mathbf{1}} 			%ones vector
+\newcommand{\zerosm}[2]{\mathbf{0}_{#1\times#2}}	%zeros generic matrix
+\newcommand{\onesm}[2]{\mathbf{1}_{#1\times#2}}	%ones generic matrix
+
+% Interval
+\newcommand{\IntervalClosed}[2]{\left[#1 \, \, \, #2\right]}
+
+% Special Eucledian space
+\newcommand{\SE}[1][2]{\text{SE}(#1)}
+
+% Special Orthogonal space
+\newcommand{\SO}[1][2]{\text{SO}(#1)}
+
+
+%%-----------------------------------------%%
+% Variables specific to Double integrator
+%%-----------------------------------------%%
+
+\newcommand{\xOne}{x_1}
+\newcommand{\xTwo}{x_2}
+\newcommand{\xOneDot}{\dot{x}_1}
+\newcommand{\xTwoDot}{\dot{x}_2}
+
+% disturbance
+\newcommand{\disturbance}{d}
+\newcommand{\disturbanceD}{\dmb}
+% upper bound on disturbance 
+\newcommand{\BoundOnd}{\text{M}_{\text{d}}}
+
+% actuation
+\newcommand{\actuation}{u}
+% upper bound on actuation
+\newcommand{\BoundOnU}{U^{\infty}}
+\newcommand{\BoundOnUdot}{U^{'\infty}}
+
+% Desired State
+\newcommand{\FinalSet}{\Omega^{\star}}
+\newcommand{\FinalSetxOne}{\Omega_{\xOne}^{\star}}
+
+% functions
+\newcommand{\hxOne}[1][\xOne]{h_1\left(#1\right)}
+\newcommand{\hxOneOne}{h_1}
+\newcommand{\hxOneDD}[1][\xOne]{h_1^{'}\left(#1\right)}
+\newcommand{\hxOneSQRT}[1][\xOne]{h_1^2\left(#1\right)}
+\newcommand{\hxOneMax}{H_1}
+\newcommand{\hxOneD}{h_1^{'\infty}}
+
+\newcommand{\hxTwo}[1][\xTwo]{h_2\left(#1\right)}
+\newcommand{\hxTwoTwo}{h_2}
+\newcommand{\hxTwoDD}[1][\xTwo]{h_2^{'}\left(#1\right)}
+\newcommand{\hxTwoD}{h_2^{'\infty}}
+\newcommand{\hxTwoDSQ}{h_2^{'\infty2}}
+\newcommand{\hxTwoSQRT}[1][\xTwo]{h_2^2\left(#1\right)}
+\newcommand{\hxTwoInv}[1][\xTwo]{h_2^{-1}\left(#1\right)}
+\newcommand{\hxTwoSQ}[1][\xTwo]{h_2^{2}\left(#1\right)}
+\newcommand{\hxTwoMax}{H_2}
+
+\newcommand{\fxTwo}[1][\xTwo]{f_2\left(#1\right)}
+\newcommand{\fxTwoTwo}{f_2}
+\newcommand{\fxTwoDD}[1][\xTwo]{f_2^{'}\left(#1\right)}
+\newcommand{\fxTwoD}[1][\xTwo]{f_2^{'\infty}}
+\newcommand{\fxTwoMax}{F_2}
+
+% gain for integrator
+\newcommand{\kint}{k_{d}}

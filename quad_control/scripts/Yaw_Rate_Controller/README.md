@@ -1,0 +1,3 @@
+Describe in detail control law
+
+1. ....

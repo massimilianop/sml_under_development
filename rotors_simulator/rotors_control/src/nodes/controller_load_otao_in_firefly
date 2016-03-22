@@ -1,0 +1,268 @@
+#!/usr/bin/env python
+# this line is just used to define the type of document
+
+import rospy
+
+import numpy
+
+# node will publish motor speeds
+from mav_msgs.msg import Actuators
+
+from mav_msgs.msg import RollPitchYawrateThrust
+
+#node will subscribe to odometry measurements
+from nav_msgs.msg import Odometry
+
+from VectorThrustController import Vector_Thrust_Controller
+
+import LoadTransportController3
+
+import LoadTransportController
+
+from utility_functions import skew,unskew,quaternion_to_rot,Velocity_Filter,quaternion_from_unit_vector,roll_pitch,bound
+
+import firefly_parameters
+
+import desired_trajectory
+
+# to work with directories relative to ROS packages
+from rospkg import RosPack
+
+import time
+
+class QuadController(object):
+
+    SaveDataFlag = True
+
+    matrix_motor_speeds = firefly_parameters.matrix_motor_speeds
+
+    quad_inertia_matrix = firefly_parameters.J
+
+    # this is the same matrix as above
+    # matrix_motor_speeds = numpy.dot((numpy.dot(K,A)).T, numpy.linalg.inv(numpy.dot(numpy.dot(K,A),(numpy.dot(K,A)).T) ))    
+
+    # VT_Ctrll = Vector_Thrust_Controller()
+    Load_Ctrll = LoadTransportController3.Load_Transport_Controller()
+    # Load_Ctrll = LoadTransportController.Load_Transport_Controller()
+
+
+    # I will be saving this as memory in the node
+    load_odometry_position = numpy.array([0.0,0.0,0.0])
+    load_odometry_velocity = numpy.array([0.0,0.0,0.0])
+
+    attitude_gain     = 3
+    angular_rate_gain = 0.52
+    # attitude_gain     = 5.0
+    # angular_rate_gain = numpy.sqrt(2*attitude_gain)   
+
+    attitude_gain_z     = 0.15
+    angular_rate_gain_z = 0.18        
+
+    # acceleration due to gravity (m/s^2)
+    gravity      = firefly_parameters.gravity
+    # transported mass (kg)
+    load_mass    = firefly_parameters.load_mass
+    # mass of vehicles (kg)
+    quad_mass    = firefly_parameters.kDefaultMass
+    # cable lengths (m)
+    cable_length = firefly_parameters.cable_length
+
+
+    # this is not really necessary, just to check data from gazebo is correct
+    # intiialization should be done in another way,
+    # but median will take care of minimizing effects
+    LoadVelocityEstimator = Velocity_Filter(3,numpy.zeros(3),0.0)
+    QuadVelocityEstimator = Velocity_Filter(3,numpy.zeros(3),0.0)
+
+    # not necessary
+    # rotation matrix of quad
+    # R = numpy.identity(3)
+
+    """docstring for QuadController"""
+    # def __init__(self, arg):
+    #     super(QuadController, self).__init__()
+    #     self.arg = arg
+
+    def compute_cmd(self,data_odometry):
+
+        #---------------------------------------------------------------#
+
+        start_time = time.time()
+
+        # current_time  = data_odometry.header.stamp.secs + data_odometry.header.stamp.nsecs/1e9
+        # t_0dt         = data_odometry.header.stamp.secs + data_odometry.header.stamp.nsecs/1e9
+        try:
+            t_0dt = data_odometry.header.stamp.secs + data_odometry.header.stamp.nsecs/1e9 - self.t0
+        except:
+            self.t0 = data_odometry.header.stamp.secs + data_odometry.header.stamp.nsecs/1e9
+            t_0dt   = data_odometry.header.stamp.secs + data_odometry.header.stamp.nsecs/1e9 - self.t0
+
+        #---------------------------------------------------------------#
+        stated        = desired_trajectory.output(t_0dt) 
+
+        #---------------------------------------------------------------#
+
+        quaternion_quad = numpy.array([data_odometry.pose.pose.orientation.x,\
+                                       data_odometry.pose.pose.orientation.y,\
+                                       data_odometry.pose.pose.orientation.z,\
+                                       data_odometry.pose.pose.orientation.w])    
+
+        R = quaternion_to_rot(quaternion_quad)        
+        # not necessary
+        # self.R = R
+
+        #---------------------------------------------------------------#
+
+        position_quad = numpy.array([data_odometry.pose.pose.position.x,\
+                                     data_odometry.pose.pose.position.y,\
+                                     data_odometry.pose.pose.position.z])
+
+        velocity_quad_body = numpy.array([data_odometry.twist.twist.linear.x,\
+                                          data_odometry.twist.twist.linear.y,\
+                                          data_odometry.twist.twist.linear.z])
+
+        velocity_quad = numpy.dot(R,velocity_quad_body)
+        
+
+        # current_time  = data_odometry.header.stamp.secs + data_odometry.header.stamp.nsecs/1e9
+        # print current_time
+        # print self.QuadVelocityEstimator.out(position_quad,current_time)
+        # print velocity_quad
+
+        #---------------------------------------------------------------#
+
+        omega_body =  numpy.array([data_odometry.twist.twist.angular.x,\
+                                   data_odometry.twist.twist.angular.y,\
+                                   data_odometry.twist.twist.angular.z])
+
+        omega = numpy.dot(R,omega_body)
+
+        # print omega_body
+        # print omega
+
+        position_load = self.load_odometry_position
+        velocity_load = self.load_odometry_velocity
+        # velocity_load = numpy.dot(R,self.load_odometry_velocity)
+
+        state  = numpy.concatenate([position_load, \
+                                    velocity_load, \
+                                    position_quad, \
+                                    velocity_quad ])
+        #---------------------------------------------------------------#
+
+        U,U_dot,V,VD  = self.Load_Ctrll.output(state,stated)
+
+
+        #  quaternion_from_unit_vector(U/numpy.linalg.norm(U),0.0)
+        psi         = numpy.arctan2(bound(R[1,0],1,-1),bound(R[0,0],1,-1))
+        roll, pitch = roll_pitch(U,psi)
+        
+        unit_vector_cable = position_quad - self.load_odometry_position
+        # print numpy.linalg.norm(unit_vector_cable)
+        unit_vector_cable = unit_vector_cable/numpy.linalg.norm(unit_vector_cable)
+        
+        thrust      = numpy.dot(U,unit_vector_cable)/numpy.dot(unit_vector,unit_vector_cable)      
+
+
+        # creating actuators message
+        message          = RollPitchYawrateThrust()
+        message.roll     = roll 
+        message.pitch    = pitch
+        message.yaw_rate = 0.0
+        message.thrust   = thrust
+
+        self.pub_commands.publish(message)
+
+        if self.SaveDataFlag == True:
+            # if we want to save data
+            current_time = data_odometry.header.stamp.secs + data_odometry.header.stamp.nsecs/1e9
+            numpy.savetxt(self.file_handle, [numpy.concatenate([[current_time],state,stated,quaternion_quad,omega,U_0dot])],delimiter=' ')
+
+        print("--- %s seconds CYCLE TIME ---" % (time.time() - start_time))
+
+        return 
+
+
+
+    def unit_vector_from_vector(self,U_0dot,U_1dot,U_2dot):
+
+        U_0dot_norm = U_0dot/numpy.linalg.norm(U_0dot)
+        U_1dot_norm = U_1dot/numpy.linalg.norm(U_0dot)
+        U_2dot_norm = U_2dot/numpy.linalg.norm(U_0dot)
+
+        unit_vector_des = U_0dot_norm
+        omega_des       = numpy.dot(skew(unit_vector_des),U_1dot_norm)
+        omega_des_dot   = numpy.dot(skew(unit_vector_des),U_2dot_norm - 2.0*U_1dot_norm*numpy.dot(U_1dot_norm,U_0dot_norm))
+
+        return (unit_vector_des,omega_des,omega_des_dot)
+
+
+    def update_load_odometry(self,data_odometry):
+
+        self.load_odometry_position = numpy.array([data_odometry.pose.pose.position.x,\
+                                                   data_odometry.pose.pose.position.y,\
+                                                   data_odometry.pose.pose.position.z])
+
+        # self.load_odometry_velocity = numpy.array([data_odometry.twist.twist.linear.x,\
+        #                                            data_odometry.twist.twist.linear.y,\
+        #                                            data_odometry.twist.twist.linear.z])
+
+        current_time  = data_odometry.header.stamp.secs + data_odometry.header.stamp.nsecs/1e9
+        self.load_odometry_velocity = self.LoadVelocityEstimator.out(self.load_odometry_position,current_time)
+
+        # current_time  = data_odometry.header.stamp.secs + data_odometry.header.stamp.nsecs/1e9
+        # print self.LoadVelocityEstimator.out(self.load_odometry_position,current_time)
+        # print numpy.dot(self.R,self.load_odometry_velocity)
+
+        return 
+
+    def handle_Save_Data(self):
+            
+        # namespace, e.g. /Iris1/
+        ns = rospy.get_namespace()
+        # remove / symbol to namespace: e.g, we get ns= Iris1
+        ns = ns.replace("/", "")
+
+        # string for time: used for generating files
+        tt = str(int(rospy.get_time()))
+
+        # determine ROS workspace directory
+        rp = RosPack()
+        package_path = rp.get_path('quad_control')
+        self.file_handle  = file(package_path+'/../../'+ns+'_data_'+tt+'.txt', 'w')
+
+        return
+
+
+    def controller(self):
+
+        # node will be named quad_control (see rqt_graph)
+        rospy.init_node('quad_with_load_control', anonymous=True)
+
+        # initialize time when output is called for first time
+        # self.t0 = time.time()
+
+        # publisher: command firefly motor speeds 
+        self.pub_commands = rospy.Publisher('command/RollPitchYawrateThrust', RollPitchYawrateThrust, queue_size=10)
+
+        # subscriber: to odometry
+        # self.sub_odometry = rospy.Subscriber("/firefly/odometry_sensor1/odometry", Odometry, self.compute_cmd)
+        self.sub_odometry = rospy.Subscriber("odometry", Odometry, self.compute_cmd) 
+
+        # subscriber: to odometry
+        # self.sub_odometry = rospy.Subscriber("/firefly/odometry_sensor1/odometry", Odometry, self.compute_cmd)
+        self.sub_odometry_load = rospy.Subscriber("odometry_load", Odometry, self.update_load_odometry) 
+
+        if self.SaveDataFlag == True:
+            self.handle_Save_Data()
+
+        # spin() simply keeps python from exiting until this node is stopped
+        rospy.spin()    
+
+
+if __name__ == '__main__':
+    a_controller = QuadController()
+
+    a_controller.controller()
+
+

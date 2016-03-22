@@ -1,0 +1,62 @@
+\vspace{1cm}
+
+\textbf{Instructions for turning Qualisys ON}
+
+\begin{enumerate}
+	
+	\item On dock bar of Windows, open \textbf{Project} icon
+	
+	\item Select \textbf{/Inet/Labhybrid2}
+	
+	\item Click on \textbf{create new} icon
+	
+	\item \textbf{CTRL+D}
+	
+	\item \textbf{Right click} (on mouse) and select \textbf{6DOF}
+	 
+	\item Identified rigid bodies should be there
+	
+\end{enumerate}
+
+\vspace{1cm}
+
+\textbf{Instructions for when Qualisys goes down} (not always necessary)\\
+(If, when turning on mocap -- \textbf{rosrun mocap ros\_mocap.py}, terminal complains about connection to Qualisys -- likely an issue regarding the IP address of the computer running Qualisys)
+
+\begin{enumerate}
+	
+	\item Go to the Qualisys computer and open a Terminal (\textbf{cmd.exe})
+	
+	\item Write \textbf{ipconfig}
+	
+	\item On \textit{Ethernet Adapter Local Area Connection} search for \textit{IPv4 Address} (copy address, e.g. 130.237.50.84)
+
+	\item Search for \textit{mocap\_source.py} (on Ubuntu) and change \textbf{host} with the copied address (it might be the same though)
+	
+\end{enumerate}
+
+\vspace{1cm}
+
+\textbf{Change Body Id of IRIS\textbf{i}}
+
+\begin{itemize}
+	
+	\item IRISi where $\textbf{i} = \{1,2,3, \cdots\}$
+
+	\item Go to mocap.launch in the mocap directory and iris\textbf{i}.launch in the scenarios directory
+	
+	\item Change id to e.g. \textbf{13} 
+	
+	\item On terminal, \textit{rosrun mocap ros\_mocap.py} followed by \textit{rostopic echo /body\_data/id\_\textbf{13}} should now yield the msg related to IRIS\textbf{i} 
+\end{itemize}
+
+
+\vspace{1cm}
+
+\textbf{2015-09-06 Qualisys now has a fixed IP (by Rui Oliveira)}
+
+\begin{itemize}
+	\item \textbf{sml-qualisys.ddns.net}
+	\item This IP will probably be the same for one year, so you don't have to be checking the IP daily from now on.
+\end{itemize}
+

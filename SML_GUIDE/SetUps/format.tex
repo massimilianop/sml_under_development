@@ -1,0 +1,121 @@
+% oriented to output, that is, what fonts to use for printing characters
+\usepackage[T1]{fontenc}
+
+% allows the user to input accented characters directly from the keyboard
+\usepackage[utf8]{inputenc}
+
+% for making database like glossary, acronyms and notation
+%\usepackage{datagidx} 
+
+% for mathematical things ... no need for amsmath
+\usepackage{mathtools}
+\usepackage{amssymb}
+%\usepackage{amsthm}
+\DeclareMathOperator\arctanh{arctanh}
+
+% for proof environment
+%\usepackage{amsthm}
+
+% package for bold math
+\usepackage{bm}
+
+% caption center
+\usepackage[center]{caption}
+% set spaces between floats and text below it
+%\setlength{\belowcaptionskip}{0mm}
+%\setlength{\intextsep}{0mm}
+%\setlength{\textfloatsep}{0mm}
+
+% not numbering equations that are not mentioned
+%\mathtoolsset{showonlyrefs,showmanualtags}
+
+% for subfigures
+\usepackage{subfigure}
+
+% subfigure numbering style
+%\renewcommand{\thesubfigure}{\thefigure(\alph{subfigure})}
+%\makeatletter
+%	\renewcommand{\p@subfigure}{}
+%	\renewcommand{\@thesubfigure}{\thesubfigure:\hskip\subfiglabelskip} 
+%\makeatother
+
+% change line spacing
+\usepackage{setspace}
+
+% used for symbol newmoon
+\usepackage{wasysym}
+
+% for hyperlinks
+\usepackage{hyperref}
+
+% these packages must come after color
+% for technical drawings
+\usepackage{tikz}
+\usepackage{tikz-3dplot}
+\usepackage{tkz-euclide}
+\usetkzobj{all}
+\usetikzlibrary{calc,decorations.markings,,intersections,shapes.misc}
+
+% Allows including images
+\usepackage{graphicx}
+
+% multiple rows/columns in table
+\usepackage{multirow}
+
+% so figures don't get out of place: used to recognize FloatBarrier
+\usepackage{placeins}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+
+% for hyperreferences: must come before glossary
+\usepackage{hyperref}
+% hyperref options
+\hypersetup{
+	colorlinks=true,
+	linkcolor=red,
+}
+
+%% helper macros
+%% THIS IS FOR FIGURE OF PROJECTION OF SPHERE IN PLANE %%
+\newcommand\pgfmathsinandcos[3]{%
+  \pgfmathsetmacro#1{sin(#3)}%
+  \pgfmathsetmacro#2{cos(#3)}%
+}
+\newcommand\LongitudePlane[3][current plane]{%
+  \pgfmathsinandcos\sinEl\cosEl{#2} % elevation
+  \pgfmathsinandcos\sint\cost{#3} % azimuth
+  \tikzset{#1/.estyle={cm={\cost,\sint*\sinEl,0,\cosEl,(0,0)}}}
+}
+\newcommand\LatitudePlane[3][current plane]{%
+  \pgfmathsinandcos\sinEl\cosEl{#2} % elevation
+  \pgfmathsinandcos\sint\cost{#3} % latitude
+  \pgfmathsetmacro\yshift{\cosEl*\sint}
+  \tikzset{#1/.estyle={cm={\cost,0,0,\cost*\sinEl,(0,\yshift)}}} %
+}
+\newcommand\DrawLongitudeCircle[2][1]{
+  \LongitudePlane{\angEl}{#2}
+  \tikzset{current plane/.prefix style={scale=#1}}
+   % angle of "visibility"
+  \pgfmathsetmacro\angVis{atan(sin(#2)*cos(\angEl)/sin(\angEl))} %
+  \draw[current plane] (\angVis:1) arc (\angVis:\angVis+180:1);
+  \draw[current plane,dashed] (\angVis-180:1) arc (\angVis-180:\angVis:1);
+}
+\newcommand\DrawLatitudeCircle[2][1]{
+  \LatitudePlane{\angEl}{#2}
+  \tikzset{current plane/.prefix style={scale=#1}}
+  \pgfmathsetmacro\sinVis{sin(#2)/cos(#2)*sin(\angEl)/cos(\angEl)}
+  % angle of "visibility"
+  \pgfmathsetmacro\angVis{asin(min(1,max(\sinVis,-1)))}
+  \draw[current plane] (\angVis:1) arc (\angVis:-\angVis-180:1);
+  \draw[current plane,dashed] (180-\angVis:1) arc (180-\angVis:\angVis:1);
+}
+%% THIS IS FOR FIGURE OF PROJECTION OF SPHERE IN PLANE %%
+
+%%% document-wide tikz options and styles
+%\tikzset{%
+%  >=latex, % option for nice arrows
+%  inner sep=0pt,%
+%  outer sep=2pt,%
+%  mark coordinate/.style={inner sep=0pt,outer sep=0pt,minimum size=3pt,
+%    fill=black,circle}%
+%}
