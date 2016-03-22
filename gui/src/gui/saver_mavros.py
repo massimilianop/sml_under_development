@@ -6,6 +6,8 @@ from python_qt_binding import loadUi
 from python_qt_binding.QtGui import QWidget
 from PyQt4.QtCore import QObject, pyqtSignal
 
+import subprocess
+
 
 from quad_control.srv import Controller_Srv
 from quad_control.srv import MocapBodies
@@ -106,6 +108,27 @@ class saver_mavrosPlugin(Plugin):
         self._widget.ModeLAND.toggled.connect(self.ChangeMode)
         self._widget.ModeSTABILIZE.toggled.connect(self.ChangeMode)
         self._widget.ModeACRO.toggled.connect(self.ChangeMode)
+
+
+        # Button to start gazebo
+        self._widget.start_gazebo.clicked.connect(self.start_gazebo)
+
+        # Button to kill gazebo
+        self._widget.kill_gazebo.clicked.connect(self.kill_gazebo)        
+
+    #@Slot(bool)
+    def start_gazebo(self):
+        #os.system('roslaunch quad_control mav_hovering_example.launch')
+        subprocess.call('roslaunch quad_control mav_hovering_example.launch &', shell=True)
+        return 
+
+    #@Slot(bool)
+    def kill_gazebo(self):
+        #os.system('killall gzclient')
+        #os.system('killall gzclient;killall gzserver')
+        subprocess.call('killall gzclient &', shell=True)
+        subprocess.call('killall gzserver &', shell=True)
+        return 
 
 
     def MinThrottle(self):
