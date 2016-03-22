@@ -53,7 +53,7 @@
   </xacro:property>
 
   <!-- Included URDF Files -->
-  <xacro:include filename="$(find rotors_description)/urdf/multirotor_base.xacro" />
+  <xacro:include filename="$(find rotors_description)/urdf/firefly/multirotor_base.xacro" />
 
   <!-- Instantiate multirotor_base_macro once -->
   <xacro:multirotor_base_macro
@@ -198,111 +198,5 @@
     <xacro:insert_block name="rotor_inertia" />
   </xacro:vertical_rotor>
 
-
-  <!-- Joint bewteen quad and next joint -->
-  <joint name="pre_load_hinge" type="continuous">
-    <parent link="${namespace}/base_link"/>
-    <child link="pre_load"/>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
-    <axis xyz="1 0 0"/>
-
-    <!--<calibration rising="0.0"/> -->
-    <!--<dynamics damping="0.0" friction="0.0"/> -->
-    <!--<limit effort="50000" lower="-1.57079632679" upper="1.57079632679" velocity="10000"/>-->
-    <!--<safety_controller k_velocity="10" k_position="15" soft_lower_limit="-2.0" soft_upper_limit="0.5" /> -->
-
-  </joint>
-
-
-  <!-- Load -->
-  <link name="pre_load">
-
-    <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <sphere radius="0.001"/>
-      </geometry>
-      <material name="orange"/>
-    </visual>
-
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.001"/>
-      <inertia
-       ixx="0.0001" ixy="0.0" ixz="0.0"
-       iyy="0.0001" iyz="0.0"
-       izz="0.0001"/>
-    </inertial>
-
-  </link>
-
-
-  <!-- Joint bewteen quad and load -->
-  <joint name="load_hinge" type="con
-
-    tinuous">
-    <parent link="pre_load"/>
-    <child link="load"/>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
-    <axis xyz="0 1 0"/>
-
-    <!--<calibration rising="0.0"/> -->
-    <!--<dynamics damping="0.0" friction="0.0"/> -->
-    <!--<limit effort="50000" lower="-1.57079632679" upper="1.57079632679" velocity="10000"/>-->
-    <!--<safety_controller k_velocity="10" k_position="15" soft_lower_limit="-2.0" soft_upper_limit="0.5" /> -->
-
-  </joint>
-
-
-  <!-- Load -->
-  <link name="load">
-
-    <collision>
-      <origin xyz="0 0 -0.6" rpy="0 0 0"/>
-      <geometry>
-        <box size="0.02 0.02 0.02"/>
-      </geometry>
-    </collision>
-
-    <visual>
-      <origin xyz="0 0 -0.6" rpy="0 0 0"/>
-      <geometry>
-        <sphere radius="0.02"/>
-      </geometry>
-      <material name="orange"/>
-    </visual>
-
-    <inertial>
-      <origin xyz="0 0 -0.6" rpy="0 0 0"/>
-      <mass value="0.25"/>
-      <inertia
-       ixx="0.01" ixy="0.0" ixz="0.0"
-       iyy="0.01" iyz="0.0"
-       izz="0.01"/>
-    </inertial>
-
-  </link>
-
-
-  <!-- Joint bewteen quad and load -->
-  <joint name="no_load_hinge" type="fixed">
-    <parent link="load"/>
-    <child link="no_load"/>
-    <origin xyz="0 0 -0.6" rpy="0 0 0"/>
-  </joint>
-
-  <!-- Load -->
-  <link name="no_load">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.001"/>
-      <inertia
-       ixx="0.0001" ixy="0.0" ixz="0.0"
-       iyy="0.0001" iyz="0.0"
-       izz="0.0001"/>
-    </inertial>
-  </link>  
-
 </robot>
-
-
+  

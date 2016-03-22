@@ -119,7 +119,9 @@ class saver_mavrosPlugin(Plugin):
     #@Slot(bool)
     def start_gazebo(self):
         #os.system('roslaunch quad_control mav_hovering_example.launch')
-        subprocess.call('roslaunch quad_control mav_hovering_example.launch &', shell=True)
+        #subprocess.call('roslaunch quad_control mav_hovering_example.launch &', shell=True)
+        #subprocess.call('roslaunch quad_control mav_with_load_example.launch &', shell=True)
+        subprocess.call('roslaunch quad_control firefly_example.launch &', shell=True)
         return 
 
     #@Slot(bool)

@@ -20,9 +20,13 @@
 -->
 
 <robot name="firefly" xmlns:xacro="http://ros.org/wiki/xacro">
-  <xacro:include filename="$(find rotors_description)/urdf/component_snippets.xacro" />
+  <!-- <xacro:include filename="$(find rotors_description)/urdf/component_snippets.xacro" />-->
   <!-- Instantiate firefly "mechanics" -->
-  <xacro:include filename="$(find rotors_description)/urdf/firefly.xacro" />
+  <!--<xacro:include filename="$(find rotors_description)/urdf/firefly.xacro" /> -->
+  <xacro:include filename="$(find rotors_description)/urdf/firefly_with_load/component_snippets_loaded.xacro" />
+  <!-- Instantiate firefly "mechanics" -->
+  <xacro:include filename="$(find rotors_description)/urdf/firefly_with_load/firefly_loaded.xacro" />
+  <xacro:ground_truth_odometry_load namespace="${namespace}" parent_link="${namespace}/load_hinge_y" />
 
   <!-- Instantiate a controller. -->
   <xacro:controller_plugin_macro namespace="${namespace}" imu_sub_topic="imu" />
