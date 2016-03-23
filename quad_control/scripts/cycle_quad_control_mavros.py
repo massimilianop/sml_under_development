@@ -621,10 +621,10 @@ class quad_controller():
             self.pub_motor_speeds.publish(self.RotorSObject.rotor_s_message(desired_3d_force_quad,yaw_rate))
 
 
-            # if self.SaveDataFlag == True:
+            if self.SaveDataFlag == True:
                 # if we want to save data
-                #numpy.savetxt(self.file_handle, [concatenate([[rospy.get_time()],[self.flag_measurements], self.state_quad, states_d[0:9], Input_to_Quad,self.ControllerObject.d_est])],delimiter=' ')
-
+                # numpy.savetxt(self.file_handle, [concatenate([[rospy.get_time()],[self.flag_measurements], self.state_quad, states_d[0:9], Input_to_Quad,self.ControllerObject.d_est])],delimiter=' ')
+                numpy.savetxt(self.file_handle, [concatenate([[rospy.get_time()],[self.flag_measurements], self.state_quad, states_d[0:9], desired_3d_force_quad])],delimiter=' ')
             # go to sleep
             rate.sleep() 
 
