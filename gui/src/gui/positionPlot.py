@@ -656,6 +656,16 @@ class positionPlotPlugin(Plugin):
     #@Slot(bool)
     def SaveDataClient(self):
         
+        #rospy.logwarn('testing')
+        file_name = self._widget.input_file_name.toPlainText()
+        
+        if not file_name:
+        # if file_name == "":
+            file_name = 'temporary_file'+str(rospy.get_time())
+            rospy.logwarn('testing')
+
+        rospy.logwarn(file_name)
+
         try: 
             # time out of one second for waiting for service
             rospy.wait_for_service(self.namespace+'SaveDataFromGui',1.0)
@@ -665,14 +675,14 @@ class positionPlotPlugin(Plugin):
 
                 # if button is pressed save data
                 if self._widget.ButtonRequestSave.isChecked():
-                    # request controller to save data
-                    reply = AskForSavingOrNot(True)
+                    # request controller to save data (implicit, with keywords)
+                    reply = AskForSavingOrNot(flag_save = True, file_name = file_name)
                     if reply.Saving == True:
                         # if controller receives message, we know it
                         print('Saving')
                 else:
                     # request controller to STOP saving data
-                    reply = AskForSavingOrNot(False)
+                    reply = AskForSavingOrNot(flag_save = False)
                     if  reply.Saving == True:
                         # if controller receives message, we know it
                         print('Stopped Saving')

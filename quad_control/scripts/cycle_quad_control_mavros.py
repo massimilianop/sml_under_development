@@ -103,6 +103,15 @@ class quad_controller():
         YawControllerClass = yaw_controllers_dictionary.yaw_controllers_dictionary['YawRateControllerTrackReferencePsi']
         self.YawControllerObject = YawControllerClass()
 
+
+        # for saving data
+        # determine ROS workspace directory
+        rp = RosPack()
+        # determine ROS workspace directory where data is saved
+        package_path = rp.get_path('quad_control')
+        self.package_save_path = package_path+'/experimental_data/data/'
+
+
     def GET_STATE_(self):
 
         # if simulator is on, state is updated by subscription
@@ -165,27 +174,29 @@ class quad_controller():
         return self.TrajGenerator.output(time_TrajDes)
 
 
-    # callback for when Saving data is requested
-    def handle_Save_Data(self,req):
+    # callback for when "saving data" is requested
+    def _handle_save_data(self,req):
         
-        if req.ToSave == True:
+        if req.flag_save == True:
             # if GUI request data to be saved create file
             
             # namespace, e.g. /Iris1/
-            ns = rospy.get_namespace()
-            # remove / symbol to namespace: e.g, we get ns= Iris1
-            ns = ns.replace("/", "")
+            namespace = rospy.get_namespace()
+            if not (namespace == ""):
+                # remove / symbol to namespace: e.g, we get namespace= Iris1
+                namespace = namespace.replace("/", "")
 
             # string for time: used for generating files
-            tt = str(int(rospy.get_time() - self.TimeSaveData))
+            # time_stamp = str(int(rospy.get_time() - self.TimeSaveData))
+            time_stamp = str(int(rospy.get_time()))
 
-            # determine ROS workspace directory
-            rp = RosPack()
-            package_path = rp.get_path('quad_control')
-            self.file_handle  = file(package_path+'/../../'+ns+'_data_'+tt+'.txt', 'w')
+            # file name provided by user in request 
+            file_name    = req.file_name
+            self.file_handle  = file(self.package_save_path+'_'+time_stamp+'_'+file_name+namespace+'.txt', 'w')
 
             # if GUI request data to be saved, set flag to true
             self.SaveDataFlag = True
+
         else:
             # if GUI request data NOT to be saved, set falg to False
             self.SaveDataFlag = False
@@ -498,7 +509,7 @@ class quad_controller():
         # where the data will be saved
         self.TimeSaveData = rospy.get_time()
         # Service is created, so that data is saved when GUI requests
-        Save_data_service = rospy.Service('SaveDataFromGui', SaveData, self.handle_Save_Data)
+        Save_data_service = rospy.Service('SaveDataFromGui', SaveData, self._handle_save_data)
 
 
         #-----------------------------------------------------------------------#
@@ -610,9 +621,9 @@ class quad_controller():
             self.pub_motor_speeds.publish(self.RotorSObject.rotor_s_message(desired_3d_force_quad,yaw_rate))
 
 
-            if self.SaveDataFlag == True:
+            # if self.SaveDataFlag == True:
                 # if we want to save data
-                numpy.savetxt(self.file_handle, [concatenate([[rospy.get_time()],[self.flag_measurements], self.state_quad, states_d[0:9], Input_to_Quad,self.ControllerObject.d_est])],delimiter=' ')
+                #numpy.savetxt(self.file_handle, [concatenate([[rospy.get_time()],[self.flag_measurements], self.state_quad, states_d[0:9], Input_to_Quad,self.ControllerObject.d_est])],delimiter=' ')
 
             # go to sleep
             rate.sleep() 

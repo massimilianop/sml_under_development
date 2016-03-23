@@ -1,3 +1,4 @@
-bool ToSave
+bool flag_save
+string file_name
 ---
 bool Saving
