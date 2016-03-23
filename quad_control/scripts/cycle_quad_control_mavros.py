@@ -175,7 +175,7 @@ class quad_controller():
 
 
     # callback for when "saving data" is requested
-    def _handle_save_data(self,req:
+    def _handle_save_data(self,req):
         
         if req.flag_save == True:
             # if GUI request data to be saved create file
