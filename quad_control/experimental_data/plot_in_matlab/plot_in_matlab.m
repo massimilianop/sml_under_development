@@ -5,7 +5,7 @@
 % clear all
 clc
 
-%% include functions
+%% Include functions
 addpath(genpath('./functions'))
 
 %%
@@ -25,7 +25,8 @@ set(0,'DefaultTextInterpreter','latex',...
       'defaulttextfontsize',12,...
       'defaultaxesfontsize',12);
 
-%%
+%% Breaking data into pieces 
+
 clc
 close all
 
@@ -45,240 +46,160 @@ vd = stated(:,4:6);
 % ad = stated(:,7:9);
 
 
-hold on
-plot3(pQ(:,1) ,pQ(:,2) ,pQ(:,3) ,'Color','k','Linewidth',2)
-plot3(pd(:,1),pd(:,2),pd(:,3),'Color',[0.3 0.3 0.3],'Linewidth',1)
+%% Plot trajectory for all time
 
-num = 4;
-II = zeros(num+1,1);
-for i = 0:1:num
-    [minmin, index] = min(abs(time-tEND*i/num));
-    II(i+1) = index;
+close all
+plot_quad_trajectory(time,pQ,pd,eeQ)
+
+%% Plot trajectory in intervals of Delta_Time length
+
+close all
+
+Delta_Time = 5;
+for i=1:floor(tEND/Delta_Time)
+    aux = time<=i*Delta_Time & time>=(i-1)*Delta_Time;
+    figure()
+    plot_quad_trajectory(time(aux),pQ(aux,:),pd(aux,:),eeQ(aux,:))
 end
 
 
-for j=1:num+1
-    pQ_  = pQ(II(j),:)';   
-    eeQ_ = eeQ(II(j),:)';
-    rot_mat_ = rot_matrix(eeQ_);
+%% Plot position/velocity all time
 
-    quad_plot(pQ_,rot_mat_,1,[],0.1,0.1)
+close all
+
+figure()
+plot_compare(time,pQ,pd,'p')
+figure()
+plot_compare(time,vQ,vd,'v')
+
+%% Plot position/velocity in intervals of Delta_Time length
+
+close all
+
+Delta_Time = 5;
+for i=1:floor(tEND/Delta_Time)
+    aux = time<=i*Delta_Time & time>=(i-1)*Delta_Time;
+    figure()
+    plot_compare(time(aux),pQ(aux,:),pd(aux,:),'p')
+    figure()
+    plot_compare(time(aux),vQ(aux,:),vd(aux,:),'v')    
+end
+
+%% Plot position/velocity tracking error for all time
+
+close all
+
+figure()
+plot_error(time,pQ,pd,'p')
+figure()
+plot_error(time,vQ,vd,'v')
+
+%% Plot position tracking error in intervals of Delta_Time length
+
+close all
+
+Delta_Time = 5;
+for i=1:floor(tEND/Delta_Time)
+    aux = time<=i*Delta_Time & time>=(i-1)*Delta_Time;
+    figure()
+    plot_error(time(aux),pQ(aux,:),pd(aux,:),'p')
+    figure()
+    plot_error(time(aux),vQ(aux,:),vd(aux,:),'v')    
+end
+
+
+%% Plot euler angles all time
+
+% quarotor euler angles
+% eeQ = state(:,7:9)*pi/180;
+
+eeQd = [];
+ades = stated(:,7:9);
+gravity = 9.81;
+
+for i= 1:length(ades)
+    psi   = eeQ(i,3);
+    ades_ = ades(i,:);
+    n     = (gravity*[0;0;1] + ades_')/norm(gravity*[0;0;1] + ades_'); 
+    n     = rot_matrix([0;0;-psi])*n;
     
+    phid   = asin(max(-1,min(1,-n(2))));
+    
+    sin_thetad = max(-1,min(1,n(1)/cos(phid)));
+    cos_thetad = max(-1,min(1,n(3)/cos(phid)));
+    thetad     = atan2(sin_thetad,cos_thetad);
+    
+    psid  = 0; 
+    
+    eeQd_ = [phid;thetad;psid];
+    
+
+    eeQd = [eeQd; eeQd_'];  
 end
 
-xlabel('x (m)')
-ylabel('y (m)')
-zlabel('z (m)')
+close all
 
-% axis equal
-axis tight
+figure()
+plot_compare_angles(time,eeQ,eeQd)
 
-view(56,16)
+%% Plot position/velocity in intervals of Delta_Time length
 
-%%
+close all
 
-% %%
-% close all
-% 
-% t = time - time(1);
-% tEND = t(end);
-% 
-% p    = state(:,1:3);
-% pdes = stated(:,1:3);
-% 
-% auxaux = 1:length(t);
-% t_aux    = ~mod(auxaux,1);
-% 
-% hold on
-% 
-% plot(t(t_aux),p(t_aux,1)-pdes(t_aux,1),'-','Color','k')
-% plot(t(t_aux),p(t_aux,2)-pdes(t_aux,2),'--','Color','k')
-% plot(t(t_aux),p(t_aux,3)-pdes(t_aux,3),'-.','Color','k')
-% plot(t(t_aux),sqrt((p(t_aux,1)-pdes(t_aux,1)).^2 + (p(t_aux,2)-pdes(t_aux,2)).^2 + (p(t_aux,3)-pdes(t_aux,3)).^2),'-.','Color','k')
-% 
-% xlabel('Time (s)')
-% ylabel('(m)')
-% 
-% l = legend('$\mathbf{p}_1$',...
-%            '$\mathbf{p}_2$',...
-%            '$\mathbf{p}_3$',...
-%            '$error$');
-% set(l,'Interpreter','latex')
-% 
-% grid on
-% 
-% %%
-% close all
-% 
-% t = time - time(1);
-% tEND = t(end);
-% 
-% v    = state(:,4:6);
-% vdes = stated(:,4:6);
-% 
-% auxaux = 1:length(t);
-% t_aux    = ~mod(auxaux,1);
-% 
-% hold on
-% 
-% plot(t(t_aux),v(t_aux,1)-vdes(t_aux,1),'-','Color','k')
-% plot(t(t_aux),v(t_aux,2)-vdes(t_aux,2),'--','Color','k')
-% plot(t(t_aux),v(t_aux,3)-vdes(t_aux,3),'-.','Color','k')
-% 
-% xlabel('Time (s)')
-% ylabel('(m/s)')
-% 
-% l = legend('$\mathbf{v}_1$',...
-%            '$\mathbf{v}_2$',...
-%            '$\mathbf{v}_3$');
-% set(l,'Interpreter','latex')
-% 
-% grid on
-% 
-% 
-% %%
-% close all
-% 
-% t = time - time(1);
-% tEND = t(end);
-% 
-% auxaux = 1:length(t);
-% t_aux    = ~mod(auxaux,1);
-% 
-% g_quad = 9.81;
-% 
-% nn = [];
-% for i= 1:length(stated(:,7:9))
-%     pp   = pQ(i,:)';
-%     pp2  = pM(i,:)';
-% 
-%     n   = (pp - pp2)/norm(pp - pp2);
-% 
-%     nn = [nn; n'];  
-% end
-% 
-% n_des = [];
-% for i= 1:length(stated(:,7:9))
-%     ades   = stated(i,7:9);
-%     n = (g_quad*[0;0;1] + ades')/norm(g_quad*[0;0;1] + ades');  
-% 
-%     n_des = [n_des; n'];  
-% end
-% 
-% hold on
-% 
-% plot(t(t_aux),nn(t_aux,1),'-','Color','k')
-% plot(t(t_aux),n_des(t_aux,1),'-','Color',[0.5 0.5 0.5])
-% 
-% plot(t(t_aux),nn(t_aux,2),'--','Color','k')
-% plot(t(t_aux),n_des(t_aux,2),'--','Color',[0.5 0.5 0.5])
-% 
-% plot(t(t_aux),nn(t_aux,3),'-.','Color','k')
-% plot(t(t_aux),n_des(t_aux,3),'-.','Color',[0.5 0.5 0.5])
-% 
-% xlabel('Time (s)')
-% 
-% l = legend('$\mathbf{n}_1$',...
-%            '$\mathbf{n}_{1,t}^{\star}$',...
-%            '$\mathbf{n}_2$',...
-%            '$\mathbf{n}_{2,t}^{\star}$',...
-%            '$\mathbf{n}_3$',...
-%            '$\mathbf{n}_{3,t}^{\star}$');
-% set(l,'Interpreter','latex')
-% 
-% grid on
-% 
-% 
-% %%
-% 
-% close all
-% 
-% t = time - time(1);
-% tEND = t(end);
-% 
-% w = [];
-% for i= 1:length(stated(:,7:9))
-%     pp   = pQ(i,:)';
-%     pp2  = pM(i,:)';
-%     
-%     vv   = vQ(i,:)';
-%     vv2  = vM(i,:)';
-%         
-%     n   = (pp - pp2)/norm(pp - pp2);
-% 
-%     ww   = skew(n)*(vv - vv2)/norm(pp - pp2);
-%     
-%     w = [w; ww'];  
-% end
-% 
-% w_des = [];
-% for i= 1:length(stated(:,7:9))
-%     ades   = stated(i,7:9)';
-%     n_des  = (g_quad*[0;0;1] + ades)/norm(g_quad*[0;0;1] + ades);  
-% 
-%     jdes = stated(i,10:12)';
-%     w_eq = skew(n_des)*jdes/norm(g_quad*[0;0;1] - ades);    
-%     
-%     w_des = [w_des; w_eq'];  
-% end
-% 
-% auxaux = 1:length(t);
-% t_aux    = ~mod(auxaux,1);
-% 
-% hold on
-% 
-% % plot(t(t_aux),w(t_aux,1),'-','Color','k')
-% % plot(t(t_aux),w_des(t_aux,1),'-','Color',[0.5 0.5 0.5])
-% 
-% plot(t(t_aux),w(t_aux,2),'--','Color','k')
-% plot(t(t_aux),w_des(t_aux,2),'--','Color',[0.5 0.5 0.5])
-%  
-% % plot(t(t_aux),w(t_aux,3),'-.','Color','k')
-% % plot(t(t_aux),w_des(t_aux,3),'-.','Color',[0.5 0.5 0.5])
-% 
-% xlabel('Time (s)')
-% ylabel('(rad/s)')
-% 
-% l = legend('$\omega_1$',...
-%            '$\omega_{1,t}^{\star}$',...
-%            '$\omega_2$',...
-%            '$\omega_{2,t}^{\star}$',...
-%            '$\omega_3$',...
-%            '$\omega_{3,t}^{\star}$');
-%        
-% set(l,'Interpreter','latex')
-% 
-% grid on
-% 
-% 
-% %%
-% close all
-% 
-% t = time - time(1);
-% tEND = t(end);
-% 
-% u  = input_quad;
-% 
-% auxaux = 1:length(t);
-% t_aux    = ~mod(auxaux,1);
-% 
-% t_aux = t <= tEND + 0.1;
-% 
-% hold on
-% 
-% plot(t(t_aux),0.1*u(t_aux,1),'-','Color','k')
-% plot(t(t_aux),u(t_aux,2),'--','Color','k')
-% plot(t(t_aux),u(t_aux,3),'-.','Color','k')
-% 
-% xlabel('Time (s)')
-% % ylabel('Input')
-% 
-% xlim([0 tFINAL])
-% 
-% l = legend('$U_1$',...
-%            '$U_2$',...
-%            '$U_3$');
-%        
-% set(l,'Interpreter','latex')
-% 
-% grid on
+Delta_Time = 5;
+for i=1:floor(tEND/Delta_Time)
+    aux = time<=i*Delta_Time & time>=(i-1)*Delta_Time;
+    figure()
+    plot_compare_angles(time(aux),eeQ(aux,:),eeQd(aux,:))  
+end
+
+
+%% Plot inputs for all time
+
+clc
+
+eeQd = [];
+ades = stated(:,7:9);
+gravity = 9.81;
+
+force3d_input = input_quad;
+thrust = [];
+phid   = [];
+thetad = [];
+
+for i= 1:length(force3d_input)
+    
+    force3d_input_ = force3d_input(i,:)';
+    psi   = eeQ(i,3);
+    
+    n     = force3d_input_/norm(force3d_input_); 
+    n     = rot_matrix([0;0;-psi])*n;
+    
+    thrust_ = norm(force3d_input_);
+    thrust = [thrust;thrust_];
+    
+    phid_  = asin(max(-1,min(1,-n(2))));
+    phid   = [phid;phid_];
+    
+    sin_thetad = max(-1,min(1,n(1)/cos(phid_)));
+    cos_thetad = max(-1,min(1,n(3)/cos(phid_)));
+    thetad_    = atan2(sin_thetad,cos_thetad);
+
+    thetad = [thetad;thetad_];
+  
+end
+
+close all 
+plot_force3d_input(time,thrust,phid,thetad)
+
+
+%% Plot inputs in intervals of Delta_Time length
+
+close all
+
+Delta_Time = 5;
+for i=1:floor(tEND/Delta_Time)
+    aux = time<=i*Delta_Time & time>=(i-1)*Delta_Time;
+    figure()
+    plot_force3d_input(time(aux),thrust(aux),phid(aux),thetad(aux))
+end
