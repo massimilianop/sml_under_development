@@ -42,7 +42,8 @@ class Trajectory:
         off = self.__offset
         rot = self.__rotation
         
-        pos_out = rot.dot(pos) + off
+	# purposedly changing this: to test merge
+        pos_out = rot.dot(pos) + 1.0*off
         vel_out = rot.dot(vel)
         acc_out = rot.dot(acc)
         jrk_out = rot.dot(jrk)
