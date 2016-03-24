@@ -195,6 +195,26 @@ class ChooseControllerPlugin(Plugin):
         self._widget.GainsOption2.toggled.connect(self.DefaultOptions)
         self._widget.GainsOption3.toggled.connect(self.DefaultOptions)
 
+
+        self._widget.ResetIrisNeutralValue.clicked.connect(self.reset_iris_neutral_value)
+
+    def reset_iris_neutral_value(self):
+        try: 
+            # time out of one second for waiting for service
+            rospy.wait_for_service(self.namespace+'IrisPlusResetNeutral',1.0)
+            try:
+                # request reseting neutral value for iris+ (implicit, with keywords)
+                ResetingNeutral = rospy.ServiceProxy(self.namespace+'IrisPlusResetNeutral', IrisPlusResetNeutral)
+                reply = ResetingNeutral()
+                if reply.received == True:
+                    rospy.logwarn('Service for reseting neutral value succeded')
+            except rospy.ServiceException:
+                rospy.logwarn('Service for reseting neutral value failed')
+                pass
+        except:
+            rospy.logwarn('Service for reseting neutral value failed')      
+            pass
+
     def DefaultOptions(self):
 
         if self._widget.GainsOption1.isChecked():

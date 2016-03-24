@@ -1,0 +1,4 @@
+# no data when making a request
+# sending this service prompts the user the reset neutral value
+---
+bool received

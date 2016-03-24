@@ -44,7 +44,7 @@ from rospkg import RosPack
 import numpy
 from numpy import *
 
-from utility_functions import GetRotFromEulerAnglesDeg,Velocity_Filter
+from utility_functions import GetRotFromEulerAnglesDeg,Velocity_Filter,Median_Filter
 
 # import list of available trajectories
 from TrajectoryPlanner import trajectories_dictionary
@@ -102,6 +102,9 @@ class quad_controller():
 
         YawControllerClass = yaw_controllers_dictionary.yaw_controllers_dictionary['YawRateControllerTrackReferencePsi']
         self.YawControllerObject = YawControllerClass()
+
+        # for reseting neutral value that makes iris+ stay at desired altitude
+        self.DesiredZForceMedian = Median_Filter(10)
 
 
         # for saving data
@@ -203,6 +206,16 @@ class quad_controller():
 
         # return message to Gui, to let it know resquest has been fulfilled
         return SaveDataResponse(True)
+
+    # callback for when "reseting iris plus neutral value" is requested
+    def _handle_iris_plus_reset_neutral(self,req):
+        # return message to GUI, to let it know resquest has been fulfilled
+        # IrisPlusResetNeutral: service type
+        median_acceleration = self.DesiredZForceMedian.output()
+        rospy.logwarn('median acceleration = '+ str(median_acceleration))
+        self.IrisPlusConverterObject.reset_k_trottle_neutral(median_acceleration)
+        return IrisPlusResetNeutralResponse(True)
+
 
 
     # callback for publishing state of controller (or stop publishing)
@@ -539,6 +552,11 @@ class quad_controller():
         # Service is created, so that user can change controller on GUI
         Chg_Contller = rospy.Service('Controller_GUI', Controller_Srv, self.handle_Controller_Srv)
 
+
+        #-----------------------------------------------------------------------#
+        # Service: change neutral value that guarantees that a quad remains at a desired altitude
+        rospy.Service('IrisPlusResetNeutral', IrisPlusResetNeutral, self._handle_iris_plus_reset_neutral)
+
         #-----------------------------------------------------------------------#
         # Service for publishing state of controller 
         # we use same type of service as above
@@ -588,6 +606,8 @@ class quad_controller():
 
             # compute input to send to QUAD
             desired_3d_force_quad = self.ControllerObject.output(time,self.state_quad,states_d)
+            self.DesiredZForceMedian.update_data(desired_3d_force_quad[2])
+
 
             euler_rad     = self.state_quad[6:9]*math.pi/180
             euler_rad_dot = numpy.zeros(3)

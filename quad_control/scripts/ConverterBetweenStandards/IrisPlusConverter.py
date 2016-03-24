@@ -39,6 +39,15 @@ class IrisPlusConverter(object):
     #     super(IrisPlusConverter, self).__init__()
     #     self.arg = arg
 
+    def reset_k_trottle_neutral(self,acceleration):
+        # if acceleration > gravity, increase neutral value
+        # if acceleration < gravity, decrease neutral value
+        self.THROTTLE_NEUTRAL = self.THROTTLE_NEUTRAL*acceleration/self.GRAVITY
+        # for safety better bound this value
+        self.THROTTLE_NEUTRAL = bound(self.THROTTLE_NEUTRAL,1600,1400)
+        rospy.logwarn('new neutral value = ' + str(self.THROTTLE_NEUTRAL) + ' in [1400,1600]')
+        return 
+
     def reset_parameters(self):
         return 
 

@@ -67,6 +67,7 @@ add_service_files(
   Simulator_Srv.srv
   MocapBodies.srv
   PlannerStart.srv
+  IrisPlusResetNeutral.srv
 )
 
 ## Generate actions in the 'action' folder
