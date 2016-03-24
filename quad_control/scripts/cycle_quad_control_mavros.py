@@ -264,7 +264,8 @@ class quad_controller():
         TrajDes_OffSet = numpy.array(req.offset)
 
         ee     = numpy.array(req.rotation)
-        TrajDes_Rotation = GetRotFromEulerAnglesDeg(ee)
+        #TrajDes_Rotation = GetRotFromEulerAnglesDeg(ee)
+        TrajDes_Rotation = ee
 
         # some parameters user can change easily 
         # req.parameters is a tuple
@@ -273,14 +274,14 @@ class quad_controller():
             TrajDes_parameters = None
         else:     
             # if tuple is not empty, cast parameters as numpy array 
-            TrajDes_parameters = numpy.array(req.parameters)   
+            TrajDes_parameters = req.parameters  
 
         # update class for TrajectoryGenerator
         TrajectoryClass = trajectories_dictionary.trajectories_dictionary[flagTrajDes]
 
-        parameters = {'offset': numpy.array(req.offset), 'rotation': GetRotFromEulerAnglesDeg(numpy.array(req.rotation)), 'radius': TrajDes_parameters[0], 'speed': TrajDes_parameters[1]}
+        #parameters = {'offset': numpy.array(req.offset), 'rotation': GetRotFromEulerAnglesDeg(numpy.array(req.rotation)), 'radius': TrajDes_parameters[0], 'speed': TrajDes_parameters[1]}
 
-        self.TrajGenerator = TrajectoryClass(**parameters)
+        self.TrajGenerator = TrajectoryClass(TrajDes_OffSet, TrajDes_Rotation, *TrajDes_parameters)
         # self.TrajGenerator = TrajectoryClass(TrajDes_OffSet,TrajDes_Rotation,TrajDes_parameters)
 
         # we need to update initial time for trajectory generation
