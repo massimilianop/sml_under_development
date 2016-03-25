@@ -8,18 +8,25 @@ import numpy as np
 
 class CircleTrajectory(tj.Trajectory):
 
-    PARAMETERS_NAMES = ("radius", "speed")
 
     @classmethod
     def description(cls):
         return "Circle"
         
+        
     def __init__(self, offset=np.array([0.0, 0.0, 1.0]), rotation=np.zeros(3),
             radius=1.0, speed=0.1):
+        tj.Trajectory.__init__(self, offset, rotation)
         self.__radius = radius
         self.__speed = speed
-        parameters = {"radius": radius, "speed": speed}
-        tj.Trajectory.__init__(self, offset, rotation, parameters)
+        
+        
+    def __str__(self):
+        string = tj.Trajectory.__str__(self)
+        string += "\nRadius: " + str(self.__radius)
+        string += "\nSpeed: " + str(self.__speed)
+        return string
+
         
     def desired_trajectory(self, time):
         c = np.cos

@@ -14,13 +14,16 @@ class FixedPointTrajectory(tj.Trajectory):
     def description(cls):
         return "Fixed Point"
         
+    @classmethod
+    def get_parameters_names(cls):
+        return ()
+        
     def __init__(self, point=np.array([0.0, 0.0, 1.0])):
-        self.__point = np.array(point)
         tj.Trajectory.__init__(self, point, np.zeros(3))
         
     def __str__(self):
         string = self.description()
-        string += "\nPoint: " + str(self.__point)
+        string += "\nPoint: " + str(self.get_offset())
         return string
         
     def desired_trajectory(self, time):
