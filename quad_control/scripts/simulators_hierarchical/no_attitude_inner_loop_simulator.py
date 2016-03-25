@@ -62,11 +62,7 @@ class NoAttitudeInnerLoopSimulator(sim.Simulator):
         omega = np.array(control[1:4])
         
         #TODO convert the control in a conversion module, not here
-        ths = self.__acro_rpp*4500/100*np.pi/180
-        w = np.zeros(3)
-        w[0] =  (omega[0] - 1500)/500*ths;
-        w[1] = -(omega[1] - 1500)/500*ths;
-        w[2] = -(omega[2] - 1500)/500*ths;
+        
         
         dot_p = np.array(velocity)
         dot_v = self.__gain_throttle*thrust/self.__mass*versor\
