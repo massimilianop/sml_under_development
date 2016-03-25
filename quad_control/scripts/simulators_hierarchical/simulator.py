@@ -6,6 +6,32 @@ import scipy.integrate as spi
 
 
 
+def acro_mode_command_to_throttle_and_angular_velocity(
+        command,
+        mass,
+        throttle_gain,
+        acro_rpp):
+        
+    throttle_cmd = command[2]
+    ang_vel_cmd = np.zeros(3)
+    ang_vel_cmd[0] = command[0]
+    ang_vel_cmd[1] = command[1]
+    ang_vel_cmd[2] = command[3]
+    ths = acro_rpp*4500/100*np.pi/180
+    throttle = throttle_gain*throttle_cmd/mass
+    ang_vel = np.zeros(3)
+    ang_vel[0] =  (ang_vel_cmd[0] - 1500)/500*ths;
+    ang_vel[1] = -(ang_vel_cmd[1] - 1500)/500*ths;
+    ang_vel[2] = -(ang_vel_cmd[2] - 1500)/500*ths;
+    
+    
+    
+    
+def stabilize_mode_command_to_thrust_and_yaw_rate(command):
+    pass
+
+
+
 class Simulator():
 
 
@@ -105,7 +131,7 @@ class Simulator():
         
         
     def set_control(self, control):
-        assert len(control) == get_control_size
+        assert len(control) == self.get_control_size()
         self.__control = np.array(control) 
     
     
