@@ -33,6 +33,29 @@ from std_srvs.srv import Empty
 import argparse
 
 
+# # Relative path
+# import sys
+# # import os
+# rospy.logwarn(sys.path)
+# sys.path.append(os.path.join(os.path.dirname(__file__),'..','..'))
+# # sys.path.append(os.path.join(os.path.dirname(__file__),'..','..','..'))
+# # sys.path.append(os.path.join(os.path.dirname(__file__),'..','..','..','..'))
+# # sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','..','..','..'))
+# rospy.logwarn(sys.path)
+
+
+
+# to work with directories relative to ROS packages
+from rospkg import RosPack
+# determine ROS workspace directory
+rp = RosPack()
+# determine ROS workspace directory where data is saved
+package_path = rp.get_path('quad_control')
+# import sys
+import sys
+sys.path.insert(0, package_path)
+# import trajectories dictionaries
+from scripts.TrajectoryPlanner import trajectories_dictionary
 
 
 class TrajectorySelectionPlugin(Plugin):
@@ -95,6 +118,36 @@ class TrajectorySelectionPlugin(Plugin):
         # Planner buttons
         self._widget.planner_start_button.clicked.connect(self.planner_start)
         self._widget.planner_stop_button.clicked.connect(self.planner_stop)
+
+        # self._widget.listWidget.addItem('aaaasas')
+        # self._widget.listWidget.insertItem('asasas')
+        # QListWidgetItem(tr("Oak"), self._widget.listWidget)
+
+
+        count = 0
+        # for key,class_name in trajectories_dictionary.items():
+        for key in trajectories_dictionary.trajectories_dictionary.keys():
+            self._widget.listWidget.insertItem(count,key)
+            count += 1 
+        
+
+        # self._widget.listWidget.insertItem(0,'traj 1')
+        # self._widget.listWidget.insertItem(1,'traj 2')
+
+        self._widget.listWidget.itemClicked.connect(self.functionnn)
+        # self._widget.listWidget.currentItemChanged.connect(self.functionnn)
+
+        self._widget.SetTrajectory2.clicked.connect(self.fdddd)
+
+    def functionnn(self):
+        rospy.logwarn("testing")
+        rospy.logwarn(self._widget.listWidget.currentItem().text())
+        self._widget.TrajectoryMessageInput.setPlainText(self._widget.listWidget.currentItem().text())
+        return 
+
+    def fdddd(self):
+        rospy.logwarn(self._widget.TrajectoryMessageInput.toPlainText())
+        return
 
     def DefaultOptions(self):
 
