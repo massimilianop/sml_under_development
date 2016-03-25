@@ -105,7 +105,7 @@ class Simulator():
         
         
     def set_control(self, control):
-        assert len(control) == get_control_size
+        assert len(control) == self.get_control_size()
         self.__control = np.array(control) 
     
     
