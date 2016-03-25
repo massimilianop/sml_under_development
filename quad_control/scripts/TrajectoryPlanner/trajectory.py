@@ -88,6 +88,7 @@ class Trajectory:
         off = self.__offset
         rot = self.__rotation_matrix
         
+	# purposedly changing this: to test merge
         pos_out = rot.dot(pos) + off
         vel_out = rot.dot(vel)
         acc_out = rot.dot(acc)
