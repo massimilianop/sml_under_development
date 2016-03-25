@@ -211,11 +211,20 @@ class quad_controller():
     def _handle_iris_plus_reset_neutral(self,req):
         # return message to GUI, to let it know resquest has been fulfilled
         # IrisPlusResetNeutral: service type
-        median_acceleration = self.DesiredZForceMedian.output()
-        rospy.logwarn('median acceleration = '+ str(median_acceleration))
-        self.IrisPlusConverterObject.reset_k_trottle_neutral(median_acceleration)
-        return IrisPlusResetNeutralResponse(True)
+        median_force = self.DesiredZForceMedian.output()
+        rospy.logwarn('median force = '+ str(median_force))
+        self.IrisPlusConverterObject.reset_k_trottle_neutral(median_force)
 
+        # new neutral value
+        k_trottle_neutral = self.IrisPlusConverterObject.get_k_throttle_neutral()
+        return IrisPlusResetNeutralResponse(received = True, k_trottle_neutral = k_trottle_neutral)
+
+    # callback for when "seting iris plus neutral value" is requested
+    def _handle_iris_plus_set_neutral(self,req):
+        # return message to GUI, to let it know resquest has been fulfilled
+        # IrisPlusSetNeutral: service type
+        self.IrisPlusConverterObject.set_k_trottle_neutral(req.k_trottle_neutral)
+        return IrisPlusSetNeutralResponse(True)
 
 
     # callback for publishing state of controller (or stop publishing)
@@ -556,6 +565,8 @@ class quad_controller():
         #-----------------------------------------------------------------------#
         # Service: change neutral value that guarantees that a quad remains at a desired altitude
         rospy.Service('IrisPlusResetNeutral', IrisPlusResetNeutral, self._handle_iris_plus_reset_neutral)
+
+        rospy.Service('IrisPlusSetNeutral', IrisPlusSetNeutral, self._handle_iris_plus_set_neutral)
 
         #-----------------------------------------------------------------------#
         # Service for publishing state of controller 

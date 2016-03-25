@@ -68,6 +68,7 @@ add_service_files(
   MocapBodies.srv
   PlannerStart.srv
   IrisPlusResetNeutral.srv
+  IrisPlusSetNeutral.srv
 )
 
 ## Generate actions in the 'action' folder

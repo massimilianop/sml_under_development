@@ -197,6 +197,7 @@ class ChooseControllerPlugin(Plugin):
 
 
         self._widget.ResetIrisNeutralValue.clicked.connect(self.reset_iris_neutral_value)
+        self._widget.SetIrisNeutralValue.clicked.connect(self.set_iris_neutral_value)
 
     def reset_iris_neutral_value(self):
         try: 
@@ -207,6 +208,7 @@ class ChooseControllerPlugin(Plugin):
                 ResetingNeutral = rospy.ServiceProxy(self.namespace+'IrisPlusResetNeutral', IrisPlusResetNeutral)
                 reply = ResetingNeutral()
                 if reply.received == True:
+                    self._widget.ThrottleNeutralValue.setValue(reply.k_trottle_neutral)
                     rospy.logwarn('Service for reseting neutral value succeded')
             except rospy.ServiceException:
                 rospy.logwarn('Service for reseting neutral value failed')
@@ -214,6 +216,24 @@ class ChooseControllerPlugin(Plugin):
         except:
             rospy.logwarn('Service for reseting neutral value failed')      
             pass
+
+
+    def set_iris_neutral_value(self):
+        try: 
+            # time out of one second for waiting for service
+            rospy.wait_for_service(self.namespace+'IrisPlusSetNeutral',1.0)
+            try:
+                # request reseting neutral value for iris+ (implicit, with keywords)
+                ResetingNeutral = rospy.ServiceProxy(self.namespace+'IrisPlusSetNeutral', IrisPlusSetNeutral)
+                reply = ResetingNeutral(k_trottle_neutral = self._widget.ThrottleNeutralValue.value())
+                if reply.received == True:
+                    rospy.logwarn('Service for seting neutral value succeded')
+            except rospy.ServiceException:
+                rospy.logwarn('Service for seting neutral value failed')
+                pass
+        except:
+            rospy.logwarn('Service for seting neutral value failed')      
+            pass            
 
     def DefaultOptions(self):
 

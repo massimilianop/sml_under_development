@@ -2,3 +2,4 @@
 # sending this service prompts the user the reset neutral value
 ---
 bool received
+int32 k_trottle_neutral
