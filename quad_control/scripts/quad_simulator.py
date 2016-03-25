@@ -8,6 +8,7 @@ from std_msgs.msg import String
 
 # simulator will publish quad state
 from quad_control.msg import quad_state
+#TODO camel case for message names (they are class names)
 
 # simulator will publish quad state
 from quad_control.msg import quad_cmd
@@ -39,7 +40,12 @@ from Simulators.ZeroDynamics.SimulatorZeroDynamics import SimulatorWithZeroDynam
 from Simulators.AttitudeInnerLoop.SimulatorWithAttitudeInnerLoop import SimulatorWithAttitudeInnerLoop
 from Simulators.NoAttitudeInnerLoop.SimulatorWithNoAttitudeInnerLoop import SimulatorWithNoAttitudeInnerLoop
 
-simulators_dictionary = {0:SimulatorWithZeroDynamics,1:SimulatorWithAttitudeInnerLoop,2:SimulatorWithNoAttitudeInnerLoop}
+import simulators_hierarchical.simulators_dictionary as shsd
+
+
+simdic = shsd.simulators_dictionary
+
+#simulators_dictionary = {0:SimulatorWithZeroDynamics,1:SimulatorWithAttitudeInnerLoop,2:SimulatorWithNoAttitudeInnerLoop}
 
 
 #----------------------------------------------#
@@ -48,23 +54,27 @@ simulators_dictionary = {0:SimulatorWithZeroDynamics,1:SimulatorWithAttitudeInne
 # this DOES NOT work: r.set_f_params(deepcopy(self.U),parameters) if U is  ARRAY
 # this works: r.set_f_params(Input(self.U),parameters) if U is  ARRAY
 
-class Input(object):
+#class Input(object):
 
-    def __init__(self,U):
+#    def __init__(self,U):
 
-        self.U0 = U[0]
-        self.U1 = U[1]
-        self.U2 = U[2]
-        self.U3 = U[3]
+#        self.U0 = U[0]
+#        self.U1 = U[1]
+#        self.U2 = U[2]
+#        self.U3 = U[3]
 
-        return    
+#        return    
 #----------------------------------------------#
 #----------------------------------------------#
 
 
-class Simulator():
+class SimulatorNode():
+
 
     def __init__(self):
+        #TODO lowercase for non-class names
+        #TODO leading underscores for internal variables
+
 
         # frequency of node (Hz)
         self.frequency = 100
@@ -78,13 +88,12 @@ class Simulator():
 
 
         # by default, we get the class [0] which is staying still
-        Sim_class = simulators_dictionary[0]
+        SimClass = simdic["no_attitude_inner_loop"]
         # sim is an instant/object of class Sim_class
-        sim       = Sim_class()
+        #sim       = Sim_class()
         # f is the dynamics, which is defined ALWAYS AS THE OUTPUT FUNCTION
-        f         = sim.output
+        #f         = sim.output
         # r is the solver object used for integration
-        self.r    = ode(f).set_integrator('dopri5')
 
         #---------------------------------------------------------------------#
         # initial states
@@ -102,9 +111,13 @@ class Simulator():
 
         # collecting all initial states0
         self.states0  = concatenate([x0,v0,R0])
+        self.time0 = 0.0
 
         # self.r = ode(f).set_integrator('dopri5')
-        self.r.set_initial_value(self.states0,0.0)
+        #self.r.set_initial_value(self.states0,0.0)
+
+
+        self.sim = SimClass(initial_time=self.time0, initial_state=self.states0)
 
         #---------------------------------------------------------------------#
 
@@ -119,6 +132,7 @@ class Simulator():
 
         # update input 
         self.U = U
+        self.sim.set_control(U)
 
 
     # callback used when starting simulator
@@ -139,7 +153,7 @@ class Simulator():
     def handle_Reset_service(self,req):
         
         # simulator has been asked to reset
-        self.r.set_initial_value(self.states0,0.0)        
+        self.sim.reset(initial_state=self.state0)      
 
         # return message to Gui, to let it know resquest has been fulfilled
         return StartSimResponse(True)
@@ -160,23 +174,24 @@ class Simulator():
             # if tuple is not empty, cast parameters as numpy array 
             parameters = numpy.array(req.parameters)
 
-        old_states = self.r.y
-        old_time   = self.r.t
+        old_control = self.U
+        old_states = self.sim.get_state()
+        old_time   = self.sim.get_time()
 
         # update class for Simulator
-        Sim_class = simulators_dictionary[fg_Sim]
+        SimClass = simulators_dictionary[fg_Sim]
         # sim is an instant/object of class Sim_class
-        sim       = Sim_class(parameters)
+        sim = SimClass(old_time, old_states, old_control, *parameters)
         # f is the dynamics, which is defined ALWAYS AS THE OUTPUT FUNCTION
-        f         = sim.output
         # r is the solver object used for integration
-        self.r    = ode(f).set_integrator('dopri5')
+        #self.r    = ode(f).set_integrator('dopri5')
         # initial conditions
-        self.r.set_initial_value(old_states,old_time)
+        #self.r.set_initial_value(old_states,old_time)
 
 
         # return message to Gui, to let it know resquest has been fulfilled
         return Simulator_SrvResponse(True)
+
 
     def write_state(self):
 
@@ -184,17 +199,18 @@ class Simulator():
         state = quad_state()
         
         # get current time
-        state.time = rospy.get_time()
-
-        state.x  = self.r.y[0]
-        state.y  = self.r.y[1]
-        state.z  = self.r.y[2]
-        state.vx = self.r.y[3]
-        state.vy = self.r.y[4]
-        state.vz = self.r.y[5]
+        state.time = self.sim.get_time()
+        simstate = self.sim.get_state()
+        
+        state.x  = simstate[0]
+        state.y  = simstate[1]
+        state.z  = simstate[2]
+        state.vx = simstate[3]
+        state.vy = simstate[4]
+        state.vz = simstate[5]
 
         # rotation matrix
-        R  = self.r.y[6:15]
+        R  = simstate[6:15]
         R  = numpy.reshape(R,(3,3))
         ee = GetEulerAnglesDeg(R)
 
@@ -259,17 +275,24 @@ class Simulator():
             # thid DOES NOT work: r.set_f_params(deepcopy(self.U),parameters)
             
             # we delay system the initialization of the system by a TimeDelay
-            if (self.r.t >= self.TimeDelay and self.StartFlag):
+            simtime = self.sim.get_time()
+            simstate = self.sim.get_state()
+            if (simtime >= self.TimeDelay and self.StartFlag):
+                self.sim.run(1.0/self.frequency)
                 # set dynamics vector accordinf to current input vector
                 # input vector is assumed constant during integration
-                self.r.set_f_params(Input(self.U))
+                #self.r.set_f_params(Input(self.U))
                 #  integrate equation for period of loop
-                self.r.integrate(self.r.t + 1.0/self.frequency);
+                #self.r.integrate(self.r.t + 1.0/self.frequency);
                 # reset initial state and initial time
-                self.r.set_initial_value(self.r.y, self.r.t)
+                #self.r.set_initial_value(self.r.y, self.r.t)
             else:
                 # need to update initial state and time
-                self.r.set_initial_value(self.r.y, self.r.t + 1.0/self.frequency)
+                #self.r.set_initial_value(self.r.y, self.r.t + 1.0/self.frequency)
+                self.sim.reset(
+                    initial_time=simtime+1.0/self.frequency,
+                    initial_state=simstate
+                )
             
             # create a message of type quad_state with current state
             state = self.write_state()
@@ -284,5 +307,5 @@ class Simulator():
 
 
 if __name__ == '__main__':
-    sim = Simulator()
+    sim = SimulatorNode()
     sim.simulate_quad()
