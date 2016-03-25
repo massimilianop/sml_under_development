@@ -258,6 +258,8 @@ class quad_controller():
 
         rospy.logwarn(fg_Cler)
 
+        rospy.logwarn(req.parameters)
+
         # some parameters user can change easily 
         # req.parameters is a tuple
         if len(req.parameters) == 0:
@@ -278,33 +280,16 @@ class quad_controller():
 
 
     # callback for when changing desired trajectory is requested
-    def handle_TrajDes_service(self,req):
-
-        # if GUI request certain trajectory, update flag on desired trajectory 
-        flagTrajDes = req.trajectory
-
-        TrajDes_OffSet = numpy.array(req.offset)
-
-        ee     = numpy.array(req.rotation)
-        #TrajDes_Rotation = GetRotFromEulerAnglesDeg(ee)
-        TrajDes_Rotation = ee
-
-        # some parameters user can change easily 
-        # req.parameters is a tuple
-        if len(req.parameters) == 0:
-            # if tuple req.parameters is empty:
-            TrajDes_parameters = None
-        else:     
-            # if tuple is not empty, cast parameters as numpy array 
-            TrajDes_parameters = req.parameters  
-
+    def _handle_service_trajectory_des(self,req):
+ 
+        # trajectory_class_name = req.trajectory
         # update class for TrajectoryGenerator
-        TrajectoryClass = trajectories_dictionary.trajectories_dictionary[flagTrajDes]
+        TrajectoryClass = trajectories_dictionary.trajectories_dictionary[req.trajectory]
 
-        #parameters = {'offset': numpy.array(req.offset), 'rotation': GetRotFromEulerAnglesDeg(numpy.array(req.rotation)), 'radius': TrajDes_parameters[0], 'speed': TrajDes_parameters[1]}
+        offset   = numpy.array(req.offset)
+        rotation = numpy.array(req.rotation)
 
-        self.TrajGenerator = TrajectoryClass(TrajDes_OffSet, TrajDes_Rotation, *TrajDes_parameters)
-        # self.TrajGenerator = TrajectoryClass(TrajDes_OffSet,TrajDes_Rotation,TrajDes_parameters)
+        self.TrajGenerator = TrajectoryClass(offset, rotation, *req.parameters)
 
         # we need to update initial time for trajectory generation
         self.time_TrajDes_t0 = rospy.get_time()
@@ -540,7 +525,7 @@ class quad_controller():
         # by default, STAYING STILL IN ORIGIN IS DESIRED TRAJECTORY
         # self.flagTrajDes = 0
         # Service is created, so that data is saved when GUI requests
-        TrajDes_service = rospy.Service('TrajDes_GUI', TrajDes_Srv, self.handle_TrajDes_service)
+        TrajDes_service = rospy.Service('TrajDes_GUI', TrajDes_Srv, self._handle_service_trajectory_des)
 
         # initialize initial time for trajectory generation
         self.time_TrajDes_t0 = rospy.get_time()

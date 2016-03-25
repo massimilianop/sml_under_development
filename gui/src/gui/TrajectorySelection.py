@@ -119,9 +119,6 @@ class TrajectorySelectionPlugin(Plugin):
         self._widget.planner_start_button.clicked.connect(self.planner_start)
         self._widget.planner_stop_button.clicked.connect(self.planner_stop)
 
-        # self._widget.listWidget.addItem('aaaasas')
-        # self._widget.listWidget.insertItem('asasas')
-        # QListWidgetItem(tr("Oak"), self._widget.listWidget)
 
 
         count = 0
@@ -129,24 +126,73 @@ class TrajectorySelectionPlugin(Plugin):
         for key in trajectories_dictionary.trajectories_dictionary.keys():
             self._widget.listWidget.insertItem(count,key)
             count += 1 
-        
 
-        # self._widget.listWidget.insertItem(0,'traj 1')
-        # self._widget.listWidget.insertItem(1,'traj 2')
+        self._widget.listWidget.itemClicked.connect(self.__print_trajectory_message)
+        self._widget.SetTrajectory2.clicked.connect(self.__get_new_trajectory_parameters)
 
-        self._widget.listWidget.itemClicked.connect(self.functionnn)
-        # self._widget.listWidget.currentItemChanged.connect(self.functionnn)
 
-        self._widget.SetTrajectory2.clicked.connect(self.fdddd)
-
-    def functionnn(self):
+    def __print_trajectory_message(self):
         rospy.logwarn("testing")
         rospy.logwarn(self._widget.listWidget.currentItem().text())
-        self._widget.TrajectoryMessageInput.setPlainText(self._widget.listWidget.currentItem().text())
+        
+        selected_class_name = self._widget.listWidget.currentItem().text()
+        selected_class      = trajectories_dictionary.trajectories_dictionary[selected_class_name]
+        string              = selected_class.parameters_to_string()
+        self._widget.TrajectoryMessageInput.setPlainText(string)
+
+        string_offset_and_rotation = selected_class.offset_and_rotation_to_string()
+        self._widget.MessageOffsetAndRotation.setPlainText(string_offset_and_rotation)
+
+        # self._widget.TrajectoryMessageInput.setPlainText(self._widget.listWidget.currentItem().text())
         return 
 
-    def fdddd(self):
+    def __get_new_trajectory_parameters(self):
         rospy.logwarn(self._widget.TrajectoryMessageInput.toPlainText())
+
+        selected_class_name = self._widget.listWidget.currentItem().text()
+        selected_class      = trajectories_dictionary.trajectories_dictionary[selected_class_name]
+        string              = self._widget.TrajectoryMessageInput.toPlainText()
+        parameters          = selected_class.string_to_parameters(string)
+        rospy.logwarn(parameters)
+
+        string_offset_and_rotation = self._widget.MessageOffsetAndRotation.toPlainText()
+        offset, rotation           = selected_class.string_to_offset_and_rotation(string_offset_and_rotation)
+
+        rospy.logwarn(offset)
+        rospy.logwarn(rotation)
+
+        try: 
+            # time out of one second for waiting for service
+            rospy.wait_for_service("/"+self.namespace+'TrajDes_GUI',1.0)
+            
+            try:
+                SettingTrajectory = rospy.ServiceProxy("/"+self.namespace+'TrajDes_GUI', TrajDes_Srv)
+
+                reply = SettingTrajectory(selected_class_name,offset,rotation,parameters)
+
+                if reply.received == True:
+                    # if controller receives message, we know it
+                    # print('Trajectory has been set')
+                    self._widget.Success.setChecked(True) 
+                    self._widget.Failure.setChecked(False) 
+
+
+            except rospy.ServiceException, e:
+                rospy.logwarn('Proxy for service that sets desired trajectory FAILED')
+                self._widget.Success.setChecked(False) 
+                self._widget.Failure.setChecked(True) 
+                # print "Service call failed: %s"%e   
+            
+        except:
+            rospy.logwarn('Timeout for service that sets desired trajectory')
+            self._widget.Success.setChecked(False) 
+            self._widget.Failure.setChecked(True) 
+            # print "Service not available ..."        
+            pass           
+
+
+        # self._widget.TrajectoryMessageInput.setPlainText(string)        
+
         return
 
     def DefaultOptions(self):
