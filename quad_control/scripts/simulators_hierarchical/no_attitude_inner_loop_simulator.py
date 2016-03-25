@@ -8,6 +8,7 @@ with no attitude inner loop.
 import numpy as np
 import utilities.utility_functions as uts
 import simulator as sim
+import json
 
 
 class NoAttitudeInnerLoopSimulator(sim.Simulator):
@@ -23,9 +24,39 @@ class NoAttitudeInnerLoopSimulator(sim.Simulator):
         return 4
     
     
+    @classmethod
+    def parameters_to_string(cls,
+            mass=1.442,
+            neutral_throttle=1484,
+            acro_rpp=4.5):
+        
+        dic = {
+            'mass':mass,
+            'neutral_throttle': neutral_throttle,
+            'acro_rpp': acro_rpp
+        }
+        
+        return json.dumps(dic)
+        
+        
+    @classmethod
+    def string_to_parameters(cls, string):
+        
+        dic = json.loads(string)
+        
+        mass = dic['mass']
+        neutral_throttle = dic['neutral_throttle']
+        acro_rpp = dic['acro_rpp']
+        
+        return mass, neutral_throttle, acro_rpp
+    
+    
+    #TODO maybe take the defaults parameters from rospy.getparam
+    # instead of hardcoding them
+    # (also in the parameters_to_string method)
     def __init__(self, initial_time=0.0,
             initial_state=None,
-            initial_control=[1484, 1500, 1500, 1500],
+            initial_control=None,
             mass=1.442, neutral_throttle=1484, acro_rpp=4.5):
         sim.Simulator.__init__(self, initial_time, initial_state,
             initial_control)
@@ -46,7 +77,7 @@ class NoAttitudeInnerLoopSimulator(sim.Simulator):
         
         
     def reset(self, initial_time=0.0, initial_state=None,
-            initial_control=[1484, 1500, 1500, 1500]):
+            initial_control=None):
         sim.Simulator.reset(self, initial_time, initial_state, initial_control)
         
         
@@ -58,16 +89,12 @@ class NoAttitudeInnerLoopSimulator(sim.Simulator):
         # for example, convert to euler angles and back
         rotation = np.reshape(state[6:15], (3,3))
         versor = rotation.dot(self.get_e3())
-        thrust = control[0]
+        throttle = control[0]
         omega = np.array(control[1:4])
         
-        #TODO convert the control in a conversion module, not here
-        
-        
         dot_p = np.array(velocity)
-        dot_v = self.__gain_throttle*thrust/self.__mass*versor\
-            - self.get_gravity()*self.get_e3()
-        dot_r = rotation.dot(uts.skew(w))
+        dot_v = throttle/self.__mass*versor - self.get_gravity()*self.get_e3()
+        dot_r = rotation.dot(uts.skew(omega))
         
         return np.concatenate([dot_p, dot_v, np.reshape(dot_r, 9)])
             
@@ -75,8 +102,13 @@ class NoAttitudeInnerLoopSimulator(sim.Simulator):
             
             
         
-#"""Test"""
-#my_sim = NoAttitudeInnerLoopSimulator()
+"""Test"""
+
+#string = NoAttitudeInnerLoopSimulator.parameters_to_string()
+#print string
+#parameters = NoAttitudeInnerLoopSimulator.string_to_parameters(string)
+#my_sim = NoAttitudeInnerLoopSimulator(0.0, None, None, *parameters)
 #print my_sim
 #my_sim.run(0.01)
 #print my_sim
+
