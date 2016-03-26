@@ -1,4 +1,4 @@
-int32 flag_controller
+string controller_name
 float64[] parameters
 ---
 bool received

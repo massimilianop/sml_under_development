@@ -28,7 +28,7 @@ class FixedPointTrajectory(tj.Trajectory):
     def string_to_parameters(cls, string):
         return tuple()
         
-    def __init__(self, point=np.array([0.0, 0.0, 1.0]),rotation=np.zeros(3)):
+    def __init__(self, point=np.array([0.0, 0.0, 0.0]),rotation=np.zeros(3)):
         tj.Trajectory.__init__(self, point, rotation)
         
     def __str__(self):

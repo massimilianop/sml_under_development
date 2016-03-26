@@ -8,7 +8,9 @@ setup_args = generate_distutils_setup(
     packages=[
         'utilities',
         'simulators_hierarchical',
-        'yaw_controllers'],
+        'yaw_controllers',
+        'systems_functions',
+        'quadrotor_tracking_controllers_hierarchical'],
     package_dir={'': 'scripts'},
 )
 

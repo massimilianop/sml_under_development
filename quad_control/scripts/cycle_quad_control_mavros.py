@@ -48,8 +48,9 @@ from utility_functions import GetRotFromEulerAnglesDeg,Velocity_Filter,Median_Fi
 
 # import list of available trajectories
 from TrajectoryPlanner import trajectories_dictionary
-from Quadrotor_Trajectory_Tracking_Controllers import controllers_dictionary
 from Yaw_Rate_Controller import yaw_controllers_dictionary
+
+from quadrotor_tracking_controllers_hierarchical import controllers_dictionary
 
 
 from ConverterBetweenStandards.RotorSConverter import RotorSConverter
@@ -58,8 +59,6 @@ from ConverterBetweenStandards.IrisPlusConverter import IrisPlusConverter
 import math
 
 class quad_controller():
-
-    GAIN_YAW_CONTROL = 1.0
 
     def __init__(self):
 
@@ -71,16 +70,8 @@ class quad_controller():
         self.state_quad = numpy.zeros(3+3+3)
 
         # dy default, desired trajectory is staying still in origin
-        TrajectoryClass = trajectories_dictionary.trajectories_dictionary['StayAtRest']
-        # zero vector
-        zvec  = numpy.zeros(3)
-        # Identity matrix
-        Ident = numpy.array([[1.0,0.0,0.0],[0.0,1.0,0.0],[0.0,0.0,1.0]])
-        # dy default
-        # self.TrajGenerator = TrajectoryClass(zvec,Ident)
-        # self.TrajGenerator = TrajectoryClass(numpy.array([0.0,0.0,1.0]),Ident)
-        # parameters = {'offset': zvec, 'rotation': Ident}
-        self.TrajGenerator = TrajectoryClass(numpy.zeros(3))
+        TrajectoryClass    = trajectories_dictionary.trajectories_dictionary['StayAtRest']
+        self.TrajGenerator = TrajectoryClass()
 
         # initialize counter for publishing to GUI
         # we only publish when self.PublishToGUI =1
@@ -94,10 +85,8 @@ class quad_controller():
         # but median will take care of minimizing effects
         self.VelocityEstimator = Velocity_Filter(3,numpy.zeros(3),0.0)
 
-        # controller selected by default
-        # ControllerClass = controllers_dictionary.controllers_dictionary[4]
-        # ControllerClass = controllers_dictionary.controllers_dictionary[2]
-        ControllerClass = controllers_dictionary.controllers_dictionary['PIDXYAndZBoundedController']
+        # controllers selected by default
+        ControllerClass = controllers_dictionary.controllers_dictionary['PIDSimpleBoundedIntegralController']
         self.ControllerObject = ControllerClass()
 
         YawControllerClass = yaw_controllers_dictionary.yaw_controllers_dictionary['YawRateControllerTrackReferencePsi']
@@ -249,34 +238,17 @@ class quad_controller():
         return Controller_SrvResponse(True)
 
 
-
     # callback for when changing controller is requested
-    def handle_Controller_Srv(self,req):
+    def _handle_service_change_controller(self,req):
 
-        # if GUI request certain controller, update flag on desired controller
-        fg_Cler = req.flag_controller
+        # controller_class_name = req.controller_name
+        # chosen class taken from dictionary
+        ControllerClass = controllers_dictionary.controllers_dictionary[req.controller_name]
 
-        rospy.logwarn(fg_Cler)
-
-        rospy.logwarn(req.parameters)
-
-        # some parameters user can change easily 
-        # req.parameters is a tuple
-        if len(req.parameters) == 0:
-            # if tuple req.parameters is empty:
-            parameters = None
-        else:     
-            # if tuple is not empty, cast parameters as numpy array 
-            parameters = numpy.array(req.parameters)
-
-        # update class for Controller
-        ControllerClass = controllers_dictionary.controllers_dictionary[fg_Cler]
-        # ControllerClass = controllers_dictionary.controllers_dictionary[2]
-
-        self.ControllerObject = ControllerClass(parameters)
+        self.ControllerObject = ControllerClass(*req.parameters)
 
         # return message to Gui, to let it know resquest has been fulfilled
-        return Controller_SrvResponse(True)
+        return SrvControllerChangeResponse(received = True)
 
 
     # callback for when changing desired trajectory is requested
@@ -544,7 +516,7 @@ class quad_controller():
 
         #-----------------------------------------------------------------------#
         # Service is created, so that user can change controller on GUI
-        Chg_Contller = rospy.Service('Controller_GUI', Controller_Srv, self.handle_Controller_Srv)
+        rospy.Service('ServiceChangeController', SrvControllerChange, self._handle_service_change_controller)
 
 
         #-----------------------------------------------------------------------#

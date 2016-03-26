@@ -4,12 +4,12 @@
 import numpy as np
 
 
-class YawController:
+class TrackingController:
 
     
     @classmethod
     def description(cls):
-        return "Abstract yaw controller"
+        return "Abstract Tracking controller"
     
     
     @classmethod
@@ -30,12 +30,9 @@ class YawController:
         return self.description()
         
         
-    def output(self, state, reference):
-        # state = euler_angles in RAD 
-        # + euler_angles_time_derivative in RAD/SEC
-        # state_desired = psi_desired in RAD + 
-        # psi_desired_time_derivative in RAD/SEC
-    
-        #TODO everything else is in degrees,
-        # maybe we should have this in degrees as well
+    def output(self, delta_t, state, reference):
+        # delta_t = time interval from previous call of output
+        # state ...
+        # reference ...    
+        #TODO 
         raise NotImplementedError()
