@@ -49,6 +49,9 @@ sys.path.insert(0, package_path)
 from scripts.quadrotor_tracking_controllers_hierarchical import controllers_dictionary
 
 
+from scripts.systems_functions.double_integrator_controllers import double_integrator_controllers_dictionaries
+
+
 class ChooseControllerPlugin(Plugin):
 
     # for controller state
@@ -115,10 +118,19 @@ class ChooseControllerPlugin(Plugin):
         # ---------------------------------------------- #
 
         # create list of available controller classes based on dictionary 
-        count = 0
-        for key in controllers_dictionary.controllers_dictionary.keys():
-            self._widget.ListControllersWidget.insertItem(count,key)
-            count += 1 
+        count_controller = 0
+        for key_controller in controllers_dictionary.controllers_dictionary.keys():
+            count_dicontroller = 0
+            for key_dicontroller in double_integrator_controllers_dictionaries.double_integrator_controllers_dictionaries.keys():
+                count = count_controller + count_dicontroller
+                
+                dic    = {'controller':key_controller,'di_controller':key_dicontroller}
+                label  = json.dumps(dic)
+
+                self._widget.ListControllersWidget.insertItem(count,label)
+                count_dicontroller +=1
+
+            count_controller += 1 
 
         # if item in list is selected, print corresponding message
         self._widget.ListControllersWidget.itemClicked.connect(self.__print_controller_message)
@@ -131,7 +143,11 @@ class ChooseControllerPlugin(Plugin):
         """Print message with parameters associated to chosen controller class"""
         
         # get selected class name on list of classes
-        selected_class_name = self._widget.ListControllersWidget.currentItem().text()
+        label = self._widget.ListControllersWidget.currentItem().text()
+        dic   = json.loads(label)
+        selected_class_name = dic['controller']
+
+
         # get class from dictionary of classes
         selected_class      = controllers_dictionary.controllers_dictionary[selected_class_name]
         # get message for chosen class

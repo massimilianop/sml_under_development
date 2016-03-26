@@ -1,19 +1,5 @@
 #!/usr/bin/python
 
-import os
-
-def cls():
-    os.system(['clear','cls'][os.name == 'nt'])
-
-# now, to clear the screen
-cls()
-
-# for ploting
-import matplotlib.pyplot as plt
-
-# for integrating
-from scipy.integrate import ode
-
 import numpy
 
 from numpy import *
@@ -31,7 +17,9 @@ from numpy import outer as outer
 
 from .. import double_integrator_controller
 
-class DI_controller(double_integrator_controller.DoubleIntegratorController): 
+import json
+
+class DIController(double_integrator_controller.DoubleIntegratorController): 
 
     @classmethod
     def description(cls):
@@ -61,20 +49,7 @@ class DI_controller(double_integrator_controller.DoubleIntegratorController):
         saturation_position = dic['saturation_position']
         saturation_velocity = dic['saturation_velocity']
 
-        return proportional_gain, derivative_gain, saturation_position, saturation_velocity
-
-    @classmethod
-    def dictionary(cls, string):
-        dic = json.loads(string)
-        
-        integral_gain_xy     = dic['integral_gain_xy']
-        bound_integral_xy    = dic['bound_integral_xy']
-        integral_gain_z      = dic['integral_gain_z']
-        bound_integral_z     = dic['bound_integral_z']
-
-        DI_controller.string_to_parameters(string)
-
-        return integral_gain_xy, bound_integral_xy, integral_gain_z , bound_integral_z, *DI_controller.string_to_parameters(string)    
+        return proportional_gain, derivative_gain, saturation_position, saturation_velocity  
 
     def __init__(self              , \
         proportional_gain     = 1.0, \
