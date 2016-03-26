@@ -63,8 +63,11 @@ class CircleTrajectory(tj.Trajectory):
 #tr = CircleTrajectory(offset=np.array([0.0, 0.0, 1.0]), radius=0.5, speed=0.2)
 ##print tr
 
-#string = tr.parameters_to_string(0.5, 0.2)
+#string = CircleTrajectory.offset_and_rotation_to_string()
 #print string
-#params = tr.string_to_parameters(string)
+#offset, rotation = CircleTrajectory.string_to_offset_and_rotation(string)
+#print offset, rotation
+#traj = CircleTrajectory(offset, rotation)
+#print traj
 
-#print params
+
