@@ -20,4 +20,3 @@ class YawRateControllerNeutral(object):
         # neutral controller: do nothing
         yaw_rate = 0.0
         return yaw_rate
-        

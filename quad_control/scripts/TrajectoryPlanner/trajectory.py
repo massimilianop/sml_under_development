@@ -25,15 +25,15 @@ class Trajectory:
     @classmethod
     def offset_and_rotation_to_string(cls, offset=np.array([0.0, 0.0, 1.0]),
             rotation=np.zeros(3)):
-        dic = {'offset':offset, 'rotation':rotation}
+        dic = {'offset':list(offset), 'rotation':list(rotation)}
         return json.dumps(dic)
         
         
     @classmethod
     def string_to_offset_and_rotation(cls, string):
         dic = json.loads(string)
-        offset = dic['offset']
-        rotation = dic['rotation']
+        offset = np.array(dic['offset'])
+        rotation = np.array(dic['rotation'])
         return offset, rotation
         
 
