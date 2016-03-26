@@ -61,7 +61,7 @@ add_service_files(
   FILES
   SaveData.srv
   StartSim.srv
-  TrajDes_Srv.srv
+  SrvTrajectoryDesired.srv
   Mocap_Id.srv
   Controller_Srv.srv
   Simulator_Srv.srv

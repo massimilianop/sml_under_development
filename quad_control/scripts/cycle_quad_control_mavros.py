@@ -28,7 +28,7 @@ from quad_control.msg import quad_cmd
 from quad_control.msg import Controller_State
 
 # import services defined in quad_control
-# Four SERVICES ARE BEING USED: SaveData, TrajDes_GUI, Mocap_Id, StartSim
+# Four SERVICES ARE BEING USED: SaveData, ServiceTrajectoryDesired, Mocap_Id, StartSim
 # SaveData is for saving data in txt file
 # TrajDes is for selecting trajectory
 # Mocap_Id for body detection from QUALISYS
@@ -295,7 +295,7 @@ class quad_controller():
         self.time_TrajDes_t0 = rospy.get_time()
 
         # return message to Gui, to let it know resquest has been fulfilled
-        return TrajDes_SrvResponse(True)
+        return SrvTrajectoryDesiredResponse(True)
 
     # # function to stop simulator
     # def stop_simulator(self):
@@ -525,7 +525,7 @@ class quad_controller():
         # by default, STAYING STILL IN ORIGIN IS DESIRED TRAJECTORY
         # self.flagTrajDes = 0
         # Service is created, so that data is saved when GUI requests
-        TrajDes_service = rospy.Service('TrajDes_GUI', TrajDes_Srv, self._handle_service_trajectory_des)
+        TrajDes_service = rospy.Service('ServiceTrajectoryDesired', SrvTrajectoryDesired, self._handle_service_trajectory_des)
 
         # initialize initial time for trajectory generation
         self.time_TrajDes_t0 = rospy.get_time()
