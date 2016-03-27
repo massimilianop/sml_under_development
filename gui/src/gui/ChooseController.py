@@ -54,17 +54,6 @@ from scripts.systems_functions.double_integrator_controllers import double_integ
 
 class ChooseControllerPlugin(Plugin):
 
-    # for controller state
-    ctr_st = pyqtSignal(numpy.ndarray)
-
-    # ---------------------------------------------- #
-    # ---------------------------------------------- #
-    # Necessary constants
-
-    # size of vectors: INTEGER
-    Size_Vector = 100
-
-
     def __init__(self, context,namespace = None):
 
         # it is either "" or the input given at creation of plugin
@@ -87,8 +76,7 @@ class ChooseControllerPlugin(Plugin):
             print 'arguments: ', args
             print 'unknowns: ', unknowns
         
-        
-        
+               
         # Create QWidget
         self._widget = QWidget()
         # Get path to UI file which is a sibling of this file
@@ -118,40 +106,55 @@ class ChooseControllerPlugin(Plugin):
         # ---------------------------------------------- #
 
         # create list of available controller classes based on dictionary 
-        count_controller = 0
-        for key_controller in controllers_dictionary.controllers_dictionary.keys():
-            count_dicontroller = 0
-            for key_dicontroller in double_integrator_controllers_dictionaries.double_integrator_controllers_dictionaries.keys():
-                count = count_controller + count_dicontroller
-                
-                dic    = {'controller':key_controller,'di_controller':key_dicontroller}
-                label  = json.dumps(dic)
-
-                self._widget.ListControllersWidget.insertItem(count,label)
-                count_dicontroller +=1
-
-            count_controller += 1 
+        count = 0
+        for key in controllers_dictionary.controllers_dictionary.keys():
+            self._widget.ListControllersWidget.insertItem(count,key)
+            count +=1
 
         # if item in list is selected, print corresponding message
-        self._widget.ListControllersWidget.itemClicked.connect(self.__print_controller_message)
+        self._widget.ListControllersWidget.itemClicked.connect(self.__controller_item_clicked)
         
         # button to request service for setting new trajectory, with new parameters
         self._widget.SetControllerButton.clicked.connect(self.__get_new_controller_parameters)
 
+        self.__chain_controller = []
 
-    def __print_controller_message(self):
-        """Print message with parameters associated to chosen controller class"""
-        
+    def __controller_item_clicked(self):
         # get selected class name on list of classes
-        label = self._widget.ListControllersWidget.currentItem().text()
-        dic   = json.loads(label)
-        selected_class_name = dic['controller']
-
+        selected_class_name = self._widget.ListControllersWidget.currentItem().text()
 
         # get class from dictionary of classes
         selected_class      = controllers_dictionary.controllers_dictionary[selected_class_name]
+        
+        self.__chain_controller.append(selected_class_name)
+
+        if selected_class.parent_class == False:
+            self.__print_controller_message()
+        else:
+            # update list of controllers
+            count = 0
+            for key in controllers_dictionary.controllers_dictionary.keys(): 
+                if key == selected_class_name:
+                    for key_child in selected_class.children.keys():
+                        self._widget.ListControllersWidget.insertItem(count,key_child)
+                        count +=1
+                else:
+                    self._widget.ListControllersWidget.insertItem(count,key)
+                    count +=1
+
+        return
+
+    def __print_controller_message(self):
+        """Print message with parameters associated to chosen controller class"""
+     
+        selected_controller_class_name = self.__chain_controller
+        # get class from dictionary of classes
+        selected_class      = controllers_dictionary.controllers_dictionary[selected_controller_class_name[0]]
         # get message for chosen class
-        string              = selected_class.parameters_to_string()
+        if selected_class.parent_class == False:
+            string              = selected_class.parameters_to_string()
+        else:
+            string              = selected_class.parameters_to_string(child_class_name = selected_controller_class_name[1:])
         # print message on GUI
         self._widget.ControllerMessageInput.setPlainText(string)
 
@@ -170,6 +173,8 @@ class ChooseControllerPlugin(Plugin):
         parameters          = selected_class.string_to_parameters(string)
 
         rospy.logwarn(parameters)
+
+        self.__chain_controller = []
 
         # request service
         try: 

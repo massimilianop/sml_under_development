@@ -7,11 +7,6 @@ import rospy
 
 import numpy
 
-import collections
-
-
-# from systems_functions.Double_Integrator_Functions.Double_Integrator_Bounded_Not_Component_wise_No_Inertial_Measurements_needed.DI_Bounded_2 import DI_controller
-
 from systems_functions.double_integrator_controllers import double_integrator_controllers_dictionaries
 
 from ... import controller
@@ -23,32 +18,35 @@ import json
 
 class ControllerPIDBoundedIntegral(controller.TrackingController):
 
+    parent_class = True
+    children     = double_integrator_controllers_dictionaries.double_integrator_controllers_dictionaries
+
     @classmethod
     def description(cls):
         return "PID Controller, with saturation on integral part"
     
     @classmethod
-    def parameters_to_string(cls,   \
-        di_controller_class_name   = 'DefaultDIController',\
-        integral_gain_xy     = 0.0, \
-        bound_integral_xy    = 0.0, \
-        integral_gain_z      = 0.5, \
-        bound_integral_z     = 0.0):
+    def parameters_to_string(cls, \
+        child_class_name   = 'DefaultDIController',\
+        integral_gain_xy   = 0.0, \
+        bound_integral_xy  = 0.0, \
+        integral_gain_z    = 0.5, \
+        bound_integral_z   = 0.0):
 
         dict_integral = {'integral_gain_xy'   :integral_gain_xy,\
         'bound_integral_xy'  :bound_integral_xy,\
         'integral_gain_z'    :integral_gain_z,\
         'bound_integral_z'   :bound_integral_z}
 
-        DIControllerClass = double_integrator_controllers_dictionaries.double_integrator_controllers_dictionaries[di_controller_class_name]
+        DIControllerClass = double_integrator_controllers_dictionaries.double_integrator_controllers_dictionaries[child_class_name]
 
         dict_di_controller = json.loads(DIControllerClass.parameters_to_string())
 
         dic = dict(dict_di_controller,**dict_integral)
-        dic['di_controller_class_name'] = di_controller_class_name
+        dic['di_controller_class_name'] = child_class_name
 
         return json.dumps(dic)
-        
+
     @classmethod
     def string_to_parameters(cls, string):
         dic = json.loads(string)
@@ -58,18 +56,38 @@ class ControllerPIDBoundedIntegral(controller.TrackingController):
         integral_gain_z      = dic['integral_gain_z']
         bound_integral_z     = dic['bound_integral_z']
 
-        di_controller_class_name = dic['di_controller_class_name']
-        DIControllerClass        = double_integrator_controllers_dictionaries.double_integrator_controllers_dictionaries[di_controller_class_name]
-        di_controller_parameters = DIControllerClass.string_to_parameters(string)
-        DIControllerObject       = DIControllerClass(di_controller_parameters)
+        di_controller_class_name   = dic['di_controller_class_name']
+        DIControllerClass          = double_integrator_controllers_dictionaries.double_integrator_controllers_dictionaries[di_controller_class_name]
+        di_controller_parameters   = DIControllerClass.string_to_parameters(string)
+        di_controller_class_number = double_integrator_controllers_dictionaries.double_integrator_controllers_numbered[di_controller_class_name]
 
-        return DIControllerObject,integral_gain_xy, bound_integral_xy, integral_gain_z , bound_integral_z
+        # return di_controller_class_number, integral_gain_xy, bound_integral_xy, integral_gain_z , bound_integral_z
+        return di_controller_class_number, di_controller_parameters, integral_gain_xy, bound_integral_xy, integral_gain_z , bound_integral_z
+        
+    # @classmethod
+    # def string_to_parameters(cls, string):
+    #     dic = json.loads(string)
+        
+    #     integral_gain_xy     = dic['integral_gain_xy']
+    #     bound_integral_xy    = dic['bound_integral_xy']
+    #     integral_gain_z      = dic['integral_gain_z']
+    #     bound_integral_z     = dic['bound_integral_z']
+
+    #     di_controller_class_name = dic['di_controller_class_name']
+    #     DIControllerClass        = double_integrator_controllers_dictionaries.double_integrator_controllers_dictionaries[di_controller_class_name]
+    #     di_controller_parameters = DIControllerClass.string_to_parameters(string)
+    #     DIControllerObject       = DIControllerClass(di_controller_parameters)
+
+    #     return DIControllerObject,integral_gain_xy, bound_integral_xy, integral_gain_z , bound_integral_z
+
+
 
     def __init__(self,\
-        DIController         = double_integrator_controllers_dictionaries.double_integrator_controllers_dictionaries['DefaultDIController'](),\
-        integral_gain_xy     = 0.0, \
-        bound_integral_xy    = 0.0, \
-        integral_gain_z      = 0.5, \
+        di_controller_class_number = 1    ,\
+        di_controller_parameters   = None ,\
+        integral_gain_xy     = 0.0        ,\
+        bound_integral_xy    = 0.0        ,\
+        integral_gain_z      = 0.5        ,\
         bound_integral_z     = 0.0):
 
         self.__integral_gain_xy     = integral_gain_xy
@@ -78,7 +96,8 @@ class ControllerPIDBoundedIntegral(controller.TrackingController):
         self.__integral_gain_z      = integral_gain_z
         self.__bound_integral_z     = bound_integral_z
 
-        self.DIControllerObject = DIController
+        di_controller_class_name = 'DefaultDIController'
+        self.DIControllerObject  = double_integrator_controllers_dictionaries.double_integrator_controllers_dictionaries[di_controller_class_name](di_controller_parameters)
 
         self.MASS    = 1.66779
 
@@ -89,6 +108,8 @@ class ControllerPIDBoundedIntegral(controller.TrackingController):
         self.t_old  = 0.0
 
         pass
+
+
         
         
     def __str__(self):

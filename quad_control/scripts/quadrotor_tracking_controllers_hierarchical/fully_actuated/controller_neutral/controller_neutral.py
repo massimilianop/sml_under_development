@@ -13,6 +13,8 @@ from ... import controller
 
 class ControllerNeutral(controller.TrackingController):
 
+    parent_class = False
+    children     = dict()
     
     @classmethod
     def description(cls):

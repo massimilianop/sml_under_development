@@ -15,6 +15,8 @@ from utilities import utility_functions
 
 class ControllerPIDSimpleBoundedIntegral(controller.TrackingController):
 
+    parent_class = False
+    children     = dict()
     
     @classmethod
     def description(cls):
