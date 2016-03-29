@@ -24,13 +24,12 @@ class NeutralController(controller.Controller):
     
     
     @classmethod
-    def parameters_to_string(cls):
-        dic = dict()
-        return json.dumps(dic)
+    def parameters_to_string(cls, parameters=None):
+        return json.dumps(parameters)
         
         
     @classmethod
-    def string_to_parameters(cls, string):
+    def string_to_parameters(cls, string=None):
         return dict()
 
 

@@ -41,7 +41,7 @@ class DoubleIntegratorBoundedNotComponentWiseController(dic.DoubleIntegratorCont
             'velocity_saturation' :velocity_saturation
             }
 
-        return json.dumps(dic)    
+        return json.dumps(dic, indent=4)    
         
     @classmethod
     def string_to_parameters(cls, string):
@@ -58,18 +58,31 @@ class DoubleIntegratorBoundedNotComponentWiseController(dic.DoubleIntegratorCont
         return dic 
 
 
-    def __init__(self              , \
-        proportional_gain     = 1.0, \
-        derivative_gain       = 1.0, \
-        position_saturation   = 1.0, \
-        velocity_saturation   = 1.0
-        ):
-
-        self.__proportional_gain    = proportional_gain
-        self.__derivative_gain      = derivative_gain
-
-        self.__position_saturation  = position_saturation
-        self.__velocity_saturation  = velocity_saturation
+    def __init__(self,
+            natural_frequency       = 0.5,
+            damping                 = sqrt(2.0)/2.0,
+            proportional_gain       = None,
+            derivative_gain         = None,
+            position_saturation     = 1.0,
+            velocity_saturation     = 1.0
+            ):
+        
+        if proportional_gain == None or derivative_gain==None:
+            
+            dic.DoubleIntegratorController.__init__(self,
+                proportional_gain=natural_frequency**2,
+                derivative_gain=2.0*damping*natural_frequency
+                )
+        
+        else:
+        
+            dic.DoubleIntegratorController.__init__(self,
+                proportional_gain=proportional_gain,
+                derivative_gain=derivative_gain
+                )
+            
+        self.__position_saturation = position_saturation
+        self.__velocity_saturation = velocity_saturation
 
         self.__eps = 0.01
 
@@ -106,8 +119,8 @@ class DoubleIntegratorBoundedNotComponentWiseController(dic.DoubleIntegratorCont
     def  _DI_Bounded(self,p,v):
 
         # gains
-        kp = self.__proportional_gain
-        kv = self.__derivative_gain
+        kp = self.get_proportional_gain()
+        kv = self.get_derivative_gain()
 
         sigma_p  = self.__position_saturation
         sigma_v  = self.__velocity_saturation
@@ -212,3 +225,11 @@ class DoubleIntegratorBoundedNotComponentWiseController(dic.DoubleIntegratorCont
   
 
         return (u,u_p,u_v,u_p_p,u_v_v,u_p_v,V,VD,V_p,V_v,V_v_p,V_v_v)
+        
+        
+        
+# Test
+con = DoubleIntegratorBoundedNotComponentWiseController()
+#print con
+#print con.output(zeros(3), zeros(3))
+#print con.parameters_to_string()

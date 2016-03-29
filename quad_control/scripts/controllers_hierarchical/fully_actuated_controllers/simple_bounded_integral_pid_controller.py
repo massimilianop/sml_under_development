@@ -49,7 +49,7 @@ class SimpleBoundedIntegralPIDController(controller.Controller):
         'bound_integral_z'   :bound_integral_z
         }
         
-        return json.dumps(dic)    
+        return json.dumps(dic, indent=4)    
         
         
     @classmethod
@@ -94,6 +94,7 @@ class SimpleBoundedIntegralPIDController(controller.Controller):
         self.__bound_integral_z     = bound_integral_z
         self.__quad_mass            = quad_mass
 
+        #TODO get from utilities?
         self.MASS = quad_mass
         self.GRAVITY = 9.81
 
@@ -104,7 +105,10 @@ class SimpleBoundedIntegralPIDController(controller.Controller):
         
     def __str__(self):
         #TODO add all the parameters and the state
-        return self.description()
+        string = controller.Controller.__str__(self)
+        string += "\nProportional gain xy: " + str(self.__proportional_gain_xy)
+        string += "\nDerivative gain xy: " + str(self.__derivative_gain_xy)
+        return string
 
 
     def output(self, delta_t, state, reference):
@@ -184,4 +188,12 @@ class SimpleBoundedIntegralPIDController(controller.Controller):
 
     def reset_estimate_z(self):
         self.disturbance_estimate[2] = 0.0
-        return             
+        return         
+        
+        
+        
+# Test
+#con = SimpleBoundedIntegralPIDController()
+#print con
+#print con.parameters_to_string()
+#print con.output(0.1, numpy.zeros(9), numpy.zeros(9))    

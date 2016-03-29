@@ -44,6 +44,7 @@ class DoubleIntegratorBoundedAndComponentWiseController(dic.DoubleIntegratorCont
             ):
             
         params = {}
+        
         params["natural_frequency"]         = natural_frequency
         params["damping"]                   = damping
         params["proportional_gain"]         = proportional_gain
@@ -51,7 +52,7 @@ class DoubleIntegratorBoundedAndComponentWiseController(dic.DoubleIntegratorCont
         params["position_saturation"]       = position_saturation
         params["velocity_saturation"]       = velocity_saturation
         
-        return json.dumps(params)
+        return json.dumps(params, indent=4)
         
         
     @classmethod
@@ -71,8 +72,8 @@ class DoubleIntegratorBoundedAndComponentWiseController(dic.DoubleIntegratorCont
             damping                 = sqrt(2.0)/2.0,
             proportional_gain       = None,
             derivative_gain         = None,
-            proportional_threshold  = 1.0,
-            derivative_threshold    = 1.0
+            position_saturation     = 1.0,
+            velocity_saturation     = 1.0
             ):
         
         if proportional_gain == None or derivative_gain==None:
@@ -236,4 +237,9 @@ class DoubleIntegratorBoundedAndComponentWiseController(dic.DoubleIntegratorCont
         return u,u_p,u_v,u_p_p,u_v_v,u_p_v,V,VD,V_p,V_v,V_v_p,V_v_v
         
         
-        
+       
+# Test
+con = DoubleIntegratorBoundedAndComponentWiseController()
+#print con
+#print con.output(zeros(3), zeros(3))
+#print con.parameters_to_string()
