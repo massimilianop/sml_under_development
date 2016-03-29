@@ -52,6 +52,9 @@ from scripts.quadrotor_tracking_controllers_hierarchical import controllers_dict
 from scripts.systems_functions.double_integrator_controllers import double_integrator_controllers_dictionaries
 
 
+from scripts.controllers_hierarchical.fully_actuated_controllers import database
+
+
 class ChooseControllerPlugin(Plugin):
 
     def __init__(self, context,namespace = None):
@@ -104,59 +107,136 @@ class ChooseControllerPlugin(Plugin):
 
         # ---------------------------------------------- #
         # ---------------------------------------------- #
+        
+        # button to request service for setting new controller, with new parameters
+        self._widget.SetControllerButton.clicked.connect(self.__get_new_controller_parameters)
 
+        self.__reset_controllers_widget()
+
+    def __reset_controllers_widget(self):
+        
         # create list of available controller classes based on dictionary 
         count = 0
-        for key in controllers_dictionary.controllers_dictionary.keys():
+        for key in database.data.keys():
             self._widget.ListControllersWidget.insertItem(count,key)
             count +=1
 
         # if item in list is selected, print corresponding message
         self._widget.ListControllersWidget.itemClicked.connect(self.__controller_item_clicked)
         
-        # button to request service for setting new trajectory, with new parameters
-        self._widget.SetControllerButton.clicked.connect(self.__get_new_controller_parameters)
+        # 
+        self.__chain_selected_controllers_names = []
 
-        self.__chain_controller = []
+        # default selected class
+        self.__selected_class = database.data['NeutralController']
+
+        self.__input_dictionary_for_selected_controller = {} 
+
+
+    def __get_recursive_class(self,dictionary,list_of_names):
+        selected_class            = dictionary[list_of_names[0:]]
+        dictionary_selected_class = selected_class.contained_objects()
+        if any(dictionary_selected_class) == True:
+            return self.__get_recursive_class(dictionary_selected_class,list_of_names[1:])
+        else:
+            return selected_class
 
     def __controller_item_clicked(self):
-        # get selected class name on list of classes
-        selected_class_name = self._widget.ListControllersWidget.currentItem().text()
-
-        # get class from dictionary of classes
-        selected_class      = controllers_dictionary.controllers_dictionary[selected_class_name]
         
-        self.__chain_controller.append(selected_class_name)
+        # get selected class name on list of classes
+        string = self._widget.ListControllersWidget.currentItem().text()
 
-        if selected_class.parent_class == False:
-            self.__print_controller_message()
+        list_of_names = string.split(':')
+
+        if len(list_of_names) == 1:
+            rospy.logwarn(list_of_names)
+            selected_class        = database.data[list_of_names[0]]
+            self.__selected_class = selected_class
+
+            if any(selected_class.contained_objects()) == False:
+                self.__print_controller_message()
+            else:
+                # if selected_class depends on other classes, and needs more user information
+
+                # initialize dictionary
+                self.__input_dictionary_for_selected_controller = selected_class.contained_objects()
+
+                # clear items from widget
+                self._widget.ListControllersWidget.clear()
+
+                self._widget.ListControllersWidget.addItem(string)
+                for key,item in selected_class.contained_objects().items():
+                    # each item is itself a dictionary
+                    for key_inner,item_inner in item.items():
+                        self._widget.ListControllersWidget.addItem(string+':'+key_inner)
         else:
-            # update list of controllers
-            count = 0
-            for key in controllers_dictionary.controllers_dictionary.keys(): 
-                if key == selected_class_name:
-                    for key_child in selected_class.children.keys():
-                        self._widget.ListControllersWidget.insertItem(count,key_child)
-                        count +=1
-                else:
-                    self._widget.ListControllersWidget.insertItem(count,key)
-                    count +=1
+
+            selected_class = self._get_recursive_class(database.data,list_of_names)
+
+            # restrict class based on user input
+            self.__input_dictionary_for_selected_controller[list_names[1]] = selected_class
+
+            print_message_flag = True
+            for key,selected_class in self.__input_dictionary_for_selected_controller.items():
+                
+                # if selected_class depends on other classes, and needs more user information
+                if any(selected_class.contained_objects()) == False:
+
+                    # one class unspecificed is enough to set flag to false
+                    print_message_flag = False
+
+                    # clear items from widget
+                    self._widget.ListControllersWidget.clear()
+
+                    self._widget.ListControllersWidget.addItem(list_of_names[0])
+                    for key,item in selected_class.contained_objects().items():
+                        # each item is itself a dictionary
+                        for key_inner,item_inner in item.items():
+                            self._widget.ListControllersWidget.addItem(string+':'+key_inner)
+
+            if print_message_flag == True:
+                self.__print_controller_message()
 
         return
 
+    def __recursion_dictionary_for_selected_class(self,selected_class,selected_controller_class_name):
+        
+        # initialize empty dictionary
+        parameters_dictionary = {}
+        # initialize counter
+        count = 0
+        for key,item in selected_class.contained_objects().items():
+            
+            selected_class_inner        = item[selected_controller_class_name[1:][count]]
+            parameters_dictionary_inner = self.__recursion_dictionary_for_selected_class(selected_class_inner,selected_controller_class_name[1:][count])
+            
+            parameters_dictionary[key]  = selected_class_inner(**parameters_dictionary_inner)
+            count += 1
+
+        return parameters_dictionary
+
+
     def __print_controller_message(self):
         """Print message with parameters associated to chosen controller class"""
-     
-        selected_controller_class_name = self.__chain_controller
-        # get class from dictionary of classes
-        selected_class      = controllers_dictionary.controllers_dictionary[selected_controller_class_name[0]]
-        # get message for chosen class
-        if selected_class.parent_class == False:
-            string              = selected_class.parameters_to_string()
-        else:
-            string              = selected_class.parameters_to_string(child_class_name = selected_controller_class_name[1:])
+
+        parameters_dictionary = self.__input_dictionary_for_selected_controller
+
+        string                = self.__selected_class.parameters_to_string(**parameters_dictionary)
+        
         # print message on GUI
         self._widget.ControllerMessageInput.setPlainText(string)
+
+     
+        # selected_controller_class_name = self.__chain_selected_controllers_names
+        # # get class from dictionary of classes
+        # selected_class        = database.data[selected_controller_class_name[0]]
+        
+        # parameters_dictionary = self.__recursion_dictionary_for_selected_class(selected_class,selected_controller_class_name[1:])
+
+        # string                = selected_class.parameters_to_string(**parameters_dictionary)
+        
+        # # print message on GUI
+        # self._widget.ControllerMessageInput.setPlainText(string)
 
         return 
 
@@ -166,7 +246,7 @@ class ChooseControllerPlugin(Plugin):
         # get selected class name on list of classes
         selected_class_name = self._widget.ListControllersWidget.currentItem().text()
         # get class from dictionary of classes
-        selected_class      = controllers_dictionary.controllers_dictionary[selected_class_name]
+        selected_class      = database.data[selected_class_name]
         # get string that user modified with new parameters
         string              = self._widget.ControllerMessageInput.toPlainText()
         # get new parameters from string
@@ -174,7 +254,7 @@ class ChooseControllerPlugin(Plugin):
 
         rospy.logwarn(parameters)
 
-        self.__chain_controller = []
+        self.__chain_selected_controllers_names = []
 
         # request service
         try: 

@@ -6,6 +6,8 @@
 #TODO is rospy needed?
 import rospy
 
+import numpy
+
 from numpy import *
 
 from numpy import cos as c
