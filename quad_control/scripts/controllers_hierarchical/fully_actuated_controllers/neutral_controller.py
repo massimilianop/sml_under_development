@@ -7,7 +7,7 @@ import rospy
 import numpy
 import json
 
-from controllers import controller
+from controllers_hierarchical import controller
 
 
 class NeutralController(controller.Controller):
@@ -36,4 +36,7 @@ class NeutralController(controller.Controller):
 
     def output(self, delta_t, state, reference):
         # desired force is null (no force, stay at rest)
-        return numpy.zeros(3)       
+        return numpy.zeros(3)
+        
+        
+        

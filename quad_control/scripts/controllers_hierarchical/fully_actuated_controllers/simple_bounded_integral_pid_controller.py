@@ -9,7 +9,7 @@ import numpy
 
 import json
 
-from controllers import controller
+from controllers_hierarchical import controller
 
 from utilities import utility_functions
 

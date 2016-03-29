@@ -2,7 +2,7 @@
 # this line is just used to define the type of document
 
 
-from controllers import controller
+from controllers_hierarchical import controller
 
 
 

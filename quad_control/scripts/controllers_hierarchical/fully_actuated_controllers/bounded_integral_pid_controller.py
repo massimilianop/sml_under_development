@@ -9,6 +9,7 @@ import numpy
 from utilities import utility_functions
 import json
 
+from controllers_hierarchical import controller
 import controllers.double_integrator_controllers as dics
 
 

@@ -15,7 +15,7 @@ from numpy import zeros as zeros
 from numpy import outer as outer
 
 
-from controllers import double_integrator_controller as dic
+from controllers_hierarchical import double_integrator_controller as dic
 
 import json
 

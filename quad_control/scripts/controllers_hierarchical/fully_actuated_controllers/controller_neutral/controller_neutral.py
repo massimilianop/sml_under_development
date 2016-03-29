@@ -7,7 +7,7 @@ import rospy
 import numpy
 import json
 
-from ... import controller
+from controllers import controller
 
 
 class NeutralController(controller.Controller):
