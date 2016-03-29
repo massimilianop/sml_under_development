@@ -24,8 +24,8 @@ from numpy import *
 from numpy import cos as c
 from numpy import sin as s
 
-from numpy import sqrt  as sqrt
-from numpy import zeros as zeros
+from numpy import sqrt
+from numpy import zeros
 
 class QI_controller(object):
 
@@ -50,7 +50,7 @@ class QI_controller(object):
 
 
     # The class "constructor" - It's actually an initializer
-    def __init__(self,parameters = None):
+    def __init__(self, parameters = None):
         if parameters is not None:
             self.K = parameters.K
             self.P = parameters.P
@@ -64,7 +64,7 @@ class QI_controller(object):
         parameters  = "Controller gain: K = " + str(self.K) + " and P is found for PA + A^T P = - I (P is important if gradient of Lyapunov is used)"
         return description + parameters + "\n\n"
 
-    def  _quadruple_integrator(self,x1,x2,x3,x4):
+    def _quadruple_integrator(self,x1,x2,x3,x4):
 
         # state
         x   = numpy.concatenate([x1,x2,x3,x4])

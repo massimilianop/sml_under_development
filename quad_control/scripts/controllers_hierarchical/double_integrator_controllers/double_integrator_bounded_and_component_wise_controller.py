@@ -25,38 +25,93 @@ from numpy import sin as s
 from numpy import sqrt  as sqrt
 from numpy import zeros as zeros
 
+import double_integrator_controller as dic
+import json
 
 
 
-class DI_controller(object):
+class DoubleIntegratorBoundedAndComponentWiseController(dic.DoubleIntegratorController):
 
 
-    wn      = 0.5
-    xi      = sqrt(2)/2.0
-    kv      = 2.0*xi*wn
-    sigma_v = 1.0
-    kp      = wn**2
-    sigma_p = 1.0  
+    @classmethod
+    def parameters_to_string(cls,
+            natural_frequency       = 0.5,
+            damping                 = sqrt(2.0)/2.0,
+            proportional_gain       = None,
+            derivative_gain         = None,
+            position_saturation     = 1.0,
+            velocity_saturation     = 1.0
+            ):
+            
+        params = {}
+        params["natural_frequency"]         = natural_frequency
+        params["damping"]                   = damping
+        params["proportional_gain"]         = proportional_gain
+        params["derivative_gain"]           = derivative_gain
+        params["position_saturation"]       = position_saturation
+        params["velocity_saturation"]       = velocity_saturation
+        
+        return json.dumps(params)
+        
+        
+    @classmethod
+    def string_to_parameters(cls, string):
+        params = json.loads(string)
+        return params
+
+
+    @classmethod
+    def contained_objects(cls):
+        return {}
+
+
+    @classmethod
+    def description(cls):
+        return "Double-integrator bounded and component-wise controller" 
 
 
     # The class "constructor" - It's actually an initializer
-    def __init__(self, parameters = None):
-        if parameters is not None:
-            self.kv      = parameters.kv
-            self.sigma_v = parameters.sigma_v
-            self.kp      = parameters.kp
-            self.sigma_p = parameters.sigma_p
+    def __init__(self,
+            natural_frequency       = 0.5,
+            damping                 = sqrt(2.0)/2.0,
+            proportional_gain       = None,
+            derivative_gain         = None,
+            proportional_threshold  = 1.0,
+            derivative_threshold    = 1.0
+            ):
+        
+        if proportional_gain == None or derivative_gain==None:
+            
+            dic.DoubleIntegratorController.__init__(self,
+                proportional_gain=natural_frequency**2,
+                derivative_gain=2.0*damping*natural_frequency
+                )
+        
+        else:
+        
+            dic.DoubleIntegratorController.__init__(self,
+                proportional_gain=proportional_gain,
+                derivative_gain=derivative_gain
+                )
+            
+        self.__position_saturation = position_saturation
+        self.__velocity_saturation = velocity_saturation
 
 
-    def output(self,p,v):
-        return self._DI_Bounded_Component(p,v)
+    def output(self, position, velocity):
+        return self._DI_Bounded_Component(position, velocity)
 
 
-    def report(self):
-        description = "Bounded Double Integrator Controller u(p,v) = -sigma(p) - ro(v): simple control law, complicated Lyapunov function\n"
-        controller  = "Parameters: sat(x) = k x/sqrt(1 + x**2), with sigma(p) = kp*sat(p/sigma_p) and ro(p) = kv*sat(v/sigma_v)\n"  
-        parameters  = "kp = " + str(self.kp) + " and kv = " + str(self.kv) + " and sigma_p = " +  str(self.sigma_p) + "and sigma_v = " +  str(self.sigma_v) +"\n\n"
-        return description + controller + parameters
+    def __str__(self):
+        string = dic.DoubleIntegratorController.__str__(self)
+        string += "\nPosition saturation: " + str(self.__position_saturation)
+        string += "\nVelocity saturation: " + str(self.__velocity_saturation)
+        return string
+        
+#        description = "Bounded Double Integrator Controller u(p,v) = -sigma(p) - ro(v): simple control law, complicated Lyapunov function\n"
+#        controller  = "Parameters: sat(x) = k x/sqrt(1 + x**2), with sigma(p) = kp*sat(p/sigma_p) and ro(p) = kv*sat(v/sigma_v)\n"  
+#        parameters  = "kp = " + str(self.kp) + " and kv = " + str(self.kv) + " and sigma_p = " +  str(self.sigma_p) + "and sigma_v = " +  str(self.sigma_v) +"\n\n"
+#        return description + controller + parameters
 
 
     def _sat(self,x):
@@ -89,11 +144,11 @@ class DI_controller(object):
     def  _DI_Bounded_Component(self,p,v):
 
         # gains
-        kp = self.kp
-        kv = self.kv
+        kp = self.get_proportional_gain()
+        kv = self.get_derivative_gain()
 
-        sigma_p  = self.sigma_p
-        sigma_v  = self.sigma_v
+        sigma_p  = self.__position_saturation
+        sigma_v  = self.__velocity_saturation
 
 
         sat_p,Dsat_p,D2sat_p,sat_Int_p = self._sat(p/sigma_p)

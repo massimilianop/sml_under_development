@@ -9,14 +9,19 @@ import numpy
 
 import json
 
-from ... import controller
+from controllers import controller
 
 from utilities import utility_functions
 
-class ControllerPIDSimpleBoundedIntegral(controller.TrackingController):
 
-    parent_class = False
-    children     = dict()
+
+class SimpleBoundedIntegralPIDController(controller.Controller):
+
+    
+    @classmethod
+    def contained_objects(cls):
+        return {}
+    
     
     @classmethod
     def description(cls):
@@ -33,28 +38,39 @@ class ControllerPIDSimpleBoundedIntegral(controller.TrackingController):
         integral_gain_z      = 0.5, \
         bound_integral_z    = 0.0):
 
-        dic = {'proportional_gain_xy':proportional_gain_xy, \
+        dic = {
+        'proportional_gain_xy':proportional_gain_xy,\
         'derivative_gain_xy' :derivative_gain_xy,\
         'integral_gain_xy'   :integral_gain_xy,\
         'bound_integral_xy'  :bound_integral_xy,\
         'proportional_gain_z':proportional_gain_z,\
         'derivative_gain_z'  :derivative_gain_z,\
         'integral_gain_z'    :integral_gain_z,\
-        'bound_integral_z'   :bound_integral_z}
+        'bound_integral_z'   :bound_integral_z
+        }
+        
         return json.dumps(dic)    
+        
         
     @classmethod
     def string_to_parameters(cls, string):
+        
         dic = json.loads(string)
-        proportional_gain_xy = dic['proportional_gain_xy']
-        derivative_gain_xy   = dic['derivative_gain_xy']
-        integral_gain_xy     = dic['integral_gain_xy']
-        bound_integral_xy    = dic['bound_integral_xy']
-        proportional_gain_z  = dic['proportional_gain_z']
-        derivative_gain_z    = dic['derivative_gain_z']
-        integral_gain_z      = dic['integral_gain_z']
-        bound_integral_z     = dic['bound_integral_z']
-        return proportional_gain_xy, derivative_gain_xy, integral_gain_xy, bound_integral_xy, proportional_gain_z, derivative_gain_z, integral_gain_z , bound_integral_z
+#        
+#        proportional_gain_xy = dic['proportional_gain_xy']
+#        derivative_gain_xy   = dic['derivative_gain_xy']
+#        integral_gain_xy     = dic['integral_gain_xy']
+#        bound_integral_xy    = dic['bound_integral_xy']
+#        proportional_gain_z  = dic['proportional_gain_z']
+#        derivative_gain_z    = dic['derivative_gain_z']
+#        integral_gain_z      = dic['integral_gain_z']
+#        bound_integral_z     = dic['bound_integral_z']
+#        
+#        return proportional_gain_xy, derivative_gain_xy, integral_gain_xy, bound_integral_xy, proportional_gain_z, derivative_gain_z, integral_gain_z , bound_integral_z
+        
+        return dic
+        
+
 
     def __init__(self,              \
         proportional_gain_xy = 1.0, \
@@ -64,7 +80,9 @@ class ControllerPIDSimpleBoundedIntegral(controller.TrackingController):
         proportional_gain_z  = 1.0, \
         derivative_gain_z    = 1.0, \
         integral_gain_z      = 0.5, \
-        bound_integral_z     = 0.0):
+        bound_integral_z     = 0.0,
+        quad_mass=1.6677
+        ):
 
         self.__proportional_gain_xy = proportional_gain_xy
         self.__derivative_gain_xy   = derivative_gain_xy
@@ -74,20 +92,15 @@ class ControllerPIDSimpleBoundedIntegral(controller.TrackingController):
         self.__derivative_gain_z    = derivative_gain_z
         self.__integral_gain_z      = integral_gain_z
         self.__bound_integral_z     = bound_integral_z
-
-
-        self.MASS    = 1.66779
-
-        self.GRAVITY = 9.81
+        self.__quad_mass            = quad_mass
 
         self.disturbance_estimate   = numpy.array([0.0,0.0,0.0])
-
         self.t_old  = 0.0
-
-        pass
+        
         
         
     def __str__(self):
+        #TODO add all the parameters and the state
         return self.description()
 
 
@@ -98,20 +111,23 @@ class ControllerPIDSimpleBoundedIntegral(controller.TrackingController):
         
         #--------------------------------------#
         # position and velocity
-        x  = state[0:3]; v  = state[3:6]
+        x  = state[0:3]
+        v  = state[3:6]
         # thrust unit vector and its angular velocity
         # R  = state[6:15]; R  = numpy.reshape(R,(3,3))
 
         #--------------------------------------#
         # desired quad trajectory
-        xd = reference[0:3]; vd = reference[3:6]; ad = reference[6:9];
+        xd = reference[0:3]
+        vd = reference[3:6]
+        ad = reference[6:9]
         
         #--------------------------------------#
         # position error and velocity error
         ep = x - xd
         ev = v - vd
 
-        u,V_v = self.input_and_gradient_of_lyapunov(ep,ev)
+        u, V_v = self.input_and_gradient_of_lyapunov(ep,ev)
 
         Full_actuation = self.MASS*(ad + u + self.GRAVITY*e3 - self.disturbance_estimate)
 
@@ -154,13 +170,14 @@ class ControllerPIDSimpleBoundedIntegral(controller.TrackingController):
         u[2]   = -kp*ep[2] - kv*ev[2]
         V_v[2] = (kp/2*ep[2] + ev[2])
 
-        return (u,V_v)
+        return u, V_v
 
 
     def reset_estimate_xy(self):
         self.disturbance_estimate[0] = 0.0
         self.disturbance_estimate[1] = 0.0
         return
+
 
     def reset_estimate_z(self):
         self.disturbance_estimate[2] = 0.0

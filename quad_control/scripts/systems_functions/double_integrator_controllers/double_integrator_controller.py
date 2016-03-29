@@ -19,9 +19,11 @@ class DoubleIntegratorController:
     def string_to_parameters(cls, string):
         raise NotImplementedError()
 
+
     @classmethod
     def dictionary(cls, string):
         raise NotImplementedError()
+
 
     def __init__(self):
         pass
@@ -31,6 +33,6 @@ class DoubleIntegratorController:
         return self.description()
         
         
-    def output(self,p,v): 
+    def output(self, position, velocity): 
         #TODO 
         raise NotImplementedError()

@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 # this line is just used to define the type of document
 
-import numpy as np
 
 
-class TrackingController:
+class Controller:
+
+
+    @classmethod:
+    def contained_objects(cls):
+        raise NotImplementedError()
 
     
     @classmethod
@@ -20,8 +24,8 @@ class TrackingController:
     @classmethod
     def string_to_parameters(cls, string):
         raise NotImplementedError()
-
-
+        
+        
     def __init__(self):
         pass
         

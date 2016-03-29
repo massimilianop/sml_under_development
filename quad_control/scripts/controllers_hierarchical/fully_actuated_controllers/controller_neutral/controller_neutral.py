@@ -5,16 +5,18 @@
 import rospy
 
 import numpy
-
 import json
 
 from ... import controller
 
 
-class ControllerNeutral(controller.TrackingController):
+class NeutralController(controller.Controller):
 
-    parent_class = False
-    children     = dict()
+    
+    @classmethod
+    def contained_objects(cls):
+        return {}
+    
     
     @classmethod
     def description(cls):
@@ -26,17 +28,10 @@ class ControllerNeutral(controller.TrackingController):
         dic = dict()
         return json.dumps(dic)
         
+        
     @classmethod
     def string_to_parameters(cls, string):
-        return tuple()    
-
-
-    def __init__(self):
-        pass
-        
-        
-    def __str__(self):
-        return self.description()
+        return dict()
 
 
     def output(self, delta_t, state, reference):
