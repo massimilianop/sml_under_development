@@ -64,6 +64,7 @@ add_service_files(
   SrvTrajectoryDesired.srv
   Mocap_Id.srv
   SrvControllerChange.srv
+  SrvControllerChangeByStr.srv
   Simulator_Srv.srv
   MocapBodies.srv
   PlannerStart.srv

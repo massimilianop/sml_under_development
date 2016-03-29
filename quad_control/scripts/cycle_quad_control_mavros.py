@@ -245,10 +245,13 @@ class quad_controller():
         # chosen class taken from dictionary
         ControllerClass = controllers_dictionary.controllers_dictionary[req.controller_name]
 
-        self.ControllerObject = ControllerClass(*req.parameters)
+        parameters_dictionary = ControllerClass.string_to_parameters(req.parameters)
+        self.ControllerObject = ControllerClass(**parameters_dictionary)
+
+        rospy.logwarn('444444444444')
 
         # return message to Gui, to let it know resquest has been fulfilled
-        return SrvControllerChangeResponse(received = True)
+        return SrvControllerChangeByStrResponse(received = True)
 
 
     # callback for when changing desired trajectory is requested
@@ -516,7 +519,8 @@ class quad_controller():
 
         #-----------------------------------------------------------------------#
         # Service is created, so that user can change controller on GUI
-        rospy.Service('ServiceChangeController', SrvControllerChange, self._handle_service_change_controller)
+        rospy.Service('ServiceChangeController', SrvControllerChangeByStr, self._handle_service_change_controller)
+        # rospy.Service('ServiceChangeController', SrvControllerChange, self._handle_service_change_controller)
 
 
         #-----------------------------------------------------------------------#

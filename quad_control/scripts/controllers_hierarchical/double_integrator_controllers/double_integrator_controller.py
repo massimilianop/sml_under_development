@@ -26,7 +26,8 @@ class DoubleIntegratorController(controller.Controller):
 
     @classmethod
     def contained_objects(cls):
-        raise NotImplementedError()
+        return {}
+        # raise NotImplementedError()
 
 
     #TODO do these have special parameters?

@@ -166,7 +166,9 @@ class ChooseControllerPlugin(Plugin):
         if len(list_of_names) == 1:
             rospy.logwarn(list_of_names)
             selected_class        = controllers_dictionary.controllers_dictionary[list_of_names[0]]
-            self.__selected_class = selected_class
+            
+            self.__selected_class_name = list_of_names[0]
+            self.__selected_class      = selected_class
 
             if any(selected_class.contained_objects()) == False:
                 self.__print_controller_message()
@@ -269,11 +271,10 @@ class ChooseControllerPlugin(Plugin):
         # get string that user modified with new parameters
         string              = self._widget.ControllerMessageInput.toPlainText()
         # get new parameters from string
-        parameters          = self.__selected_class.string_to_parameters(string)
+        parameters          = string
 
         rospy.logwarn(parameters)
 
-        self.__chain_selected_controllers_names = []
 
         # request service
         try: 
@@ -281,9 +282,11 @@ class ChooseControllerPlugin(Plugin):
             rospy.wait_for_service("/"+self.namespace+'ServiceChangeController',2.0)
             
             try:
-                RequestingController = rospy.ServiceProxy("/"+self.namespace+'ServiceChangeController', SrvControllerChange)
+                rospy.logwarn('33333333333333333')
+                # RequestingController = rospy.ServiceProxy("/"+self.namespace+'ServiceChangeController', SrvControllerChange)
+                RequestingController = rospy.ServiceProxy("/"+self.namespace+'ServiceChangeController', SrvControllerChangeByStr)
 
-                reply = RequestingController(selected_class_name,parameters)
+                reply = RequestingController(controller_name = self.__selected_class_name, parameters = parameters)
 
                 if reply.received == True:
                     # if controller receives message

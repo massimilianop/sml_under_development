@@ -24,3 +24,8 @@ rosservice call IrisPlusSetNeutral '{k_trottle_neutral: 1400}'
 rosservice call /Iris1/TrajDes_GUI '{trajectory: "StayAtRest" , offset: [0.0,0.0,0.0], rotation: [0.0, 0.0, 0.0], parameters: [0.0]}'
 rosservice call TrajDes_GUI '{trajectory: "StayAtRest" , offset: [0.0,0.0,0.0], rotation: [0.0, 0.0, 0.0], parameters: [0.0]}'
 ```
+
+4. SrvControllerChangeByStr: service for ...
+```
+rosservice call SrvControllerChangeByStr '{controller_name: "a", parameters: "b"}'
+```

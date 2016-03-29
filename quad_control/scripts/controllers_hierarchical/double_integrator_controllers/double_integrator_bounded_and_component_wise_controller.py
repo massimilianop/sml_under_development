@@ -61,11 +61,6 @@ class DoubleIntegratorBoundedAndComponentWiseController(dic.DoubleIntegratorCont
 
 
     @classmethod
-    def contained_objects(cls):
-        return {}
-
-
-    @classmethod
     def description(cls):
         return "Double-integrator bounded and component-wise controller" 
 

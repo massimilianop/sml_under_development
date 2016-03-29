@@ -52,7 +52,7 @@ class BoundedIntegralPIDController(controller.Controller):
             ):
 
         params = {
-            'double_integrator_controller_parameters': double_integrator_controller.parameters_to_string(),\
+            'double_integrator_controller': double_integrator_controller.parameters_to_string(),\
             'integral_gain_xy'   :integral_gain_xy     ,\
             'bound_integral_xy'  :bound_integral_xy    ,\
             'integral_gain_z'    :integral_gain_z      ,\
@@ -87,6 +87,9 @@ class BoundedIntegralPIDController(controller.Controller):
 
         # return di_controller_class_number, integral_gain_xy, bound_integral_xy, integral_gain_z , bound_integral_z
         #return di_controller_class_number, di_controller_parameters, integral_gain_xy, bound_integral_xy, integral_gain_z , bound_integral_z
+
+        double_integrator_controller = 
+
         return dic
         
     # @classmethod
@@ -122,7 +125,7 @@ class BoundedIntegralPIDController(controller.Controller):
         self.__integral_gain_z      = integral_gain_z
         self.__bound_integral_z     = bound_integral_z
 
-        di_controller_class_name = 'DefaultDIController'
+        # di_controller_class_name = 'DefaultDIController'
         self.DIControllerObject  = double_integrator_controller
 
         #TODO should these two be inherited by a parent instead?
