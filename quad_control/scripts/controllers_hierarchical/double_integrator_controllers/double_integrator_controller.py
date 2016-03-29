@@ -15,7 +15,7 @@ class DoubleIntegratorController(controller.Controller):
     
     
     @classmethod
-    def parameters_to_string(cls, parameters):
+    def parameters_to_string(cls, parameters=None):
         raise NotImplementedError()
         
         

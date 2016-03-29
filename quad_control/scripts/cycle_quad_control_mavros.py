@@ -50,8 +50,8 @@ from utility_functions import GetRotFromEulerAnglesDeg,Velocity_Filter,Median_Fi
 from TrajectoryPlanner import trajectories_dictionary
 from Yaw_Rate_Controller import yaw_controllers_dictionary
 
-from quadrotor_tracking_controllers_hierarchical import controllers_dictionary
-
+# from quadrotor_tracking_controllers_hierarchical import controllers_dictionary
+from controllers_hierarchical.fully_actuated_controllers import controllers_dictionary
 
 from ConverterBetweenStandards.RotorSConverter import RotorSConverter
 from ConverterBetweenStandards.IrisPlusConverter import IrisPlusConverter

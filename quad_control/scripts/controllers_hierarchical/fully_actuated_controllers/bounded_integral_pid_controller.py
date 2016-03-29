@@ -10,11 +10,14 @@ from utilities import utility_functions
 import json
 
 from controllers_hierarchical import controller
-import controllers.double_integrator_controllers as dics
+from controllers_hierarchical.double_integrator_controllers import database as dics
+
+import controllers_hierarchical.double_integrator_controllers.double_integrator_controller as dic
+
+# from controllers_hierarchical.double_integrator_controllers.di_ctrl_dictionary import di_ctrl_dictionary
 
 
-
-dics_db = dics.database.data
+dics_db = dics.data
 
 
 
@@ -24,6 +27,9 @@ class BoundedIntegralPIDController(controller.Controller):
 #    parent_class = True
 #    children     = double_integrator_controllers_dictionaries.double_integrator_controllers_dictionaries
 
+    # @classmethod
+    # def contained_objects(cls):
+    #     return {}
     
     @classmethod
     def contained_objects(cls):
@@ -37,7 +43,7 @@ class BoundedIntegralPIDController(controller.Controller):
     
     @classmethod
     def parameters_to_string(cls, \
-            double_integrator_controller_parameters = dic.DoubleIntegratorController.parameters_to_string(),\
+            double_integrator_controller = dics.data["DoubleIntegratorController"],\
             integral_gain_xy   = 0.0, \
             bound_integral_xy  = 0.0, \
             integral_gain_z    = 0.5, \
@@ -46,11 +52,11 @@ class BoundedIntegralPIDController(controller.Controller):
             ):
 
         params = {
-            'double_integrator_controller_parameters': double_integrator_controller_parameters,\
-            'integral_gain_xy'   :integral_gain_xy,\
-            'bound_integral_xy'  :bound_integral_xy,\
-            'integral_gain_z'    :integral_gain_z,\
-            'bound_integral_z'   :bound_integral_z,
+            'double_integrator_controller_parameters': double_integrator_controller.parameters_to_string(),\
+            'integral_gain_xy'   :integral_gain_xy     ,\
+            'bound_integral_xy'  :bound_integral_xy    ,\
+            'integral_gain_z'    :integral_gain_z      ,\
+            'bound_integral_z'   :bound_integral_z     ,
             'quad_mass'          :quad_mass
             }
 
@@ -106,7 +112,7 @@ class BoundedIntegralPIDController(controller.Controller):
             integral_gain_xy     = 0.0        ,\
             bound_integral_xy    = 0.0        ,\
             integral_gain_z      = 0.5        ,\
-            bound_integral_z     = 0.0
+            bound_integral_z     = 0.0        ,\
             quad_mass            = 1.66779
             ):
 

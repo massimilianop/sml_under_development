@@ -94,6 +94,9 @@ class SimpleBoundedIntegralPIDController(controller.Controller):
         self.__bound_integral_z     = bound_integral_z
         self.__quad_mass            = quad_mass
 
+        self.MASS = quad_mass
+        self.GRAVITY = 9.81
+
         self.disturbance_estimate   = numpy.array([0.0,0.0,0.0])
         self.t_old  = 0.0
         

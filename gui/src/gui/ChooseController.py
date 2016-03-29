@@ -46,13 +46,15 @@ package_path = rp.get_path('quad_control')
 import sys
 sys.path.insert(0, package_path)
 # import trajectories dictionaries
-from scripts.quadrotor_tracking_controllers_hierarchical import controllers_dictionary
+# from scripts.quadrotor_tracking_controllers_hierarchical import controllers_dictionary
 
 
-from scripts.systems_functions.double_integrator_controllers import double_integrator_controllers_dictionaries
+# from scripts.systems_functiosn.double_integrator_controllers import double_integrator_controllers_dictionaries
 
 
-from scripts.controllers_hierarchical.fully_actuated_controllers import database
+# from scripts.controllers_hierarchical.fully_actuated_controllers import database
+
+from scripts.controllers_hierarchical.fully_actuated_controllers import controllers_dictionary
 
 
 class ChooseControllerPlugin(Plugin):
@@ -117,7 +119,7 @@ class ChooseControllerPlugin(Plugin):
         
         # create list of available controller classes based on dictionary 
         count = 0
-        for key in database.data.keys():
+        for key in controllers_dictionary.controllers_dictionary.keys():
             self._widget.ListControllersWidget.insertItem(count,key)
             count +=1
 
@@ -128,29 +130,42 @@ class ChooseControllerPlugin(Plugin):
         self.__chain_selected_controllers_names = []
 
         # default selected class
-        self.__selected_class = database.data['NeutralController']
+        self.__selected_class = controllers_dictionary.controllers_dictionary['NeutralController']
 
         self.__input_dictionary_for_selected_controller = {} 
 
 
     def __get_recursive_class(self,dictionary,list_of_names):
-        selected_class            = dictionary[list_of_names[0:]]
-        dictionary_selected_class = selected_class.contained_objects()
-        if any(dictionary_selected_class) == True:
-            return self.__get_recursive_class(dictionary_selected_class,list_of_names[1:])
-        else:
-            return selected_class
+        rospy.logwarn('222222222222')
+        rospy.logwarn(dictionary)
+
+        rospy.logwarn(list_of_names[0])
+
+        # this may yield a dictionary with classes for values, or may yield a class
+        dictionary_selected_class = dictionary[list_of_names[0]]
+
+        try:
+            if any(dictionary_selected_class) == True:
+                return self.__get_recursive_class(dictionary_selected_class,list_of_names[1:])
+
+        except Exception, e:
+            selected_class = dictionary_selected_class
+            return selected_class         
 
     def __controller_item_clicked(self):
         
         # get selected class name on list of classes
         string = self._widget.ListControllersWidget.currentItem().text()
 
+        rospy.logwarn(string)
         list_of_names = string.split(':')
+        rospy.logwarn('asasasasasas')
+        rospy.logwarn(list_of_names)
+
 
         if len(list_of_names) == 1:
             rospy.logwarn(list_of_names)
-            selected_class        = database.data[list_of_names[0]]
+            selected_class        = controllers_dictionary.controllers_dictionary[list_of_names[0]]
             self.__selected_class = selected_class
 
             if any(selected_class.contained_objects()) == False:
@@ -159,6 +174,8 @@ class ChooseControllerPlugin(Plugin):
                 # if selected_class depends on other classes, and needs more user information
 
                 # initialize dictionary
+                # this dictionary contains **abstracts** of classes
+                # TODO: maybe have default controllers in constructors of classes
                 self.__input_dictionary_for_selected_controller = selected_class.contained_objects()
 
                 # clear items from widget
@@ -168,19 +185,25 @@ class ChooseControllerPlugin(Plugin):
                 for key,item in selected_class.contained_objects().items():
                     # each item is itself a dictionary
                     for key_inner,item_inner in item.items():
-                        self._widget.ListControllersWidget.addItem(string+':'+key_inner)
+                        self._widget.ListControllersWidget.addItem(string+':'+key+':'+key_inner)
         else:
 
-            selected_class = self._get_recursive_class(database.data,list_of_names)
+            dictionary     = self.__selected_class.contained_objects()
+            selected_class = self.__get_recursive_class(dictionary,list_of_names[1:])
 
             # restrict class based on user input
-            self.__input_dictionary_for_selected_controller[list_names[1]] = selected_class
+            self.__input_dictionary_for_selected_controller[list_of_names[1]] = selected_class
+
+            rospy.logwarn(selected_class)
 
             print_message_flag = True
             for key,selected_class in self.__input_dictionary_for_selected_controller.items():
                 
+                rospy.logwarn(selected_class)
+
                 # if selected_class depends on other classes, and needs more user information
-                if any(selected_class.contained_objects()) == False:
+                rospy.logwarn(any(selected_class.contained_objects()))
+                if any(selected_class.contained_objects()) == True:
 
                     # one class unspecificed is enough to set flag to false
                     print_message_flag = False
@@ -192,7 +215,7 @@ class ChooseControllerPlugin(Plugin):
                     for key,item in selected_class.contained_objects().items():
                         # each item is itself a dictionary
                         for key_inner,item_inner in item.items():
-                            self._widget.ListControllersWidget.addItem(string+':'+key_inner)
+                            self._widget.ListControllersWidget.addItem(string+':'+key+':'+key_inner)
 
             if print_message_flag == True:
                 self.__print_controller_message()
@@ -229,7 +252,7 @@ class ChooseControllerPlugin(Plugin):
      
         # selected_controller_class_name = self.__chain_selected_controllers_names
         # # get class from dictionary of classes
-        # selected_class        = database.data[selected_controller_class_name[0]]
+        # selected_class        = controllers_dictionary.controllers_dictionary[selected_controller_class_name[0]]
         
         # parameters_dictionary = self.__recursion_dictionary_for_selected_class(selected_class,selected_controller_class_name[1:])
 
@@ -243,14 +266,10 @@ class ChooseControllerPlugin(Plugin):
     def __get_new_controller_parameters(self):
         """Request service for new controller with parameters chosen by user"""
 
-        # get selected class name on list of classes
-        selected_class_name = self._widget.ListControllersWidget.currentItem().text()
-        # get class from dictionary of classes
-        selected_class      = database.data[selected_class_name]
         # get string that user modified with new parameters
         string              = self._widget.ControllerMessageInput.toPlainText()
         # get new parameters from string
-        parameters          = selected_class.string_to_parameters(string)
+        parameters          = self.__selected_class.string_to_parameters(string)
 
         rospy.logwarn(parameters)
 
@@ -259,7 +278,7 @@ class ChooseControllerPlugin(Plugin):
         # request service
         try: 
             # time out of one second for waiting for service
-            rospy.wait_for_service("/"+self.namespace+'ServiceChangeController',1.0)
+            rospy.wait_for_service("/"+self.namespace+'ServiceChangeController',2.0)
             
             try:
                 RequestingController = rospy.ServiceProxy("/"+self.namespace+'ServiceChangeController', SrvControllerChange)
@@ -276,7 +295,7 @@ class ChooseControllerPlugin(Plugin):
                 rospy.logwarn('Proxy for service that sets controller FAILED')
                 self._widget.Success.setChecked(False) 
                 self._widget.Failure.setChecked(True) 
-                # print "Service call failed: %s"%e   
+                # print "Service call failed: %s"%e
             
         except:
             rospy.logwarn('Timeout for service that sets controller')

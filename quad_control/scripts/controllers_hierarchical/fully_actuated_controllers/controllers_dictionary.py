@@ -7,5 +7,6 @@ import bounded_integral_pid_controller as bipidc
 controllers_dictionary = {
 "NeutralController": nc.NeutralController,
 "SimpleBoundedIntegralPIDController": sbipidc.SimpleBoundedIntegralPIDController,
-"BoundedIntegralPIDController": bipidc.BoundedIntegralPIDController
+"BoundedIntegralPIDController": bipidc.BoundedIntegralPIDController,
+"PIDSimpleBoundedIntegralController":sbipidc.SimpleBoundedIntegralPIDController
 }

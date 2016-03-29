@@ -5,7 +5,6 @@
 
 class Controller:
 
-
     @classmethod
     def contained_objects(cls):
         raise NotImplementedError()
