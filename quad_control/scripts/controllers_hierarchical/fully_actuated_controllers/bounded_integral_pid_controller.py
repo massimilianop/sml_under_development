@@ -53,7 +53,7 @@ class BoundedIntegralPIDController(controller.Controller):
 
         params = {
             #TODO should we change the value of this item to also include the class name?
-            'double_integrator_controller': double_integrator_controller.parameters_to_string(),\
+            'double_integrator_controller': (double_integrator_controller.__name__, double_integrator_controller.parameters_to_string()),\
             'integral_gain_xy'   :integral_gain_xy     ,\
             'bound_integral_xy'  :bound_integral_xy    ,\
             'integral_gain_z'    :integral_gain_z      ,\
@@ -75,6 +75,17 @@ class BoundedIntegralPIDController(controller.Controller):
     def string_to_parameters(cls, string):
         
         dic = json.loads(string)
+        
+        for key, value in cls.contained_objects().items():
+            inner_obj = dic[key]
+            InnerCls = value[inner_obj[0]]
+            #rospy.logwarn(InnerCls)
+            inner_params_str = inner_obj[1]
+            inner_params = json.loads(inner_params_str)
+            if inner_params == None:
+                inner_params = dict()
+            dic[key] = InnerCls(**inner_params)
+            
         
 #        integral_gain_xy     = dic['integral_gain_xy']
 #        bound_integral_xy    = dic['bound_integral_xy']
