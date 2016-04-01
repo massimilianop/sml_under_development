@@ -120,12 +120,12 @@ class TrajectorySelectionPlugin(Plugin):
         # get string that user modified with new parameters
         string              = self._widget.TrajectoryMessageInput.toPlainText()
         # get new parameters from string
-        parameters          = selected_class.string_to_parameters(string)
+        #parameters          = selected_class.string_to_parameters(string)
 
         # get string that user modified with new offset and rotation
-        string_offset_and_rotation = self._widget.MessageOffsetAndRotation.toPlainText()
+        #string_offset_and_rotation = self._widget.MessageOffsetAndRotation.toPlainText()
         # get offset and rotation from string
-        offset, rotation           = selected_class.string_to_offset_and_rotation(string_offset_and_rotation)
+        #offset, rotation           = selected_class.string_to_offset_and_rotation(string_offset_and_rotation)
 
         # request service
         try: 
@@ -135,8 +135,9 @@ class TrajectorySelectionPlugin(Plugin):
             try:
                 SettingTrajectory = rospy.ServiceProxy("/"+self.namespace+'ServiceTrajectoryDesired', SrvTrajectoryDesired)
 
-                reply = SettingTrajectory(selected_class_name,offset,rotation,parameters)
-
+                #reply = SettingTrajectory(selected_class_name,offset,rotation,parameters)
+                reply = SettingTrajectory(selected_class_name, string)
+                    
                 if reply.received == True:
                     # if controller receives message
                     self._widget.Success.setChecked(True) 

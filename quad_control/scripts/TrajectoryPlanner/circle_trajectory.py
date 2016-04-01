@@ -13,20 +13,6 @@ class CircleTrajectory(tj.Trajectory):
     @classmethod
     def description(cls):
         return "Circle"
-    
-        
-    @classmethod
-    def parameters_to_string(cls, radius=1.0, speed=0.1):
-        dic = {'radius':radius, 'speed':speed}
-        return json.dumps(dic)
-        
-        
-    @classmethod
-    def string_to_parameters(cls, string):
-        dic = json.loads(string)
-        radius = dic['radius']
-        speed = dic['speed']
-        return radius, speed
         
         
     def __init__(self, offset=np.array([0.0, 0.0, 1.0]), rotation=np.zeros(3),
@@ -60,14 +46,9 @@ class CircleTrajectory(tj.Trajectory):
         
         
 """Test"""
-#tr = CircleTrajectory(offset=np.array([0.0, 0.0, 1.0]), radius=0.5, speed=0.2)
-##print tr
-
-#string = CircleTrajectory.offset_and_rotation_to_string()
+#string = CircleTrajectory.to_string()
 #print string
-#offset, rotation = CircleTrajectory.string_to_offset_and_rotation(string)
-#print offset, rotation
-#traj = CircleTrajectory(offset, rotation)
-#print traj
+#tr = CircleTrajectory.from_string(string)
+#print tr
 
 

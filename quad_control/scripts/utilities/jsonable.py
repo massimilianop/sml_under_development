@@ -3,7 +3,7 @@
 
 import json     
 import inspect
-
+import numpy as np
 
 
 class Jsonable:
@@ -45,6 +45,8 @@ class Jsonable:
             arg = args[i+1]
             if arg in cls.inner.keys():
                 val = (inner[arg].__name__, inner[arg].to_string())
+            elif type(defs[i]) is np.ndarray:
+                val = list(defs[i])
             else:
                 val = defs[i]
             arg_dic[arg] = val
@@ -80,27 +82,27 @@ class Jsonable:
 #print jsn
 
 
-class Inner(Jsonable):
-    
-    def __init__(self, arg1=1):
-        pass
-        
-        
+#class Inner(Jsonable):
+#    
+#    def __init__(self, arg1=1):
+#        pass
+#        
+#        
 
-class Outer(Jsonable):
+#class Outer(Jsonable):
 
-    inner = {"sub": {"Inner": Inner}}
-    
-    def __init__(self, arg2=2, sub=Inner()):
-        pass
-        
-        
-        
-string = Inner.to_string()
-print string
-sub = Inner.from_string(string)
-print sub
-string = Outer.to_string(inner={'sub':Inner})
-print string
-boss = Outer.from_string(string)
-print boss
+#    inner = {"sub": {"Inner": Inner}}
+#    
+#    def __init__(self, arg2=2, sub=Inner()):
+#        pass
+#        
+#        
+#        
+#string = Inner.to_string()
+#print string
+#sub = Inner.from_string(string)
+#print sub
+#string = Outer.to_string(inner={'sub':Inner})
+#print string
+#boss = Outer.from_string(string)
+#print boss

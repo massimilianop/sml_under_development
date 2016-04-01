@@ -257,16 +257,18 @@ class quad_controller():
 
 
     # callback for when changing desired trajectory is requested
-    def _handle_service_trajectory_des(self,req):
+    def _handle_service_trajectory_des(self, req):
  
         # trajectory_class_name = req.trajectory
         # update class for TrajectoryGenerator
         TrajectoryClass = trajectories_dictionary.trajectories_dictionary[req.trajectory]
-
+        
+        string = req.parameters
+        
         offset   = numpy.array(req.offset)
         rotation = numpy.array(req.rotation)
 
-        self.TrajGenerator = TrajectoryClass(offset, rotation, *req.parameters)
+        self.TrajGenerator = TrajectoryClass.from_string(string)
 
         # we need to update initial time for trajectory generation
         self.time_TrajDes_t0 = rospy.get_time()
@@ -528,13 +530,12 @@ class quad_controller():
         #-----------------------------------------------------------------------#
         # Service: change neutral value that guarantees that a quad remains at a desired altitude
         rospy.Service('IrisPlusResetNeutral', IrisPlusResetNeutral, self._handle_iris_plus_reset_neutral)
-
         rospy.Service('IrisPlusSetNeutral', IrisPlusSetNeutral, self._handle_iris_plus_set_neutral)
 
         #-----------------------------------------------------------------------#
         # Service for publishing state of controller 
         # we use same type of service as above
-        Contller_St = rospy.Service('Controller_State_GUI', Controller_Srv, self.handle_Controller_State_Srv)
+        #Contller_St = rospy.Service('Controller_State_GUI', Controller_Srv, self.handle_Controller_State_Srv)
 
         #-----------------------------------------------------------------------#
 

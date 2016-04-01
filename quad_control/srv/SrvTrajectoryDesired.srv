@@ -1,6 +1,4 @@
 string trajectory
-float64[3] offset
-float64[3] rotation
-float64[] parameters
+string parameters
 ---
 bool received

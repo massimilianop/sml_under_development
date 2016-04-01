@@ -3,55 +3,27 @@ that is used for defining a desired trajectory
 for a rigid body in the 3D space"""
 
 
+
 import numpy as np
 from utilities import utility_functions as uts
-import json
+from utilities import jsonable as js
 
-class Trajectory:
+
+
+class Trajectory(js.Jsonable):
 
 
     @classmethod
     def description(cls):
-        raise NotImplementedError()
-        #return "Abstract Trajectory"
-    
-    
-    @classmethod
-    def get_parameters_names(cls):
-        raise NotImplementedError()
-        #return ()
-
-
-    @classmethod
-    def offset_and_rotation_to_string(cls, offset=np.array([0.0, 0.0, 1.0]),
-            rotation=np.zeros(3)):
-        dic = {'offset':list(offset), 'rotation':list(rotation)}
-        return json.dumps(dic)
-        
-        
-    @classmethod
-    def string_to_offset_and_rotation(cls, string):
-        dic = json.loads(string)
-        offset = np.array(dic['offset'])
-        rotation = np.array(dic['rotation'])
-        return offset, rotation
-        
-
-    @classmethod
-    def parameters_to_string(cls, parameters):
-        raise NotImplementedError()
-        
-        
-    @classmethod
-    def string_to_parameters(cls, string):
-        raise NotImplementedError()
+        #raise NotImplementedError()
+        return "Abstract Trajectory"
 
 
     def __init__(self, offset=np.zeros(3), rotation=np.zeros(3)):
         
-        self.__offset = offset
-        self.__rotation = rotation
-        self.__rotation_matrix = uts.GetRotFromEulerAnglesDeg(rotation)
+        self.__offset = np.array(offset)
+        self.__rotation = np.array(rotation)
+        self.__rotation_matrix = uts.GetRotFromEulerAnglesDeg(self.__rotation)
         #TODO change the names in the utility_functions module
     
     
@@ -88,7 +60,6 @@ class Trajectory:
         off = self.__offset
         rot = self.__rotation_matrix
         
-	# purposedly changing this: to test merge
         pos_out = rot.dot(pos) + off
         vel_out = rot.dot(vel)
         acc_out = rot.dot(acc)
@@ -105,7 +76,9 @@ class Trajectory:
         
         
 """Test"""
-#tr = Trajectory()
+#string = Trajectory.to_string()
+#print string
+#tr = Trajectory.from_string(string)
 #print tr
         
         
