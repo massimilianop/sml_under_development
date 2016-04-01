@@ -4,7 +4,7 @@
 '''
     Purpose: converts a desired force (in NEWTONS) to IRIS+ standard
 
-    THROTTLE_NEUTRAL is the most critical parameter, that needs to be reseted when an experiment is commenced
+    __THROTTLE_NEUTRAL is the most critical parameter, that needs to be reseted when an experiment is commenced
 
 '''
 
@@ -17,13 +17,13 @@ import math
 class IrisPlusConverter(object):
 
     # mass of IRIS+ (kg)
-    MASS    = rospy.get_param("mass_quad_ctr",1.442)
+    __MASS    = rospy.get_param("mass_quad_ctr",1.442)
 
     # acceleration due to gravity (m/s/s)
-    GRAVITY = rospy.get_param("gravity_ctr",9.81)  
+    __GRAVITY = rospy.get_param("gravity_ctr",9.81)  
 
     # Throttle neutral 
-    THROTTLE_NEUTRAL = 1430.0
+    __THROTTLE_NEUTRAL = 1430.0
 
     # The default of 4.5 commands a 200 deg/sec rate
     # of rotation when the yaw stick is held fully left or right.
@@ -39,12 +39,32 @@ class IrisPlusConverter(object):
     #     super(IrisPlusConverter, self).__init__()
     #     self.arg = arg
 
+    def get_k_throttle_neutral(self):
+        return self.__THROTTLE_NEUTRAL
+
+    def reset_k_trottle_neutral(self,force):
+        # if force > m*gravity, decrease neutral value
+        # if force < m*gravity, increase neutral value
+        self.__THROTTLE_NEUTRAL = self.__THROTTLE_NEUTRAL*(self.__MASS*self.__GRAVITY)/force
+        # for safety better bound this value
+        self.__THROTTLE_NEUTRAL = bound(self.__THROTTLE_NEUTRAL,1600,1400)
+        rospy.logwarn('new neutral value = ' + str(self.__THROTTLE_NEUTRAL) + ' in [1400,1600]')
+        return 
+
+    def set_k_trottle_neutral(self,throttle_neutral):
+        # setting throttle value
+        self.__THROTTLE_NEUTRAL = throttle_neutral
+        # for safety better bound this value
+        self.__THROTTLE_NEUTRAL = bound(self.__THROTTLE_NEUTRAL,1600,1400)
+        rospy.logwarn('settting neutral value to = ' + str(self.__THROTTLE_NEUTRAL) + ' in [1400,1600]')
+        return 
+
     def reset_parameters(self):
         return 
 
     def descriptive_message(self):
         # needs to be corrected
-        return 'Converter for IRIS+ with parameters' + str(self.THROTTLE_NEUTRAL)
+        return 'Converter for IRIS+ with parameters' + str(self.__THROTTLE_NEUTRAL)
 
     def set_rotation_matrix(self,euler_angles):
         # euler_angles must come in RADIANS
@@ -99,7 +119,7 @@ class IrisPlusConverter(object):
         U[3]  =  1500.0 - yaw_rate_desired*500.0/MAX_PSI_SPEED_Rad;    
 
         # REMARK: the throtle comes between 1000 and 2000 PWM
-        U[2]  = Throttle*self.THROTTLE_NEUTRAL/(self.GRAVITY*self.MASS);
+        U[2]  = Throttle*self.__THROTTLE_NEUTRAL/(self.__GRAVITY*self.__MASS);
 
         # need to bound between 1000 and 2000; element-wise operation
         U     = bound(U,2000,1000) 

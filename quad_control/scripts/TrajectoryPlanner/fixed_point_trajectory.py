@@ -4,6 +4,7 @@ i.e., a trajectory that stays in the same point forever.
 
 import trajectory as tj
 import numpy as np
+import json
 
 import rospy
 
@@ -18,8 +19,17 @@ class FixedPointTrajectory(tj.Trajectory):
     def get_parameters_names(cls):
         return ()
         
-    def __init__(self, point=np.array([0.0, 0.0, 1.0])):
-        tj.Trajectory.__init__(self, point, np.zeros(3))
+    @classmethod
+    def parameters_to_string(cls):
+        dic = dict()
+        return json.dumps(dic)
+        
+    @classmethod
+    def string_to_parameters(cls, string):
+        return tuple()
+        
+    def __init__(self, point=np.array([0.0, 0.0, 0.0]),rotation=np.zeros(3)):
+        tj.Trajectory.__init__(self, point, rotation)
         
     def __str__(self):
         string = self.description()
@@ -38,5 +48,9 @@ class FixedPointTrajectory(tj.Trajectory):
         
         
 # """Test"""
-#tr = FixedPointTrajectory()
+#string = FixedPointTrajectory.parameters_to_string()
+#print string
+#parameters = FixedPointTrajectory.string_to_parameters(string)
+#print parameters
+#tr = FixedPointTrajectory(np.zeros(3), *parameters)
 #print tr

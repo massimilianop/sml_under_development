@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # this line is just used to define the type of document
 
+
+
+#TODO is rospy needed?
 import rospy
 
 import numpy
@@ -10,8 +13,18 @@ from numpy import *
 from numpy import cos as c
 from numpy import sin as s
 
+
+#TODO decapitalize all the function names
+
+
+GRAVITY = 9.81
+E3_VERSOR = numpy.array([0.0, 0.0, 1.0])
+
+
 def skew(xx):
-    x = xx[0];y = xx[1];z = xx[2]
+    x = xx[0]
+    y = xx[1]
+    z = xx[2]
     return numpy.array([[0,-z,y],[z,0,-x],[-y,x,0]])
 
 # def skew(x):
@@ -35,12 +48,16 @@ def unskew(X):
 
 #--------------------------------------------------------------------------#
 # orthogonal projection operator
+#TODO rename to projection_operator or something like that
 def OP(x):
     
     return -skew(x).dot(skew(x))
 
 #print OP([1,2,3])
 #print OP([1,0,0])
+
+#TODO rename all the rotations descriptive names,
+# not capitalized
 
 def Rx(tt):
     
@@ -79,7 +96,9 @@ def bound(x,maxmax,minmin):
 
     return numpy.maximum(minmin,numpy.minimum(maxmax,x))
 
-#--------------------------------------------------------------------------#
+#--------------------------------------------------------------------------
+
+#TODO decapitalize: get_euler_angles(rot_max)
 def GetEulerAngles(R):
 
     #phi   = atan2(R(3,2),R(3,3));
@@ -175,6 +194,7 @@ def roll_pitch(Full_actuation,psi):
 #--------------------------------------------------------------------------#
 # For computing velocity from position measurements
 
+
 class Median_Filter():
     # N is order of median filter
     def __init__(self, N):
@@ -192,6 +212,7 @@ class Median_Filter():
     def up_and_out(self,new_data):
         self.update_data(new_data)
         return self.output()
+
 
 class Median_Filter_3D():
     # N is order of median filter

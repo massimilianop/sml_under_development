@@ -1,0 +1,8 @@
+# this will not work, because we need java to create html
+matlab -nodisplay -nojvm -r 'print_html 'file_name'; exit;'  
+
+
+matlab -nodisplay -r 'print_html '_1458747408_test_plot_1'; exit;'
+
+
+file_name_to_plot=$(ls -t *.txt | head -n1); matlab -nodisplay -r 'print_html '$file_name_to_plot'; exit;'

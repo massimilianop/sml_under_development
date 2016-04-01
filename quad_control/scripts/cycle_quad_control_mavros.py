@@ -28,7 +28,7 @@ from quad_control.msg import quad_cmd
 from quad_control.msg import Controller_State
 
 # import services defined in quad_control
-# Four SERVICES ARE BEING USED: SaveData, TrajDes_GUI, Mocap_Id, StartSim
+# Four SERVICES ARE BEING USED: SaveData, ServiceTrajectoryDesired, Mocap_Id, StartSim
 # SaveData is for saving data in txt file
 # TrajDes is for selecting trajectory
 # Mocap_Id for body detection from QUALISYS
@@ -44,13 +44,14 @@ from rospkg import RosPack
 import numpy
 from numpy import *
 
-from utility_functions import GetRotFromEulerAnglesDeg,Velocity_Filter
+from utility_functions import GetRotFromEulerAnglesDeg,Velocity_Filter,Median_Filter
 
 # import list of available trajectories
 from TrajectoryPlanner import trajectories_dictionary
-from Quadrotor_Trajectory_Tracking_Controllers import controllers_dictionary
 from Yaw_Rate_Controller import yaw_controllers_dictionary
 
+# from quadrotor_tracking_controllers_hierarchical import controllers_dictionary
+from controllers_hierarchical.fully_actuated_controllers import controllers_dictionary
 
 from ConverterBetweenStandards.RotorSConverter import RotorSConverter
 from ConverterBetweenStandards.IrisPlusConverter import IrisPlusConverter
@@ -58,8 +59,6 @@ from ConverterBetweenStandards.IrisPlusConverter import IrisPlusConverter
 import math
 
 class quad_controller():
-
-    GAIN_YAW_CONTROL = 1.0
 
     def __init__(self):
 
@@ -71,16 +70,8 @@ class quad_controller():
         self.state_quad = numpy.zeros(3+3+3)
 
         # dy default, desired trajectory is staying still in origin
-        TrajectoryClass = trajectories_dictionary.trajectories_dictionary['StayAtRest']
-        # zero vector
-        zvec  = numpy.zeros(3)
-        # Identity matrix
-        Ident = numpy.array([[1.0,0.0,0.0],[0.0,1.0,0.0],[0.0,0.0,1.0]])
-        # dy default
-        # self.TrajGenerator = TrajectoryClass(zvec,Ident)
-        # self.TrajGenerator = TrajectoryClass(numpy.array([0.0,0.0,1.0]),Ident)
-        # parameters = {'offset': zvec, 'rotation': Ident}
-        self.TrajGenerator = TrajectoryClass(numpy.zeros(3))
+        TrajectoryClass    = trajectories_dictionary.trajectories_dictionary['StayAtRest']
+        self.TrajGenerator = TrajectoryClass()
 
         # initialize counter for publishing to GUI
         # we only publish when self.PublishToGUI =1
@@ -94,14 +85,15 @@ class quad_controller():
         # but median will take care of minimizing effects
         self.VelocityEstimator = Velocity_Filter(3,numpy.zeros(3),0.0)
 
-        # controller selected by default
-        # ControllerClass = controllers_dictionary.controllers_dictionary[4]
-        # ControllerClass = controllers_dictionary.controllers_dictionary[2]
-        ControllerClass = controllers_dictionary.controllers_dictionary['PIDXYAndZBoundedController']
+        # controllers selected by default
+        ControllerClass = controllers_dictionary.controllers_dictionary['PIDSimpleBoundedIntegralController']
         self.ControllerObject = ControllerClass()
 
         YawControllerClass = yaw_controllers_dictionary.yaw_controllers_dictionary['YawRateControllerTrackReferencePsi']
         self.YawControllerObject = YawControllerClass()
+
+        # for reseting neutral value that makes iris+ stay at desired altitude
+        self.DesiredZForceMedian = Median_Filter(10)
 
 
         # for saving data
@@ -204,6 +196,25 @@ class quad_controller():
         # return message to Gui, to let it know resquest has been fulfilled
         return SaveDataResponse(True)
 
+    # callback for when "reseting iris plus neutral value" is requested
+    def _handle_iris_plus_reset_neutral(self,req):
+        # return message to GUI, to let it know resquest has been fulfilled
+        # IrisPlusResetNeutral: service type
+        median_force = self.DesiredZForceMedian.output()
+        rospy.logwarn('median force = '+ str(median_force))
+        self.IrisPlusConverterObject.reset_k_trottle_neutral(median_force)
+
+        # new neutral value
+        k_trottle_neutral = self.IrisPlusConverterObject.get_k_throttle_neutral()
+        return IrisPlusResetNeutralResponse(received = True, k_trottle_neutral = k_trottle_neutral)
+
+    # callback for when "seting iris plus neutral value" is requested
+    def _handle_iris_plus_set_neutral(self,req):
+        # return message to GUI, to let it know resquest has been fulfilled
+        # IrisPlusSetNeutral: service type
+        self.IrisPlusConverterObject.set_k_trottle_neutral(req.k_trottle_neutral)
+        return IrisPlusSetNeutralResponse(True)
+
 
     # callback for publishing state of controller (or stop publishing)
     def handle_Controller_State_Srv(self,req):
@@ -227,68 +238,41 @@ class quad_controller():
         return Controller_SrvResponse(True)
 
 
-
     # callback for when changing controller is requested
-    def handle_Controller_Srv(self,req):
+    def _handle_service_change_controller(self,req):
 
-        # if GUI request certain controller, update flag on desired controller
-        fg_Cler = req.flag_controller
+        # controller_class_name = req.controller_name
+        # chosen class taken from dictionary
+        ControllerClass = controllers_dictionary.controllers_dictionary[req.controller_name]
 
-        rospy.logwarn(fg_Cler)
+        parameters_dictionary = ControllerClass.string_to_parameters(req.parameters)
+        
+        self.ControllerObject = ControllerClass(**parameters_dictionary)
 
-        # some parameters user can change easily 
-        # req.parameters is a tuple
-        if len(req.parameters) == 0:
-            # if tuple req.parameters is empty:
-            parameters = None
-        else:     
-            # if tuple is not empty, cast parameters as numpy array 
-            parameters = numpy.array(req.parameters)
-
-        # update class for Controller
-        ControllerClass = controllers_dictionary.controllers_dictionary[fg_Cler]
-        # ControllerClass = controllers_dictionary.controllers_dictionary[2]
-
-        self.ControllerObject = ControllerClass(parameters)
+        #rospy.logwarn(self.ControllerObject.__class__.__name__)
+        rospy.logwarn('444444444444')
 
         # return message to Gui, to let it know resquest has been fulfilled
-        return Controller_SrvResponse(True)
+        return SrvControllerChangeByStrResponse(received = True)
 
 
     # callback for when changing desired trajectory is requested
-    def handle_TrajDes_service(self,req):
-
-        # if GUI request certain trajectory, update flag on desired trajectory 
-        flagTrajDes = req.trajectory
-
-        TrajDes_OffSet = numpy.array(req.offset)
-
-        ee     = numpy.array(req.rotation)
-        #TrajDes_Rotation = GetRotFromEulerAnglesDeg(ee)
-        TrajDes_Rotation = ee
-
-        # some parameters user can change easily 
-        # req.parameters is a tuple
-        if len(req.parameters) == 0:
-            # if tuple req.parameters is empty:
-            TrajDes_parameters = None
-        else:     
-            # if tuple is not empty, cast parameters as numpy array 
-            TrajDes_parameters = req.parameters  
-
+    def _handle_service_trajectory_des(self,req):
+ 
+        # trajectory_class_name = req.trajectory
         # update class for TrajectoryGenerator
-        TrajectoryClass = trajectories_dictionary.trajectories_dictionary[flagTrajDes]
+        TrajectoryClass = trajectories_dictionary.trajectories_dictionary[req.trajectory]
 
-        #parameters = {'offset': numpy.array(req.offset), 'rotation': GetRotFromEulerAnglesDeg(numpy.array(req.rotation)), 'radius': TrajDes_parameters[0], 'speed': TrajDes_parameters[1]}
+        offset   = numpy.array(req.offset)
+        rotation = numpy.array(req.rotation)
 
-        self.TrajGenerator = TrajectoryClass(TrajDes_OffSet, TrajDes_Rotation, *TrajDes_parameters)
-        # self.TrajGenerator = TrajectoryClass(TrajDes_OffSet,TrajDes_Rotation,TrajDes_parameters)
+        self.TrajGenerator = TrajectoryClass(offset, rotation, *req.parameters)
 
         # we need to update initial time for trajectory generation
         self.time_TrajDes_t0 = rospy.get_time()
 
         # return message to Gui, to let it know resquest has been fulfilled
-        return TrajDes_SrvResponse(True)
+        return SrvTrajectoryDesiredResponse(True)
 
     # # function to stop simulator
     # def stop_simulator(self):
@@ -518,7 +502,7 @@ class quad_controller():
         # by default, STAYING STILL IN ORIGIN IS DESIRED TRAJECTORY
         # self.flagTrajDes = 0
         # Service is created, so that data is saved when GUI requests
-        TrajDes_service = rospy.Service('TrajDes_GUI', TrajDes_Srv, self.handle_TrajDes_service)
+        TrajDes_service = rospy.Service('ServiceTrajectoryDesired', SrvTrajectoryDesired, self._handle_service_trajectory_des)
 
         # initialize initial time for trajectory generation
         self.time_TrajDes_t0 = rospy.get_time()
@@ -537,7 +521,15 @@ class quad_controller():
 
         #-----------------------------------------------------------------------#
         # Service is created, so that user can change controller on GUI
-        Chg_Contller = rospy.Service('Controller_GUI', Controller_Srv, self.handle_Controller_Srv)
+        rospy.Service('ServiceChangeController', SrvControllerChangeByStr, self._handle_service_change_controller)
+        # rospy.Service('ServiceChangeController', SrvControllerChange, self._handle_service_change_controller)
+
+
+        #-----------------------------------------------------------------------#
+        # Service: change neutral value that guarantees that a quad remains at a desired altitude
+        rospy.Service('IrisPlusResetNeutral', IrisPlusResetNeutral, self._handle_iris_plus_reset_neutral)
+
+        rospy.Service('IrisPlusSetNeutral', IrisPlusSetNeutral, self._handle_iris_plus_set_neutral)
 
         #-----------------------------------------------------------------------#
         # Service for publishing state of controller 
@@ -587,7 +579,10 @@ class quad_controller():
             states_d = self.traj_des()
 
             # compute input to send to QUAD
+            # rospy.logwarn(self.ControllerObject.__class__.__name__)
             desired_3d_force_quad = self.ControllerObject.output(time,self.state_quad,states_d)
+            self.DesiredZForceMedian.update_data(desired_3d_force_quad[2])
+
 
             euler_rad     = self.state_quad[6:9]*math.pi/180
             euler_rad_dot = numpy.zeros(3)

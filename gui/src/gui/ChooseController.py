@@ -32,20 +32,32 @@ from quad_control.msg import Controller_State
 
 import argparse
 
-#'NeutralController','PIDBoundedIntegralController','PIDSimpleBoundedIntegralController','PIDXYAndZBoundedController'
+
+
+
+
+# to work with directories relative to ROS packages
+from rospkg import RosPack
+# determine ROS workspace directory
+rp = RosPack()
+# determine ROS workspace directory where data is saved
+package_path = rp.get_path('quad_control')
+# import sys
+import sys
+sys.path.insert(0, package_path)
+# import trajectories dictionaries
+# from scripts.quadrotor_tracking_controllers_hierarchical import controllers_dictionary
+
+
+# from scripts.systems_functiosn.double_integrator_controllers import double_integrator_controllers_dictionaries
+
+
+# from scripts.controllers_hierarchical.fully_actuated_controllers import database
+
+from scripts.controllers_hierarchical.fully_actuated_controllers import controllers_dictionary
+
 
 class ChooseControllerPlugin(Plugin):
-
-    # for controller state
-    ctr_st = pyqtSignal(numpy.ndarray)
-
-    # ---------------------------------------------- #
-    # ---------------------------------------------- #
-    # Necessary constants
-
-    # size of vectors: INTEGER
-    Size_Vector = 100
-
 
     def __init__(self, context,namespace = None):
 
@@ -69,8 +81,7 @@ class ChooseControllerPlugin(Plugin):
             print 'arguments: ', args
             print 'unknowns: ', unknowns
         
-        
-        
+               
         # Create QWidget
         self._widget = QWidget()
         # Get path to UI file which is a sibling of this file
@@ -93,184 +104,249 @@ class ChooseControllerPlugin(Plugin):
         # ---------------------------------------------- #
         # ---------------------------------------------- #
 
-        # BUTTON TO SET DESIRED CONTROLLER
-        self._widget.SetControllerButton.clicked.connect(self.SetController)
-
-        # BUTTON TO SET DESIRED TRAJECTORY
-        self._widget.Reset_Int_XY.clicked.connect(self.RESET_xy_PID)
-
-        # BUTTON TO SET DESIRED TRAJECTORY
-        self._widget.Reset_Int_Z.clicked.connect(self.RESET_z_PID)
-
-        # ------------------------------------------------------------------#
-        # ------------------------------------------------------------------#
-        # get some values from launch file if theyre available
-        wn  = 1
-        xsi = numpy.sqrt(2)/2
-        kv   = rospy.get_param("kv",2.0*xsi*wn)
-        kp   = rospy.get_param("kp",wn*wn)
-
-        Throttle_neutral = rospy.get_param("Throttle_neutral_ctr",1484.0)
-
-
-        # ------------------------------------------------------------------#
-        # ------------------------------------------------------------------#
-
-        # Default values for buttons: PD Controller
-        self._widget.PgainXY.setValue(kp)
-        self._widget.DgainXY.setValue(kv)
-        self._widget.PgainZ.setValue(kp)
-        self._widget.DgainZ.setValue(kv)
-        self._widget.ThrottleNeutral.setValue(Throttle_neutral)
-
-        # Default values for buttons: PID Controller
-        self._widget.PgainXY_PID.setValue(kp)
-        self._widget.DgainXY_PID.setValue(kv)
-        self._widget.IgainXY_PID.setValue(0.0)
-        self._widget.PgainZ_PID.setValue(kp)
-        self._widget.DgainZ_PID.setValue(kv)
-        self._widget.DgainXY_PID.setValue(kv)
-        self._widget.IgainZ_PID.setValue(0.0)
-        self._widget.ThrottleNeutral_PID.setValue(Throttle_neutral)
-
+        self._widget.ResetIrisNeutralValue.clicked.connect(self.reset_iris_neutral_value)
+        self._widget.SetIrisNeutralValue.clicked.connect(self.set_iris_neutral_value)
 
         # ---------------------------------------------- #
-        # ---------------------------------------------- #   
-
-        # window for plots
-        plotwidget = pg.PlotWidget()
-        plotwidget.getPlotItem().addLegend()
-        plotwidget.setYRange(-2.0,2.0)      
+        # ---------------------------------------------- #
         
-        layout        = QtGui.QGridLayout()
-        layout.addWidget(plotwidget)
+        # button to request service for setting new controller, with new parameters
+        self._widget.SetControllerButton.clicked.connect(self.__get_new_controller_parameters)
 
+        self.__reset_controllers_widget()
 
-        # labels for window with positions
-        plotwidget.getPlotItem().setLabel('left','disturbance estimate','m/s/s')
-        plotwidget.getPlotItem().setLabel('bottom','time','s')
-
-        # complete putting labels
-        self._widget.frame.setLayout(layout)
-
-        # ---------------------------------------------- #
-        # ---------------------------------------------- #          
-
-        # time vector
-        self.timevector = [0]*self.Size_Vector
-
+    def __reset_controllers_widget(self):
         
-        #Setting variables for each coordinate and channel
+        # create list of available controller classes based on dictionary 
+        count = 0
+        for key in controllers_dictionary.controllers_dictionary.keys():
+            self._widget.ListControllersWidget.insertItem(count,key)
+            count +=1
 
-        # ---------------------------------------------- #  
-        # positions x,y,z
-        self.DXplotvector = [0]*self.Size_Vector
-        self.DXcurve = plotwidget.getPlotItem().plot(self.timevector,self.DXplotvector, name='x')
-        self.DXcurve.setPen(pg.mkPen('r'))
+        # if item in list is selected, print corresponding message
+        self._widget.ListControllersWidget.itemClicked.connect(self.__controller_item_clicked)
         
-        self.DYplotvector = [0]*self.Size_Vector
-        self.DYcurve = plotwidget.getPlotItem().plot(self.timevector,self.DYplotvector, name='y')
-        self.DYcurve.setPen(pg.mkPen('g'))
+        # 
+        self.__chain_selected_controllers_names = []
 
-        self.DZplotvector = [0]*self.Size_Vector
-        self.DZcurve = plotwidget.getPlotItem().plot(self.timevector,self.DZplotvector, name='z')
-        self.DZcurve.setPen(pg.mkPen('b'))
+        # default selected class
+        self.__selected_class = controllers_dictionary.controllers_dictionary['NeutralController']
 
-
-        # ---------------------------------------------- #
-        # ---------------------------------------------- #
-        # initial time: this will be used to offset to time to 0 
-        # instead of plotting with "real" time
-        self.time0 = rospy.get_time()
+        self.__input_dictionary_for_selected_controller = {} 
 
 
-        # Connecting slots to signals
-        self.ctr_st.connect(self.ctr_st_update)
+    def __get_recursive_class(self,dictionary,list_of_names):
+        rospy.logwarn('222222222222')
+        rospy.logwarn(dictionary)
 
-        # BUTTON TO SUBSCRIBE AND UNSUBSCRIBE To Controller state
-        self._widget.ButtonCtrStateSubscribe.stateChanged.connect(self.SetCtrStateSubscription)         
+        rospy.logwarn(list_of_names[0])
 
+        # this may yield a dictionary with classes for values, or may yield a class
+        dictionary_selected_class = dictionary[list_of_names[0]]
 
-        self._widget.GainsOption1.toggled.connect(self.DefaultOptions)
-        self._widget.GainsOption2.toggled.connect(self.DefaultOptions)
-        self._widget.GainsOption3.toggled.connect(self.DefaultOptions)
+        try:
+            if any(dictionary_selected_class) == True:
+                return self.__get_recursive_class(dictionary_selected_class,list_of_names[1:])
 
-    def DefaultOptions(self):
+        except Exception, e:
+            selected_class = dictionary_selected_class
+            return selected_class         
 
-        if self._widget.GainsOption1.isChecked():
-            wn  = 1
-            xsi = numpy.sqrt(2)/2
-            ki  = 0.0
+    def __controller_item_clicked(self):
+        
+        # get selected class name on list of classes
+        string = self._widget.ListControllersWidget.currentItem().text()
 
-            wn_z  = 1
-            xsi_z = numpy.sqrt(2)/2
-            ki_z  = 0.0
-
-            Throttle_neutral = 1400
-
-        if self._widget.GainsOption2.isChecked():
-            wn  = 1.7
-            xsi = numpy.sqrt(2)/2
-            ki  = 0.0
-
-            wn_z  = 1
-            xsi_z = numpy.sqrt(2)/2
-            ki_z  = 0.1
-
-            Throttle_neutral = 1400
-
-        if self._widget.GainsOption3.isChecked():
-            wn  = 1.7
-            xsi = numpy.sqrt(2)/2
-            ki  = 0.1
-
-            wn_z  = 1
-            xsi_z = numpy.sqrt(2)/2
-            ki_z  = 0.1
-
-            Throttle_neutral = 1400            
+        rospy.logwarn(string)
+        list_of_names = string.split(':')
+        rospy.logwarn('asasasasasas')
+        rospy.logwarn(list_of_names)
 
 
-        kv   = 2.0*xsi*wn
-        kp   = wn*wn
+        if len(list_of_names) == 1:
+            rospy.logwarn(list_of_names)
+            selected_class        = controllers_dictionary.controllers_dictionary[list_of_names[0]]
+            
+            self.__selected_class_name = list_of_names[0]
+            self.__selected_class      = selected_class
 
-        kv_z   = 2.0*xsi_z*wn_z
-        kp_z   = wn_z*wn_z
+            if any(selected_class.contained_objects()) == False:
+                self.__print_controller_message()
+            else:
+                # if selected_class depends on other classes, and needs more user information
 
+                # initialize dictionary
+                # this dictionary contains **abstracts** of classes
+                # TODO: maybe have default controllers in constructors of classes
+                self.__input_dictionary_for_selected_controller = selected_class.contained_objects()
 
-        # Default values for buttons: PID Controller
-        self._widget.PgainXY_PID.setValue(kp)
-        self._widget.DgainXY_PID.setValue(kv)
-        self._widget.IgainXY_PID.setValue(ki)
-        self._widget.PgainZ_PID.setValue(kp_z)
-        self._widget.DgainZ_PID.setValue(kv_z)
-        self._widget.IgainZ_PID.setValue(ki_z)
-        self._widget.ThrottleNeutral_PID.setValue(Throttle_neutral)
+                # clear items from widget
+                self._widget.ListControllersWidget.clear()
 
-
-    def SetCtrStateSubscription(self):
-
-
-        if self._widget.ButtonCtrStateSubscribe.isChecked():
-
-            self.sub = rospy.Subscriber(self.namespace +'ctr_state', Controller_State, self.callback)
-
-            self.ReceiveControllerState(True,[0])
-
+                self._widget.ListControllersWidget.addItem(string)
+                for key,item in selected_class.contained_objects().items():
+                    # each item is itself a dictionary
+                    for key_inner,item_inner in item.items():
+                        self._widget.ListControllersWidget.addItem(string+':'+key+':'+key_inner)
         else:
-            # subscriber may not exist yet
+
+            dictionary     = self.__selected_class.contained_objects()
+            selected_class = self.__get_recursive_class(dictionary,list_of_names[1:])
+
+            # restrict class based on user input
+            self.__input_dictionary_for_selected_controller[list_of_names[1]] = selected_class
+
+            rospy.logwarn(selected_class)
+
+            print_message_flag = True
+            for key,selected_class in self.__input_dictionary_for_selected_controller.items():
+                
+                rospy.logwarn(selected_class)
+
+                # if selected_class depends on other classes, and needs more user information
+                rospy.logwarn(any(selected_class.contained_objects()))
+                if any(selected_class.contained_objects()) == True:
+
+                    # one class unspecificed is enough to set flag to false
+                    print_message_flag = False
+
+                    # clear items from widget
+                    self._widget.ListControllersWidget.clear()
+
+                    self._widget.ListControllersWidget.addItem(list_of_names[0])
+                    for key,item in selected_class.contained_objects().items():
+                        # each item is itself a dictionary
+                        for key_inner,item_inner in item.items():
+                            self._widget.ListControllersWidget.addItem(string+':'+key+':'+key_inner)
+
+            if print_message_flag == True:
+                self.__print_controller_message()
+
+        return
+
+    def __recursion_dictionary_for_selected_class(self,selected_class,selected_controller_class_name):
+        
+        # initialize empty dictionary
+        parameters_dictionary = {}
+        # initialize counter
+        count = 0
+        for key,item in selected_class.contained_objects().items():
+            
+            selected_class_inner        = item[selected_controller_class_name[1:][count]]
+            parameters_dictionary_inner = self.__recursion_dictionary_for_selected_class(selected_class_inner,selected_controller_class_name[1:][count])
+            
+            parameters_dictionary[key]  = selected_class_inner(**parameters_dictionary_inner)
+            count += 1
+
+        return parameters_dictionary
+
+
+    def __print_controller_message(self):
+        """Print message with parameters associated to chosen controller class"""
+
+        parameters_dictionary = self.__input_dictionary_for_selected_controller
+
+        string                = self.__selected_class.parameters_to_string(**parameters_dictionary)
+        
+        # print message on GUI
+        self._widget.ControllerMessageInput.setPlainText(string)
+
+     
+        # selected_controller_class_name = self.__chain_selected_controllers_names
+        # # get class from dictionary of classes
+        # selected_class        = controllers_dictionary.controllers_dictionary[selected_controller_class_name[0]]
+        
+        # parameters_dictionary = self.__recursion_dictionary_for_selected_class(selected_class,selected_controller_class_name[1:])
+
+        # string                = selected_class.parameters_to_string(**parameters_dictionary)
+        
+        # # print message on GUI
+        # self._widget.ControllerMessageInput.setPlainText(string)
+
+        return 
+
+    def __get_new_controller_parameters(self):
+        """Request service for new controller with parameters chosen by user"""
+
+        # get string that user modified with new parameters
+        string              = self._widget.ControllerMessageInput.toPlainText()
+        # get new parameters from string
+        parameters          = string
+
+        rospy.logwarn(parameters)
+
+
+        # request service
+        try: 
+            # time out of one second for waiting for service
+            rospy.wait_for_service("/"+self.namespace+'ServiceChangeController',2.0)
+            
             try:
-                # unsubscribe to topic
-                self.sub.unregister()
-            except:
+                rospy.logwarn('33333333333333333')
+                # RequestingController = rospy.ServiceProxy("/"+self.namespace+'ServiceChangeController', SrvControllerChange)
+                RequestingController = rospy.ServiceProxy("/"+self.namespace+'ServiceChangeController', SrvControllerChangeByStr)
+
+                reply = RequestingController(controller_name = self.__selected_class_name, parameters = parameters)
+
+                if reply.received == True:
+                    # if controller receives message
+                    self._widget.Success.setChecked(True) 
+                    self._widget.Failure.setChecked(False) 
+
+
+            except rospy.ServiceException, e:
+                rospy.logwarn('Proxy for service that sets controller FAILED')
+                self._widget.Success.setChecked(False) 
+                self._widget.Failure.setChecked(True) 
+                # print "Service call failed: %s"%e
+            
+        except:
+            rospy.logwarn('Timeout for service that sets controller')
+            self._widget.Success.setChecked(False) 
+            self._widget.Failure.setChecked(True) 
+            # print "Service not available ..."        
+            pass                 
+
+        return
+
+
+    def reset_iris_neutral_value(self):
+        try: 
+            # time out of one second for waiting for service
+            rospy.wait_for_service(self.namespace+'IrisPlusResetNeutral',1.0)
+            try:
+                # request reseting neutral value for iris+ (implicit, with keywords)
+                ResetingNeutral = rospy.ServiceProxy(self.namespace+'IrisPlusResetNeutral', IrisPlusResetNeutral)
+                reply = ResetingNeutral()
+                if reply.received == True:
+                    self._widget.ThrottleNeutralValue.setValue(reply.k_trottle_neutral)
+                    rospy.logwarn('Service for reseting neutral value succeded')
+            except rospy.ServiceException:
+                rospy.logwarn('Service for reseting neutral value failed')
                 pass
+        except:
+            rospy.logwarn('Service for reseting neutral value failed')      
+            pass
 
-            self.ReceiveControllerState(False,[0])
 
-            # clear all plots 
-            self.DXcurve.setData([],[])
-            self.DYcurve.setData([],[])
-            self.DZcurve.setData([],[])
+    def set_iris_neutral_value(self):
+        try: 
+            # time out of one second for waiting for service
+            rospy.wait_for_service(self.namespace+'IrisPlusSetNeutral',1.0)
+            try:
+                # request reseting neutral value for iris+ (implicit, with keywords)
+                ResetingNeutral = rospy.ServiceProxy(self.namespace+'IrisPlusSetNeutral', IrisPlusSetNeutral)
+                reply = ResetingNeutral(k_trottle_neutral = self._widget.ThrottleNeutralValue.value())
+                if reply.received == True:
+                    rospy.logwarn('Service for seting neutral value succeded')
+            except rospy.ServiceException:
+                rospy.logwarn('Service for seting neutral value failed')
+                pass
+        except:
+            rospy.logwarn('Service for seting neutral value failed')      
+            pass            
+
+
 
     def RESET_xy_PID(self):
         # IMPORTANT
@@ -281,166 +357,6 @@ class ChooseControllerPlugin(Plugin):
         # IMPORTANT
         flag_PID_Controller = 1
         self.ReceiveControllerState(flag_PID_Controller,[2])
- 
-
-    def callback(self,data):
-     
-        # data.d_est is tuple, cast it as as numpy array 
-        disturbance = numpy.array(data.d_est)
-        # time
-        time = data.time
-
-        data_recasted = numpy.concatenate([[time], disturbance])
-
-        self.ctr_st.emit(data_recasted)       
-
-    def ctr_st_update(self,data):
-
-        self.timevector[:-1] = self.timevector[1:]
-        self.timevector[-1]  = data[0] - self.time0      
-
-        self.DXplotvector[:-1] = self.DXplotvector[1:]
-        self.DXplotvector[-1]  = data[1]
-        self.DXcurve.setData(self.timevector,self.DXplotvector)
-
-        self.DYplotvector[:-1] = self.DYplotvector[1:]
-        self.DYplotvector[-1]  = data[2]        
-        self.DYcurve.setData(self.timevector,self.DYplotvector)
-
-        self.DZplotvector[:-1] = self.DZplotvector[1:]
-        self.DZplotvector[-1]  = data[3]
-        self.DZcurve.setData(self.timevector,self.DZplotvector)
-      
-
-    #@Slot(bool)
-    def SetController(self):
-
-        try: 
-            # time out of one second for waiting for service
-            rospy.wait_for_service(self.namespace+'Controller_GUI',1.0)
-            
-            try:
-                SettingController = rospy.ServiceProxy(self.namespace+'Controller_GUI', Controller_Srv)
-
-                # self._widget.ControllerSelect.currentIndex() is the tab number
-                # first tab is 0
-                # second tab is 1
-                # ... 
-
-                if self._widget.ControllerSelect.currentIndex() == 0:
-                    # PD controller selected
-                   controller,parameters = self.PD_parameters()
-
-                if self._widget.ControllerSelect.currentIndex() == 1:
-                    # PID controller selected
-                    controller,parameters = self.PID_parameters()
-
-                if self._widget.ControllerSelect.currentIndex() == 2:
-                    # ACRO controller selected
-                    controller,parameters = self.ACRO_parameters()
-
-                reply = SettingController(controller,parameters)
-
-
-                if reply.received == True:
-                    # if controller receives message, we know it
-                    # print('Trajectory has been set')
-                    self._widget.Success.setChecked(True) 
-                    self._widget.Failure.setChecked(False) 
-
-
-            except rospy.ServiceException:
-                self._widget.Success.setChecked(False) 
-                self._widget.Failure.setChecked(True) 
-                # print "Service call failed: %s"%e   
-            
-        except:
-            self._widget.Success.setChecked(False) 
-            self._widget.Failure.setChecked(True) 
-            # print "Service not available ..."        
-            pass     
-
-
-    def PD_parameters(self):
-
-        controller = 0
-        P = self._widget.PgainXY_PID.value()
-        D = self._widget.DgainXY_PID.value()
-        P_z = self._widget.PgainZ_PID.value()
-        D_z = self._widget.DgainZ_PID.value()
-        # Throttle Neutral
-        TN = self._widget.ThrottleNeutral.value()
-
-        parameters = numpy.array([P,D,P_z,D_z,TN])
-
-        return controller,parameters
-
-    def PID_parameters(self):
-
-        if self._widget.PID_OPTION.value() == 1:
-            controller = 1
-        if self._widget.PID_OPTION.value() == 2:
-            controller = 2
-        P = self._widget.PgainXY_PID.value()
-        D = self._widget.DgainXY_PID.value()
-        I = self._widget.IgainXY_PID.value()
-        P_z = self._widget.PgainZ_PID.value()
-        D_z = self._widget.DgainZ_PID.value()
-        I_z = self._widget.IgainZ_PID.value()
-
-        # Throttle Neutral
-        TN = self._widget.ThrottleNeutral_PID.value()
-
-        time = rospy.get_time()
-        parameters = numpy.array([P,D,I,P_z,D_z,I_z,TN,time])
-
-        return controller,parameters
-
-    def ACRO_parameters(self):
-
-        controller = 3
-        parameters = None
-
-        return controller,parameters
-
-
-    #@Slot(bool)
-    def ReceiveControllerState(self,YesOrNo,parameter):
-        
-        # parameter = [0], means get controller state
-        # parameter = [1], means reset controller state in x and y
-        # parameter = [2], means reset controller state in z
-
-        try:
-
-            # time out of one second for waiting for service
-            rospy.wait_for_service(self.namespace+'Controller_State_GUI',1.0)
-
-            try:
-
-                AskForControllerState = rospy.ServiceProxy(self.namespace+'Controller_State_GUI', Controller_Srv)
-
-                reply = AskForControllerState(YesOrNo,parameter)
-
-                if reply.received == True:
-                    # if controller receives message, we know it
-                    self._widget.Success.setChecked(True) 
-                    self._widget.Failure.setChecked(False) 
-                else:
-                    # if controller does not receive message, we know it
-                    self._widget.Success.setChecked(False) 
-                    self._widget.Failure.setChecked(True) 
-
-            except rospy.ServiceException:
-                # print "Service call failed: %s"%e   
-                self._widget.Success.setChecked(False) 
-                self._widget.Failure.setChecked(True) 
-            
-        except: 
-            # print "Service not available ..."        
-            self._widget.Success.setChecked(False) 
-            self._widget.Failure.setChecked(True)
-            pass  
 
 
     def _parse_args(self, argv):

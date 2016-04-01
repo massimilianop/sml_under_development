@@ -1,19 +1,14 @@
 #!/usr/bin/env python
 # this line is just used to define the type of document
 
-# in case we want to use rospy.logwarn or logerror
+# in case we want to use rospy.logwarn or rospy.logerror
 import rospy
 
 import numpy
 
-import collections
+import collections  
 
-# Relative path
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','..','..','..'))
-from Python.Double_Integrator_Functions.Double_Integrator_Bounded_and_Component_wise.DI_Bounded_1 import DI_controller
-
+from systems_functions.Double_Integrator_Functions.Double_Integrator_Bounded_and_Component_wise.DI_Bounded_1 import DI_controller
 
 #--------------------------------------------------------------------------#
 from numpy import cos as c

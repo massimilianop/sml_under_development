@@ -8,31 +8,27 @@ from PyQt4.QtCore import QObject, pyqtSignal
 import PyQt4.QtCore
 import pyqtgraph as pg
 
-# necessary to have gui as a client, asking controller to save data
-# from python_qt_binding.QtCore import QTimer, Slot
-# from python_qt_binding.QtCore import pyqtSlot
-
-
-import numpy
-
-# import analysis
-# import utils
-import subprocess
-# from mavros.msg import OverrideRCIn
-# from mocap.msg import QuadPositionDerived
-
-from quad_control.msg import quad_state_and_cmd
-
 
 # import services defined in quad_control
-# SERVICE BEING USED: TrajDes_GUI
-from quad_control.srv import *
+# from quad_control.srv import *
+# SERVICE BEING USED: SrvTrajectoryDesired
+from quad_control.srv import SrvTrajectoryDesired
 
-from std_srvs.srv import Empty
-
+# used to get namespace, when passed as argument to GUI
 import argparse
 
 
+# to work with directories relative to ROS packages
+from rospkg import RosPack
+# determine ROS workspace directory
+rp = RosPack()
+# determine ROS workspace directory where data is saved
+package_path = rp.get_path('quad_control')
+# import sys
+import sys
+sys.path.insert(0, package_path)
+# import trajectories dictionaries
+from scripts.TrajectoryPlanner import trajectories_dictionary
 
 
 class TrajectorySelectionPlugin(Plugin):
@@ -61,7 +57,6 @@ class TrajectorySelectionPlugin(Plugin):
             print 'unknowns: ', unknowns
         
         
-        
         # Create QWidget
         self._widget = QWidget()
         # Get path to UI file which is a sibling of this file
@@ -82,83 +77,68 @@ class TrajectorySelectionPlugin(Plugin):
         context.add_widget(self._widget)
 
         # ---------------------------------------------- #
-        # ---------------------------------------------- #
 
-        # BUTTON TO SET DESIRED TRAJECTORY
-        self._widget.SetTrajectory.clicked.connect(self.SetTrajectory)
+        # create list of available trajectory classes based on dictionary 
+        count = 0
+        for key in trajectories_dictionary.trajectories_dictionary.keys():
+            self._widget.ListTrajectoriesWidget.insertItem(count,key)
+            count += 1 
 
-
-        self._widget.DefaultOption1.toggled.connect(self.DefaultOptions)
-        self._widget.DefaultOption2.toggled.connect(self.DefaultOptions)
-        self._widget.DefaultOption3.toggled.connect(self.DefaultOptions)
-
-        # Planner buttons
-        self._widget.planner_start_button.clicked.connect(self.planner_start)
-        self._widget.planner_stop_button.clicked.connect(self.planner_stop)
-
-    def DefaultOptions(self):
-
-        # radius, period and height
-        if self._widget.DefaultOption1.isChecked():
-            r  = 0
-            w  = 0
-            z  = 0.6
-
-        if self._widget.DefaultOption2.isChecked():
-            r  = 0.5
-            w  = 0.1
-            z  = 0.6
-
-        if self._widget.DefaultOption3.isChecked():
-            r  = 1
-            w  = 0.1
-            z  = 0.6        
-        if self._widget.DefaultOption4.isChecked():
-            r  = 0.5
-            w  = 0.2
-            z  = 0.6                   
+        # if item in list is selected, print corresponding message
+        self._widget.ListTrajectoriesWidget.itemClicked.connect(self.__print_trajectory_message)
+        
+        # button to request service for setting new trajectory, with new parameters
+        self._widget.SetTrajectory.clicked.connect(self.__get_new_trajectory_parameters)
 
 
-        # Default values for buttons
-        self._widget.box_radius_circle.setValue(r)
-        self._widget.box_omega_circle.setValue(w)
-        self._widget.box_z_circle.setValue(z)
+    def __print_trajectory_message(self):
+        """Print message with parameters associated to chosen trajectory class"""
+        
+        # get selected class name on list of classes
+        selected_class_name = self._widget.ListTrajectoriesWidget.currentItem().text()
+        # get class from dictionary of classes
+        selected_class      = trajectories_dictionary.trajectories_dictionary[selected_class_name]
+        # get message for chosen class
+        string              = selected_class.parameters_to_string()
+        # print message on GUI
+        self._widget.TrajectoryMessageInput.setPlainText(string)
 
+        # get message associated to offset and rotation
+        string_offset_and_rotation = selected_class.offset_and_rotation_to_string()
+        # print message on GUI
+        self._widget.MessageOffsetAndRotation.setPlainText(string_offset_and_rotation)
 
-    #@Slot(bool)
-    def SetTrajectory(self):
+        return 
 
-        # print(vars(self._widget))
+    def __get_new_trajectory_parameters(self):
+        """Request service for new trajectory with parameters chosen by user"""
 
-        rospy.logwarn('currently testing')
-        rospy.logwarn("/"+self.namespace+'TrajDes_GUI')
+        # get selected class name on list of classes
+        selected_class_name = self._widget.ListTrajectoriesWidget.currentItem().text()
+        # get class from dictionary of classes
+        selected_class      = trajectories_dictionary.trajectories_dictionary[selected_class_name]
+        # get string that user modified with new parameters
+        string              = self._widget.TrajectoryMessageInput.toPlainText()
+        # get new parameters from string
+        parameters          = selected_class.string_to_parameters(string)
 
+        # get string that user modified with new offset and rotation
+        string_offset_and_rotation = self._widget.MessageOffsetAndRotation.toPlainText()
+        # get offset and rotation from string
+        offset, rotation           = selected_class.string_to_offset_and_rotation(string_offset_and_rotation)
+
+        # request service
         try: 
             # time out of one second for waiting for service
-            rospy.wait_for_service("/"+self.namespace+'TrajDes_GUI',1.0)
+            rospy.wait_for_service("/"+self.namespace+'ServiceTrajectoryDesired',1.0)
             
             try:
-                SettingTrajectory = rospy.ServiceProxy("/"+self.namespace+'TrajDes_GUI', TrajDes_Srv)
+                SettingTrajectory = rospy.ServiceProxy("/"+self.namespace+'ServiceTrajectoryDesired', SrvTrajectoryDesired)
 
-                # self._widget.TrajSelect.currentIndex() is the tab number
-                # first tab is 0
-                # second tab is 1
-                # ... 
-
-                if self._widget.TrajSelect.currentIndex() == 0:
-                   traj,offset,rotation,parameters = self.fixed_point()
-
-                if self._widget.TrajSelect.currentIndex() == 1:
-                    traj,offset,rotation,parameters = self.circle()
-
-                rospy.logwarn(traj)
-
-                reply = SettingTrajectory(traj,offset,rotation,parameters)
-
+                reply = SettingTrajectory(selected_class_name,offset,rotation,parameters)
 
                 if reply.received == True:
-                    # if controller receives message, we know it
-                    # print('Trajectory has been set')
+                    # if controller receives message
                     self._widget.Success.setChecked(True) 
                     self._widget.Failure.setChecked(False) 
 
@@ -174,77 +154,21 @@ class TrajectorySelectionPlugin(Plugin):
             self._widget.Success.setChecked(False) 
             self._widget.Failure.setChecked(True) 
             # print "Service not available ..."        
-            pass     
+            pass                 
 
-
-    def fixed_point(self):
-
-        traj = 'StayAtRest'
-        
-        x = self._widget.box_x.value()
-        y = self._widget.box_y.value()
-        z = self._widget.box_z.value()
-        offset = numpy.array([x,y,z])
-        
-        rotation = numpy.array([0.0,0.0,0.0])
-
-        parameters = None
-
-        return traj,offset,rotation,parameters        
-
-    def circle(self):
-
-        traj = 'DescribeCircle'
-        x = self._widget.box_x_circle.value()
-        y = self._widget.box_y_circle.value()
-        z = self._widget.box_z_circle.value()
-        offset = numpy.array([x,y,z])
-
-        phi   = 0.0
-        theta = self._widget.box_theta_circle.value()
-        psi   = self._widget.box_psi_circle.value()
-        rotation = numpy.array([phi,theta,psi])
-
-        r = self._widget.box_radius_circle.value()
-        # from revolutions per second to rad per second
-        w = self._widget.box_omega_circle.value()*2*3.14
-        parameters = numpy.array([r,w])
-
-        return traj,offset,rotation,parameters
-
+        return
 
     def _parse_args(self, argv):
 
         parser = argparse.ArgumentParser(prog='saver', add_help=False)
 
         # args = parser.parse_args(argv)
-
         if argv:
             namespace = argv[0]
             return namespace            
         else:
             # is argv is empty return empty string
             return ""
-
-    # start planned trajectory
-    def planner_start(self):
-        try:
-            rospy.wait_for_service('planner_start',1)
-            start = rospy.ServiceProxy('planner_start',PlannerStart)
-
-            start(self._widget.planner_edit.toPlainText())
-        except rospy.ROSException, rospy.ServiceException:
-            rospy.logwarn('could not start planned trajectory')
-
-    # stop planned trajectory
-    def planner_stop(self):
-        try:
-            rospy.wait_for_service('planner_stop',1)
-            stop = rospy.ServiceProxy('planner_stop',Empty)
-
-            stop()
-        except rospy.ROSException, rospy.ServiceException:
-            rospy.logwarn('could not start planned trajectory')
     
     def shutdown_plugin(self):
         # TODO unregister all publishers here

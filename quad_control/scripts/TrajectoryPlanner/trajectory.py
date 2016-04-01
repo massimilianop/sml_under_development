@@ -5,7 +5,7 @@ for a rigid body in the 3D space"""
 
 import numpy as np
 from utilities import utility_functions as uts
-
+import json
 
 class Trajectory:
 
@@ -20,6 +20,31 @@ class Trajectory:
     def get_parameters_names(cls):
         raise NotImplementedError()
         #return ()
+
+
+    @classmethod
+    def offset_and_rotation_to_string(cls, offset=np.array([0.0, 0.0, 1.0]),
+            rotation=np.zeros(3)):
+        dic = {'offset':list(offset), 'rotation':list(rotation)}
+        return json.dumps(dic)
+        
+        
+    @classmethod
+    def string_to_offset_and_rotation(cls, string):
+        dic = json.loads(string)
+        offset = np.array(dic['offset'])
+        rotation = np.array(dic['rotation'])
+        return offset, rotation
+        
+
+    @classmethod
+    def parameters_to_string(cls, parameters):
+        raise NotImplementedError()
+        
+        
+    @classmethod
+    def string_to_parameters(cls, string):
+        raise NotImplementedError()
 
 
     def __init__(self, offset=np.zeros(3), rotation=np.zeros(3)):
@@ -43,6 +68,15 @@ class Trajectory:
         
     def get_rotation(self):
         return np.array(self.__rotation)
+        
+        
+    def set_offset(self, offset):
+        self.__offset = np.array(offset)
+        
+        
+    def set_rotation(self):
+        self.__rotation = numpy.array(rotation)
+        self.__rotation_matrix = uts.GetRotFromEulerAnglesDeg(rotation)
         
         
     def desired_trajectory(self, time):

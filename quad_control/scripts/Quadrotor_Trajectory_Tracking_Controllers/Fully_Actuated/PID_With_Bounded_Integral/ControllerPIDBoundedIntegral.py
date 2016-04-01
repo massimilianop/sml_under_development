@@ -8,12 +8,13 @@ import numpy
 
 import collections
 
-# Relative path
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','..','..','..'))
-from Python.Double_Integrator_Functions.Double_Integrator_Bounded_Not_Component_wise_No_Inertial_Measurements_needed.DI_Bounded_2 import DI_controller
+# # Relative path
+# import sys
+# import os
+# sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','..','..','..'))
+# from Python.Double_Integrator_Functions.Double_Integrator_Bounded_Not_Component_wise_No_Inertial_Measurements_needed.DI_Bounded_2 import DI_controller
 
+from systems_functions.Double_Integrator_Functions.Double_Integrator_Bounded_Not_Component_wise_No_Inertial_Measurements_needed.DI_Bounded_2 import DI_controller
 
 #--------------------------------------------------------------------------#
 from numpy import cos as c
