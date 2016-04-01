@@ -88,8 +88,6 @@ class BoundedIntegralPIDController(controller.Controller):
         # return di_controller_class_number, integral_gain_xy, bound_integral_xy, integral_gain_z , bound_integral_z
         #return di_controller_class_number, di_controller_parameters, integral_gain_xy, bound_integral_xy, integral_gain_z , bound_integral_z
 
-        double_integrator_controller = 
-
         return dic
         
     # @classmethod
