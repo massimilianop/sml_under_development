@@ -1,0 +1,19 @@
+database_dic = {}
+
+# no need for this double integrator, since it does nothing, and it should not be the default di controller
+# import double_integrator_neutral_controller
+# di_ctrl_dictionary["DoubleIntegratorNeutralController"] =  double_integrator_neutral_controller.DoubleIntegratorNeutralController
+
+import double_integrator_controller
+database_dic["DefaultDIC"] = double_integrator_controller.DoubleIntegratorController
+
+# import double_integrator_bounded_and_component_wise_controller
+# database_dic["BoundedAndComponentWiseDIC"] = double_integrator_bounded_and_component_wise_controller.DoubleIntegratorBoundedAndComponentWiseController
+
+import double_integrator_bounded_not_component_wise_controller
+database_dic["BoundedNotComponentWiseDIC"] = double_integrator_bounded_not_component_wise_controller.DoubleIntegratorBoundedNotComponentWiseController
+
+import n_dimensional_bounded_dic.n_dimensional_bounded_dic
+database_dic["BoundedNotComponentWiseDIC"] = n_dimensional_bounded_dic.n_dimensional_bounded_dic.NDimensionalBoundedDIC
+
+
