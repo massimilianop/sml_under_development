@@ -246,8 +246,10 @@ class quad_controller():
         ControllerClass = controllers_dictionary.controllers_dictionary[req.controller_name]
 
         parameters_dictionary = ControllerClass.string_to_parameters(req.parameters)
+        
         self.ControllerObject = ControllerClass(**parameters_dictionary)
 
+        #rospy.logwarn(self.ControllerObject.__class__.__name__)
         rospy.logwarn('444444444444')
 
         # return message to Gui, to let it know resquest has been fulfilled
@@ -577,6 +579,7 @@ class quad_controller():
             states_d = self.traj_des()
 
             # compute input to send to QUAD
+            # rospy.logwarn(self.ControllerObject.__class__.__name__)
             desired_3d_force_quad = self.ControllerObject.output(time,self.state_quad,states_d)
             self.DesiredZForceMedian.update_data(desired_3d_force_quad[2])
 

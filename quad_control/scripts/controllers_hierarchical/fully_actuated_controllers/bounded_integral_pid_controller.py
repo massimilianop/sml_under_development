@@ -43,7 +43,7 @@ class BoundedIntegralPIDController(controller.Controller):
     
     @classmethod
     def parameters_to_string(cls, \
-            double_integrator_controller = dics.data["DoubleIntegratorController"],\
+            double_integrator_controller = dics.data["DoubleIntegratorDefaultController"],\
             integral_gain_xy   = 0.0, \
             bound_integral_xy  = 0.0, \
             integral_gain_z    = 0.5, \
@@ -52,7 +52,8 @@ class BoundedIntegralPIDController(controller.Controller):
             ):
 
         params = {
-            'double_integrator_controller': double_integrator_controller.parameters_to_string(),\
+            #TODO should we change the value of this item to also include the class name?
+            'double_integrator_controller': (double_integrator_controller.__name__, double_integrator_controller.parameters_to_string()),\
             'integral_gain_xy'   :integral_gain_xy     ,\
             'bound_integral_xy'  :bound_integral_xy    ,\
             'integral_gain_z'    :integral_gain_z      ,\
@@ -67,13 +68,24 @@ class BoundedIntegralPIDController(controller.Controller):
 #        dic = dict(dict_di_controller,**dict_integral)
 #        dic['di_controller_class_name'] = child_class_name
 
-        return json.dumps(params)
+        return json.dumps(params, indent=4)
 
 
     @classmethod
     def string_to_parameters(cls, string):
         
         dic = json.loads(string)
+        
+        for key, value in cls.contained_objects().items():
+            inner_obj = dic[key]
+            InnerCls = value[inner_obj[0]]
+            #rospy.logwarn(InnerCls)
+            inner_params_str = inner_obj[1]
+            inner_params = json.loads(inner_params_str)
+            if inner_params == None:
+                inner_params = dict()
+            dic[key] = InnerCls(**inner_params)
+            
         
 #        integral_gain_xy     = dic['integral_gain_xy']
 #        bound_integral_xy    = dic['bound_integral_xy']
@@ -87,8 +99,6 @@ class BoundedIntegralPIDController(controller.Controller):
 
         # return di_controller_class_number, integral_gain_xy, bound_integral_xy, integral_gain_z , bound_integral_z
         #return di_controller_class_number, di_controller_parameters, integral_gain_xy, bound_integral_xy, integral_gain_z , bound_integral_z
-
-        double_integrator_controller = 
 
         return dic
         
@@ -132,8 +142,12 @@ class BoundedIntegralPIDController(controller.Controller):
         # Should the mass be passed as a parameter?
         # We can always use 1.66779 as a default value
         self.__quad_mass = quad_mass
+        
+        self.MASS = quad_mass
+        self.GRAVITY = 9.81
 
         self.disturbance_estimate   = numpy.array([0.0,0.0,0.0])
+        self.d_est = self.disturbance_estimate
 
         self.t_old  = 0.0
 
@@ -143,8 +157,11 @@ class BoundedIntegralPIDController(controller.Controller):
         
         
     def __str__(self):
-        return self.description()
-
+        #TODO add the remaining parameters
+        string = controller.Controller.__str__(self)
+        string += "\nDouble-integrator controller: " + str(self.DIControllerObject)
+        return string
+        
 
     def output(self, delta_t, state, reference):
 
@@ -195,4 +212,32 @@ class BoundedIntegralPIDController(controller.Controller):
     def reset_disturbance_estimate(self):
         self.disturbance_estimate = numpy.array([0.0,0.0,0.0])
         return
-            
+
+
+
+
+#Test
+
+inner_objs = BoundedIntegralPIDController.contained_objects()
+print inner_objs
+
+Dic = inner_objs['double_integrator_controller']['DoubleIntegratorBoundedNotComponentWiseController']
+print Dic
+
+dic_parameters = Dic.string_to_parameters(Dic.parameters_to_string())
+print dic_parameters
+
+dic = Dic(**dic_parameters)
+print dic
+
+params = BoundedIntegralPIDController.string_to_parameters(BoundedIntegralPIDController.parameters_to_string())
+print params
+
+params['double_integrator_controller'] = dic
+print params
+
+con = BoundedIntegralPIDController(**params)
+print con
+print con.output(0.0, numpy.zeros(9), numpy.zeros(9))
+
+

@@ -38,8 +38,8 @@ class DoubleIntegratorController(controller.Controller):
         
     def __str__(self):
         string = controller.Controller.__str__(self)
-        string += "\nProportional gain: " + self.__proportional_gain
-        string += "\nDerivative gain: " + self.__derivative_gain
+        string += "\nProportional gain: " + str(self.__proportional_gain)
+        string += "\nDerivative gain: " + str(self.__derivative_gain)
         return string
     
     
@@ -52,11 +52,11 @@ class DoubleIntegratorController(controller.Controller):
 
         
     #TODO adjust with the special parameters
-    def __str__(self):
-        string = self.description()
-        string += "\nProportional gain: " + self.__proportional_gain
-        string += "\nDerivative gain: " + self.__derivative_gain
-        return string
+#    def __str__(self):
+#        string = self.description()
+#        string += "\nProportional gain: " + self.__proportional_gain
+#        string += "\nDerivative gain: " + self.__derivative_gain
+#        return string
         
     
     def output(self, position, velocity): 
