@@ -50,7 +50,7 @@ class Jsonable:
             else:
                 val = defs[i]
             arg_dic[arg] = val
-        return json.dumps(arg_dic, indent=4)
+        return json.dumps(arg_dic, sort_keys=True, indent=4, separators=(',', ':') )
         
         
     @classmethod
