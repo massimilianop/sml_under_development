@@ -32,3 +32,5 @@ $v = a$
 
 <img src="https://latex.codecogs.com/svg.latex?q&space;=&space;\frac{a}{b}">
 
+
+<img src="https://latex.codecogs.com/svg.latex?\mathbf{u}(\mathbf{p},\mathbf{v})&space;=&space;-&space;k_{\scriptsize{p}}&space;\boldsymbol{\sigma}_{\scriptsize{p}}(\mathbf{p})&space;-&space;k_{\scriptsize{v}}&space;\boldsymbol{\sigma}_{\scriptsize{v}}(\mathbf{v})&space;\frac{\partial&space;V}{\partial&space;x}">

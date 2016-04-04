@@ -265,8 +265,8 @@ class quad_controller():
         
         string = req.parameters
         
-        offset   = numpy.array(req.offset)
-        rotation = numpy.array(req.rotation)
+        #offset   = numpy.array(req.offset)
+        #rotation = numpy.array(req.rotation)
 
         self.TrajGenerator = TrajectoryClass.from_string(string)
 

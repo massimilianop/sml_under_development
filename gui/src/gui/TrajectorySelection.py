@@ -99,14 +99,14 @@ class TrajectorySelectionPlugin(Plugin):
         # get class from dictionary of classes
         selected_class      = trajectories_dictionary.trajectories_dictionary[selected_class_name]
         # get message for chosen class
-        string              = selected_class.parameters_to_string()
+        string              = selected_class.to_string()
         # print message on GUI
         self._widget.TrajectoryMessageInput.setPlainText(string)
 
         # get message associated to offset and rotation
-        string_offset_and_rotation = selected_class.offset_and_rotation_to_string()
+        #string_offset_and_rotation = selected_class.offset_and_rotation_to_string()
         # print message on GUI
-        self._widget.MessageOffsetAndRotation.setPlainText(string_offset_and_rotation)
+        #self._widget.MessageOffsetAndRotation.setPlainText(string_offset_and_rotation)
 
         return 
 
