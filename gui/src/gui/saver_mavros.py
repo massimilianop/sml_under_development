@@ -9,7 +9,7 @@ from PyQt4.QtCore import QObject, pyqtSignal
 import subprocess
 
 
-from quad_control.srv import Controller_Srv
+#from quad_control.srv import Controller_Srv
 from quad_control.srv import MocapBodies
 
 from mavros_msgs.srv import CommandBool
