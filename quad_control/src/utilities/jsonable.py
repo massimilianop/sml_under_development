@@ -50,9 +50,12 @@ class Jsonable:
             else:
                 val = defs[i]
             arg_dic[arg] = val
-        string = json.dumps(arg_dic, indent=4, separators=(', ', ':\n\t'))
+        # string = json.dumps(arg_dic, indent=4, separators=(', ', ':\n\t'))
+        string = json.dumps(arg_dic, separators=(', \n', '\t:\t'))
         string = string.replace('"[','[')
         string = string.replace(']"',']')
+        string = string.replace('{','{\n')
+        string = string.replace('}','\n}')
         return string
         
         

@@ -34,13 +34,13 @@ from numpy import cos as c
 from numpy import sin as s
 
 
-from utility_functions import GetEulerAnglesDeg
-
-from Simulators.ZeroDynamics.SimulatorZeroDynamics import SimulatorWithZeroDynamics
-from Simulators.AttitudeInnerLoop.SimulatorWithAttitudeInnerLoop import SimulatorWithAttitudeInnerLoop
-from Simulators.NoAttitudeInnerLoop.SimulatorWithNoAttitudeInnerLoop import SimulatorWithNoAttitudeInnerLoop
+# from utility_functions import GetEulerAnglesDeg
+from utilities.utility_functions import GetEulerAnglesDeg
 
 import simulators_hierarchical.simulators_dictionary as shsd
+
+
+from visualization_msgs.msg import Marker
 
 
 simdic = shsd.simulators_dictionary
@@ -78,6 +78,7 @@ class SimulatorNode():
 
         # frequency of node (Hz)
         self.frequency = 100
+        # self.frequency = 1
 
         # delay for starting simulator (sec)
         self.TimeDelay = 2.0
@@ -88,7 +89,8 @@ class SimulatorNode():
 
 
         # by default, we get the class [0] which is staying still
-        SimClass = simdic["no_attitude_inner_loop"]
+        # SimClass = simdic["no_attitude_inner_loop"]
+        SimClass = simdic["attitude_inner_loop"]
         # sim is an instant/object of class Sim_class
         #sim       = Sim_class()
         # f is the dynamics, which is defined ALWAYS AS THE OUTPUT FUNCTION
@@ -160,37 +162,14 @@ class SimulatorNode():
 
 
     # callback used for changing simulator
-    def handle_Simulator_Srv(self,req):
+    def __handle_simulator_change_service(self,req):
 
-        # if GUI request certain simulator, change flag
-        fg_Sim = req.flag_simulator
+        SimulatorClass = simdic[req.controller_name]
+        
+        self.sim = SimulatorClass.from_string(req.parameters)
 
-        # some parameters user can change easily 
-        # req.parameters is a tuple
-        if len(req.parameters) == 0:
-            # if tuple req.parameters is empty:
-            parameters = None
-        else:     
-            # if tuple is not empty, cast parameters as numpy array 
-            parameters = numpy.array(req.parameters)
-
-        old_control = self.U
-        old_states = self.sim.get_state()
-        old_time   = self.sim.get_time()
-
-        # update class for Simulator
-        SimClass = simulators_dictionary[fg_Sim]
-        # sim is an instant/object of class Sim_class
-        sim = SimClass(old_time, old_states, old_control, *parameters)
-        # f is the dynamics, which is defined ALWAYS AS THE OUTPUT FUNCTION
-        # r is the solver object used for integration
-        #self.r    = ode(f).set_integrator('dopri5')
-        # initial conditions
-        #self.r.set_initial_value(old_states,old_time)
-
-
-        # return message to Gui, to let it know resquest has been fulfilled
-        return Simulator_SrvResponse(True)
+        # return message: resquest has been fulfilled
+        return SrvControllerChangeByStrResponse(received = True)
 
 
     def write_state(self):
@@ -259,12 +238,47 @@ class SimulatorNode():
         #-----------------------------------------------------------------------#
         #-----------------------------------------------------------------------#
         # Service is created, so that user can change simulator on GUI
-        Chg_Simulator = rospy.Service('Simulator_GUI', Simulator_Srv, self.handle_Simulator_Srv)
+        Chg_Simulator = rospy.Service('ServiceChangeSimulator', SrvControllerChangeByStr, self.__handle_simulator_change_service)
 
 
         # solve differential equations at frequency
         rate = rospy.Rate(self.frequency)
+        
+        pub_rviz = rospy.Publisher("visualization_marker",Marker, queue_size=10);
 
+        marker = Marker()
+        marker.header.frame_id = "map";
+        marker.header.stamp = rospy.Time();
+        marker.ns = "my_namespace";
+        marker.id = 0;
+        # marker.type = Marker.SPHERE;
+        # marker.action = Marker.ADD;
+        marker.pose.position.y = 0.1;
+        marker.pose.position.z = 0.1;
+        marker.pose.orientation.x = 0.0;
+        marker.pose.orientation.y = 0.0;
+        marker.pose.orientation.z = 0.0;
+        marker.pose.orientation.w = 1.0;
+        # marker.scale.x = 1;
+        # marker.scale.y = 0.1;
+        # marker.scale.z = 0.1;
+        # marker.color.a = 1.0; #Don't forget to set the alpha!
+        # marker.color.r = 0.0;
+        # marker.color.g = 1.0;
+        # marker.color.b = 0.0;
+        # //only if using a MESH_RESOURCE marker type:
+
+        # marker.color.r = 1.0;
+        # marker.color.g = 1.0;
+        # marker.color.b = 1.0;
+
+        marker.scale.x = 1;
+        marker.scale.y = 1;
+        marker.scale.z = 1;
+        marker.type = Marker.MESH_RESOURCE
+        marker.mesh_use_embedded_materials = True
+        marker.mesh_resource = "package://rotors_description/meshes/firefly.dae"
+        # marker.mesh_resource = "package://pr2_description/meshes/base_v0/base.dae";
 
         while not rospy.is_shutdown():
 
@@ -299,6 +313,21 @@ class SimulatorNode():
             # publish current state
             pub.publish(state)
 
+            # marker.pose.position.x = 0.1 + numpy.cos(2*3.14/5*rospy.get_time());
+            marker.pose.position.x = simstate[0]
+            marker.pose.position.y = simstate[1]
+            marker.pose.position.z = simstate[2]
+
+            # quaternion
+            # marker.pose.orientation.x = simstate[0]
+            # marker.pose.orientation.y = simstate[1]
+            # marker.pose.orientation.z = simstate[2]
+            # marker.pose.orientation.w = simstate[2]          
+
+            pub_rviz.publish( marker )
+
+            # rospy.logwarn(marker)
+
             # let node sleep
             rate.sleep()
 
@@ -307,5 +336,5 @@ class SimulatorNode():
 
 
 if __name__ == '__main__':
-    sim = SimulatorNode()
-    sim.simulate_quad()
+    simulator_node = SimulatorNode()
+    simulator_node.simulate_quad()

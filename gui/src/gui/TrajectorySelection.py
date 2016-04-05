@@ -18,17 +18,26 @@ from quad_control.srv import SrvTrajectoryDesired
 import argparse
 
 
-# to work with directories relative to ROS packages
-from rospkg import RosPack
-# determine ROS workspace directory
-rp = RosPack()
-# determine ROS workspace directory where data is saved
-package_path = rp.get_path('quad_control')
+# # to work with directories relative to ROS packages
+# from rospkg import RosPack
+# # determine ROS workspace directory
+# rp = RosPack()
+# # determine ROS workspace directory where data is saved
+# package_path = rp.get_path('quad_control')
+# # import sys
 # import sys
-import sys
-sys.path.insert(0, package_path)
+# sys.path.insert(0, package_path)
 # import trajectories dictionaries
-from scripts.TrajectoryPlanner import trajectories_dictionary
+
+import rospkg
+# get an instance of RosPack with the default search paths
+rospack = rospkg.RosPack()
+# get the file path for rospy_tutorials
+# rospack.get_path('quad_control')
+import sys
+sys.path.insert(0, rospack.get_path('quad_control'))
+rospy.logwarn(sys.path)
+from src.TrajectoryPlanner import trajectories_dictionary
 
 
 class TrajectorySelectionPlugin(Plugin):

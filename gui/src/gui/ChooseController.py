@@ -12,8 +12,15 @@ from quad_control.srv import SrvControllerChangeByStr
 
 import argparse
 
+
+import rospkg
+# get an instance of RosPack with the default search paths
+rospack = rospkg.RosPack()
+# get the file path for rospy_tutorials
+import sys
+sys.path.insert(0, rospack.get_path('quad_control'))
 # no need to get quad_control path, since it is package; import controllers dictionary
-from scripts.controllers_hierarchical.fully_actuated_controllers import controllers_dictionary
+from src.controllers_hierarchical.fully_actuated_controllers import controllers_dictionary
 
 class ChooseControllerPlugin(Plugin):
 

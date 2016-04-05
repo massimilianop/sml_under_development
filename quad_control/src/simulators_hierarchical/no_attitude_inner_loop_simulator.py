@@ -7,10 +7,10 @@ with no attitude inner loop.
 
 import numpy as np
 import utilities.utility_functions as uts
-import simulator as sim
+# import simulator as sim
+import simulator
 
-
-class NoAttitudeInnerLoopSimulator(sim.Simulator):
+class NoAttitudeInnerLoopSimulator(simulator.Simulator):
 
 
     @classmethod
@@ -35,7 +35,7 @@ class NoAttitudeInnerLoopSimulator(sim.Simulator):
             initial_state=None,
             initial_control=None,
             mass=1.442, neutral_throttle=1484, acro_rpp=4.5):
-        sim.Simulator.__init__(self, initial_time, initial_state,
+        simulator.Simulator.__init__(self, initial_time, initial_state,
             initial_control)
         self.__mass = mass
         self.__neutral_throttle = neutral_throttle
@@ -55,19 +55,21 @@ class NoAttitudeInnerLoopSimulator(sim.Simulator):
         
     def reset(self, initial_time=0.0, initial_state=None,
             initial_control=None):
-        sim.Simulator.reset(self, initial_time, initial_state, initial_control)
+        simulator.Simulator.reset(self, initial_time, initial_state, initial_control)
         
         
     def vector_field(self, time, state, control):
+        
         
         position = np.array(state[0:3])
         velocity = np.array(state[3:6])
         #TODO make sure that this is a rotation matrix
         # for example, convert to euler angles and back
         rotation = np.reshape(state[6:15], (3,3))
-        versor = rotation.dot(uts.E3_VERSOR)
+        versor   = rotation.dot(uts.E3_VERSOR)
+        
         throttle = control[0]
-        omega = np.array(control[1:4])
+        omega    = np.array(control[1:4])
         
         dot_p = np.array(velocity)
         dot_v = throttle/self.__mass*versor - uts.GRAVITY*uts.E3_VERSOR
@@ -79,11 +81,11 @@ class NoAttitudeInnerLoopSimulator(sim.Simulator):
             
             
         
-"""Test"""
+# """Test"""
 
-string = NoAttitudeInnerLoopSimulator.to_string()
-print string
-sim = NoAttitudeInnerLoopSimulator.from_string(string)
-print sim
-print sim.vector_field(0.0, np.ones(15), np.ones(4))
+# string = NoAttitudeInnerLoopSimulator.to_string()
+# print string
+# sim = NoAttitudeInnerLoopSimulator.from_string(string)
+# print sim
+# print sim.vector_field(0.0, np.ones(15), np.ones(4))
 
