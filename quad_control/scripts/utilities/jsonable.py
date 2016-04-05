@@ -1,7 +1,7 @@
 """This module implements the class Jsonable."""
 
 
-import json     
+import json
 import inspect
 import numpy as np
 
@@ -46,11 +46,14 @@ class Jsonable:
             if arg in cls.inner.keys():
                 val = (inner[arg].__name__, inner[arg].to_string())
             elif type(defs[i]) is np.ndarray:
-                val = list(defs[i])
+                val = str(list(defs[i]))
             else:
                 val = defs[i]
             arg_dic[arg] = val
-        return json.dumps(arg_dic, sort_keys=True, indent=4, separators=(',', ':') )
+        string = json.dumps(arg_dic, indent=4, separators=(', ', ':\n\t'))
+        string = string.replace('"[','[')
+        string = string.replace(']"',']')
+        return string
         
         
     @classmethod

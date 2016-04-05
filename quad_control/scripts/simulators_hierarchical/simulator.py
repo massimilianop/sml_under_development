@@ -4,6 +4,7 @@
 import numpy as np
 import scipy.integrate as spi
 import json
+from utilities import jsonable as js
 
 
 
@@ -36,7 +37,7 @@ def stabilize_mode_command_to_thrust_and_yaw_rate(command):
 
 
 
-class Simulator(Jsonable):
+class Simulator(js.Jsonable):
 
 
     @classmethod
