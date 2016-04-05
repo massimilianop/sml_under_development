@@ -44,9 +44,6 @@ class Jsonable:
         max_length = 0
         for i in range(len(defs)):
             arg = args[i+1]
-            la = len(arg)
-            if la > max_length:
-                max_length = la
             if arg in cls.inner.keys():
                 val = (inner[arg].__name__, inner[arg].to_string())
             elif type(defs[i]) is np.ndarray:
