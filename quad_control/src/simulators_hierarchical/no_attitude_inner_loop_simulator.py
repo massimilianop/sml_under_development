@@ -70,15 +70,16 @@ class NoAttitudeInnerLoopSimulator(sm.Simulator):
         
     def vector_field(self, time, state, control):
         
+        
         position = np.array(state[0:3])
         velocity = np.array(state[3:6])
         #TODO make sure that this is a rotation matrix
         # for example, convert to euler angles and back
         rotation = np.reshape(state[6:15], (3,3))
-        
-        versor = rotation.dot(uts.E3_VERSOR)
+
+        versor   = rotation.dot(uts.E3_VERSOR)
         throttle = control[0]
-        omega = np.array(control[1:4])
+        omega    = np.array(control[1:4])
         
         dot_p = np.array(velocity)
         dot_v = throttle/self.mass*versor - uts.GRAVITY*uts.E3_VERSOR
