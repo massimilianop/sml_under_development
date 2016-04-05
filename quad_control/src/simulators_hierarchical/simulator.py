@@ -20,7 +20,7 @@ def acro_mode_command_to_throttle_and_angular_velocity(
     ang_vel_cmd[1] = command[1]
     ang_vel_cmd[2] = command[3]
     ths = acro_rpp*4500.0/100.0*np.pi/180.0
-    throttle = throttle_gain*throttle_cmd/mass
+    throttle = throttle_gain*throttle_cmd
     ang_vel = np.zeros(3)
     ang_vel[0] =  (ang_vel_cmd[0] - 1500.0)/500.0*ths
     ang_vel[1] = -(ang_vel_cmd[1] - 1500.0)/500.0*ths
@@ -101,7 +101,6 @@ class Simulator(js.Jsonable):
     
     def get_state(self):
         return np.array(self.state)
-        
         
         
     def get_position(self):

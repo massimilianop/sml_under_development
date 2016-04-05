@@ -7,12 +7,11 @@ with no attitude inner loop.
 
 import numpy as np
 import utilities.utility_functions as uts
-# import simulator as sim
-import simulator
+import simulator as sm
+import rospy
 
 
-
-class NoAttitudeInnerLoopSimulator(simulator.Simulator):
+class NoAttitudeInnerLoopSimulator(sm.Simulator):
 
 
     @classmethod
@@ -34,15 +33,20 @@ class NoAttitudeInnerLoopSimulator(simulator.Simulator):
     # instead of hardcoding them
     # (also in the parameters_to_string method)
     def __init__(self, initial_time=0.0,
-            initial_state=None,
-            initial_control=None,
+            initial_position=np.zeros(3),
+            initial_velocity=np.zeros(3),
+            initial_rotation=np.zeros(3),
+            initial_control=np.zeros(4),
             mass=1.442,
             neutral_throttle=1484,
             acro_rpp=4.5
             ):
-            
-        simulator.Simulator.__init__(self, initial_time, initial_state,
-            initial_control)
+        
+        pos = initial_position
+        vel = initial_velocity
+        rot = np.reshape(uts.GetRotFromEulerAnglesDeg(np.array(initial_rotation)), 9)
+        initial_state = np.concatenate([pos, vel, rot])
+        sm.Simulator.__init__(self, initial_time, initial_state, initial_control)
         self.mass = mass
         self.neutral_throttle = neutral_throttle
         self.acro_rpp = acro_rpp
@@ -54,11 +58,11 @@ class NoAttitudeInnerLoopSimulator(simulator.Simulator):
         
         
     def get_attitude(self):
-        return uts.GetEulerAnglesDeg(np.reshape(self.state, (3,3)))
+        return uts.GetEulerAnglesDeg(np.reshape(self.state[6:15], (3,3)))
         
         
     def set_control(self, command):
-        throttle, ang_vel = simulator.acro_mode_command_to_throttle_and_angular_velocity(
+        throttle, ang_vel = sm.acro_mode_command_to_throttle_and_angular_velocity(
             command, self.mass, self.throttle_gain, self.acro_rpp)
         self.control[0] = throttle
         self.control[1:4] = ang_vel
@@ -71,12 +75,14 @@ class NoAttitudeInnerLoopSimulator(simulator.Simulator):
         #TODO make sure that this is a rotation matrix
         # for example, convert to euler angles and back
         rotation = np.reshape(state[6:15], (3,3))
+        
         versor = rotation.dot(uts.E3_VERSOR)
         throttle = control[0]
         omega = np.array(control[1:4])
         
         dot_p = np.array(velocity)
         dot_v = throttle/self.mass*versor - uts.GRAVITY*uts.E3_VERSOR
+        rospy.logwarn(dot_v)
         dot_r = rotation.dot(uts.skew(omega))
         
         return np.concatenate([dot_p, dot_v, np.reshape(dot_r, 9)])
@@ -87,9 +93,9 @@ class NoAttitudeInnerLoopSimulator(simulator.Simulator):
         
 """Test"""
 
-#string = NoAttitudeInnerLoopSimulator.to_string()
-#print string
-#sim = NoAttitudeInnerLoopSimulator.from_string(string)
+string = NoAttitudeInnerLoopSimulator.to_string()
+print string
+sim = NoAttitudeInnerLoopSimulator.from_string(string)
 #print sim
 #print sim.vector_field(0.0, np.ones(15), np.ones(4))
 
