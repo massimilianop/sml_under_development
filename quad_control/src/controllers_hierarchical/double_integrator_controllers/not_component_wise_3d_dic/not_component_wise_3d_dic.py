@@ -2,24 +2,11 @@
 
 import numpy
 
-from numpy import *
-
-#--------------------------------------------------------------------------#
-# Some functions
-
-from numpy import cos as c
-from numpy import sin as s
-
-from numpy import sqrt  as sqrt
-from numpy import zeros as zeros
-from numpy import outer as outer
-
-
-import double_integrator_controller as dic
-
 import json
 
-class DoubleIntegratorBoundedNotComponentWiseController(dic.DoubleIntegratorController): 
+from .. import double_integrator_controller as dic
+
+class NotComponentWise3DDIC(dic.DoubleIntegratorController): 
 
 
     @classmethod
@@ -60,7 +47,7 @@ class DoubleIntegratorBoundedNotComponentWiseController(dic.DoubleIntegratorCont
 
     def __init__(self,
             natural_frequency       = 0.5,
-            damping                 = sqrt(2.0)/2.0,
+            damping                 = numpy.sqrt(2.0)/2.0,
             proportional_gain       = None,
             derivative_gain         = None,
             position_saturation     = 1.0,
@@ -106,11 +93,11 @@ class DoubleIntegratorBoundedNotComponentWiseController(dic.DoubleIntegratorCont
 
     def _sat(self,x):
 
-        sat     =  1.0/sqrt(1.0 + x**2)
+        sat     =  1.0/numpy.sqrt(1.0 + x**2)
         Dsat    =  -x*(1.0 + x**2)**(-3.0/2.0)
         D2sat   =  (-1.0 + 2.0*x**2)*(1.0 + x**2)**(-5.0/2.0)
         # primitive of sat(x)*x
-        sat_Int =  sqrt(1.0 + x**2) - 1.0
+        sat_Int =  numpy.sqrt(1.0 + x**2) - 1.0
 
         return (sat,Dsat,D2sat,sat_Int)
 
@@ -141,7 +128,7 @@ class DoubleIntegratorBoundedNotComponentWiseController(dic.DoubleIntegratorCont
             # matrix
             h1_p   = kp*Dsat_p/sigma_p*outer(p,p)/pp + kp*sat_p*I
             # tensor
-            h1_p_p = zeros((3,3,3));
+            h1_p_p = numpy.zeros((3,3,3));
             for i in range(3):
                 ee = I[:,i];
                 h1_p_p[:,:,i] = kp*D2sat_p/sigma_p**2*outer(p,p)/(pp**2)*dot(p,ee)       + \
@@ -151,7 +138,7 @@ class DoubleIntegratorBoundedNotComponentWiseController(dic.DoubleIntegratorCont
                                 kp*Dsat_p/sigma_p*outer(ee,p)/pp
         else:
             h1_p          = kp*I
-            h1_p_p = zeros((3,3,3))
+            h1_p_p = numpy.zeros((3,3,3))
 
         # vector
         h2     = kv*sat_v*v
@@ -159,7 +146,7 @@ class DoubleIntegratorBoundedNotComponentWiseController(dic.DoubleIntegratorCont
             # matrix
             h2_v   = kv*Dsat_v/sigma_v*outer(v,v)/vv + kv*sat_v*I
             # tensor
-            h2_v_v = zeros((3,3,3))
+            h2_v_v = numpy.zeros((3,3,3))
             for i in range(3):
                 ee = I[:,i]
                 h2_v_v[:,:,i] = kv*D2sat_v/sigma_v**2*outer(v,v)/(vv**2)*dot(v,ee)    + \
@@ -169,7 +156,7 @@ class DoubleIntegratorBoundedNotComponentWiseController(dic.DoubleIntegratorCont
                                 kv*Dsat_v/sigma_v*outer(ee,v)/vv
         else:
             h2_v   = kv*I
-            h2_v_v = zeros((3,3,3))
+            h2_v_v = numpy.zeros((3,3,3))
 
 
         # vector
@@ -185,7 +172,7 @@ class DoubleIntegratorBoundedNotComponentWiseController(dic.DoubleIntegratorCont
         # tensor
         u_v_v = - h2_v_v;
 
-        u_p_v = zeros((3,3,3));
+        u_p_v = numpy.zeros((3,3,3));
 
 
         beta   = 1.0/(2.0*kp);
@@ -229,7 +216,7 @@ class DoubleIntegratorBoundedNotComponentWiseController(dic.DoubleIntegratorCont
         
         
 # Test
-con = DoubleIntegratorBoundedNotComponentWiseController()
+# con = DoubleIntegratorBoundedNotComponentWiseController()
 #print con
-#print con.output(zeros(3), zeros(3))
+#print con.output(numpy.zeros(3), numpy.zeros(3))
 #print con.parameters_to_string()

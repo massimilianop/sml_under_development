@@ -1,42 +1,18 @@
 #!/usr/bin/python
 
-import os
+import numpy
 
-def cls():
-    os.system(['clear','cls'][os.name == 'nt'])
-
-# now, to clear the screen
-cls()
-
-# for ploting
-import matplotlib.pyplot as plt
-
-# for integrating
-from scipy.integrate import ode
-
-from numpy import *
-
-#--------------------------------------------------------------------------#
-# Some functions
-
-from numpy import cos as c
-from numpy import sin as s
-
-from numpy import sqrt  as sqrt
-from numpy import zeros as zeros
-
-import double_integrator_controller as dic
 import json
 
+from .. import double_integrator_controller as dic
 
-
-class DoubleIntegratorBoundedAndComponentWiseController(dic.DoubleIntegratorController):
+class ComponentWise3DDIC(dic.DoubleIntegratorController):
 
 
     @classmethod
     def parameters_to_string(cls,
             natural_frequency       = 0.5,
-            damping                 = sqrt(2.0)/2.0,
+            damping                 = numpy.sqrt(2.0)/2.0,
             proportional_gain       = None,
             derivative_gain         = None,
             position_saturation     = 1.0,
@@ -69,7 +45,7 @@ class DoubleIntegratorBoundedAndComponentWiseController(dic.DoubleIntegratorCont
     # The class "constructor" - It's actually an initializer
     def __init__(self,
             natural_frequency       = 0.5,
-            damping                 = sqrt(2.0)/2.0,
+            damping                 = numpy.sqrt(2.0)/2.0,
             proportional_gain       = None,
             derivative_gain         = None,
             position_saturation     = 1.0,
@@ -112,11 +88,11 @@ class DoubleIntegratorBoundedAndComponentWiseController(dic.DoubleIntegratorCont
 
     def _sat(self,x):
 
-        sat     =  x/sqrt(1.0 + x**2)
+        sat     =  x/numpy.sqrt(1.0 + x**2)
         Dsat    =  (1.0 + x**2)**(-3.0/2.0)
         D2sat   =  -3.0*x*(1.0 + x**2)**(-5.0/2.0)
         # primitive of saturation function
-        sat_Int =  sqrt(1.0 + x**2) - 1.0
+        sat_Int =  numpy.sqrt(1.0 + x**2) - 1.0
 
         return (sat,Dsat,D2sat,sat_Int)
 
@@ -207,20 +183,20 @@ class DoubleIntegratorBoundedAndComponentWiseController(dic.DoubleIntegratorCont
 
     def  _DI_Bounded_NOT_Component(self,p,v):
 
-        u      = zeros(3)
-        u_p    = zeros((3,3))
-        u_v    = zeros((3,3))
-        u_p_p  = zeros((3,3,3))
-        u_v_v  = zeros((3,3,3))
-        u_p_v  = zeros((3,3,3))
+        u      = numpy.zeros(3)
+        u_p    = numpy.zeros((3,3))
+        u_v    = numpy.zeros((3,3))
+        u_p_p  = numpy.zeros((3,3,3))
+        u_v_v  = numpy.zeros((3,3,3))
+        u_p_v  = numpy.zeros((3,3,3))
 
-        # V     = zeros(1)
-        # VD    = zeros(1)
+        # V     = numpy.zeros(1)
+        # VD    = numpy.zeros(1)
 
-        V_p   = zeros(3)
-        V_v   = zeros(3)
-        V_v_p = zeros((3,3))
-        V_v_v = zeros((3,3))
+        V_p   = numpy.zeros(3)
+        V_v   = numpy.zeros(3)
+        V_v_p = numpy.zeros((3,3))
+        V_v_v = numpy.zeros((3,3))
 
         u[0],u_p[0,0],u_v[0,0],u_p_p[0,0,0],u_v_v[0,0,0],u_p_v[0,0,0],V0,VD0,V_p[0],V_v[0],V_v_p[0,0],V_v_v[0,0] =  \
             self._DI_Bounded_Component(p[0],v[0])
@@ -239,7 +215,7 @@ class DoubleIntegratorBoundedAndComponentWiseController(dic.DoubleIntegratorCont
         
        
 # Test
-con = DoubleIntegratorBoundedAndComponentWiseController()
+# con = DoubleIntegratorBoundedAndComponentWiseController()
 #print con
-#print con.output(zeros(3), zeros(3))
+#print con.output(numpy.zeros(3), numpy.zeros(3))
 #print con.parameters_to_string()
