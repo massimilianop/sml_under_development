@@ -10,7 +10,7 @@
 
 import numpy
 import rospy
-from utility_functions import roll_pitch,bound,Rz,GetRotFromEulerAngles
+from utilities.utility_functions import roll_pitch,bound,Rz,GetRotFromEulerAngles
 # we use pi
 import math
 

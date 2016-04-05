@@ -44,7 +44,7 @@ from rospkg import RosPack
 import numpy
 from numpy import *
 
-from utility_functions import GetRotFromEulerAnglesDeg,Velocity_Filter,Median_Filter
+from utilities.utility_functions import GetRotFromEulerAnglesDeg,Velocity_Filter,Median_Filter
 
 # import list of available trajectories
 from TrajectoryPlanner import trajectories_dictionary

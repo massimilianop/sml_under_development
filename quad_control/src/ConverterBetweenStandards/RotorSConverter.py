@@ -8,7 +8,7 @@ import numpy
 # node will publish motor speeds
 from mav_msgs.msg import Actuators
 
-from utility_functions import skew,unskew,quaternion_to_rot,Velocity_Filter,quaternion_from_unit_vector,bound,GetEulerAnglesDeg
+from utilities.utility_functions import skew,unskew,quaternion_to_rot,Velocity_Filter,quaternion_from_unit_vector,bound,GetEulerAnglesDeg
 
 # import firefly parameters: mass, inertia, ...
 import firefly_parameters

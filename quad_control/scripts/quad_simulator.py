@@ -34,7 +34,8 @@ from numpy import cos as c
 from numpy import sin as s
 
 
-from utility_functions import GetEulerAnglesDeg
+# from utility_functions import GetEulerAnglesDeg
+from utilities.utility_functions import GetEulerAnglesDeg
 
 import simulators_hierarchical.simulators_dictionary as shsd
 
@@ -318,10 +319,10 @@ class SimulatorNode():
             marker.pose.position.z = simstate[2]
 
             # quaternion
-            marker.pose.orientation.x = simstate[0]
-            marker.pose.orientation.y = simstate[1]
-            marker.pose.orientation.z = simstate[2]
-            marker.pose.orientation.w = simstate[2]          
+            # marker.pose.orientation.x = simstate[0]
+            # marker.pose.orientation.y = simstate[1]
+            # marker.pose.orientation.z = simstate[2]
+            # marker.pose.orientation.w = simstate[2]          
 
             pub_rviz.publish( marker )
 

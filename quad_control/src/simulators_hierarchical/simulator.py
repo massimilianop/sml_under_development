@@ -82,8 +82,8 @@ class Simulator(js.Jsonable):
             return self.vector_field(t, x, self.__control)
         self.__solver = spi.ode(f).set_integrator('dopri5')
                 
-        self.__time_record = []
-        self.__state_record = [[] for index in range(self.get_state_size())]
+        self.__time_record    = []
+        self.__state_record   = [[] for index in range(self.get_state_size())]
         self.__control_record = [[] for index in range(self.get_control_size())]
                 
                 
