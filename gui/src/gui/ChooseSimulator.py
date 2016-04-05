@@ -29,6 +29,17 @@ from quad_control.srv import *
 import argparse
 
 
+
+import rospkg
+# get an instance of RosPack with the default search paths
+rospack = rospkg.RosPack()
+# get the file path for rospy_tutorials
+import sys
+sys.path.insert(0, rospack.get_path('quad_control'))
+# no need to get quad_control path, since it is package; import controllers dictionary
+from src.simulators_hierarchical import simulators_dictionary
+
+
 class ChooseSimulatorPlugin(Plugin):
 
 
@@ -81,16 +92,214 @@ class ChooseSimulatorPlugin(Plugin):
         # BUTTON TO SET DESIRED SIMULATOR
         self._widget.SetSimulatorButton.clicked.connect(self.SetSimulator)
 
+        # ---------------------------------------------- #
+        
+        # button to request service for setting new controller, with new parameters
+        self._widget.SetSimulatorButton.clicked.connect(self.__get_new_simulator_parameters)
 
-        # Default values for buttons: Fully Actuated
-        self._widget.Mass.setValue(1.442)
-        self._widget.AttitudeGain.setValue(0.5)
-        self._widget.ThrottleNeutral.setValue(1484)
+        # if item in list is selected, print corresponding message
+        self._widget.ListSimulatorsWidget.itemClicked.connect(self.__simulator_item_clicked)
 
-        # Default values for buttons: Non Fully Actuated
-        self._widget.Mass_2.setValue(1.442)
-        self._widget.ThrottleNeutral_2.setValue(1484)
+        self.__reset_simulators_widget()
 
+        # button for resetting list of available controllers
+        self._widget.ResetSimulatorsList.clicked.connect(self.__reset_simulators_widget)
+
+    def __reset_simulators_widget(self):
+        """ Clear widget with simulators list and print it again """
+        
+        # clear items from widget
+        self._widget.ListSimulatorsWidget.clear()
+
+        # create list of available controller classes based on **imported dictionary** 
+        count = 0
+        for key in simulators_dictionary.simulators_dictionary.keys():
+            # print all elements in dictionary
+            self._widget.ListSimulatorsWidget.insertItem(count,key)
+            count +=1
+
+        # default selected class
+        self.__selected_class = simulators_dictionary.simulators_dictionary['Default']
+
+        # selected class may depend on other (parent) classes
+        # initialize dictionary which will be input to construct class object
+        self.__input_dictionary_for_selected_simulator = {} 
+
+
+    #TODO: this needs a correction: it can return dictionary
+    def __get_recursive_class(self,dictionary,list_of_names):
+        """ From given dictionary and list of names get dictionary **or** selected class"""
+
+        # this may yield a dictionary with classes for values, or may yield a class
+        dictionary_selected_class = dictionary[list_of_names[0]]
+
+        # this try/except is necessary since dictionary_selected_class may not be dictionary
+        try:
+            if any(dictionary_selected_class) == True:
+                # go deeper in the dictionary and get next dictionary or class
+                return self.__get_recursive_class(dictionary_selected_class,list_of_names[1:])
+
+        except Exception, e:
+            #
+            selected_class = dictionary_selected_class
+            return selected_class         
+
+
+    def __simulator_item_clicked(self):
+        """ what to do when user clicks on an option """
+        
+        # get string that user selected
+        string = self._widget.ListSimulatorsWidget.currentItem().text()
+
+        # string is composed of string separated by :
+        # split string in portions
+        list_of_names = string.split(':')
+
+
+        if len(list_of_names) == 1:
+            # is list is composed of one string 
+            
+            selected_class             = simulators_dictionary.simulators_dictionary[list_of_names[0]]
+
+            # save selected class and its names, to be used in printing message to user
+            self.__selected_class_name = list_of_names[0]
+            self.__selected_class      = selected_class
+
+            if any(selected_class.inner) == False:
+                self.__print_simulator_message()
+            else:
+                # if selected_class depends on other classes, and needs more user information
+
+                # initialize dictionary
+                # this dictionary contains **abstracts** of classes
+                # TODO: maybe have default controllers in constructors of classes
+                self.__input_dictionary_for_selected_simulator = selected_class.inner
+
+                # clear items from widget
+                self._widget.ListSimulatorsWidget.clear()
+
+                self._widget.ListSimulatorsWidget.addItem(string)
+                for key,item in selected_class.inner.items():
+                    # each item is itself a dictionary
+                    for key_inner,item_inner in item.items():
+                        self._widget.ListSimulatorsWidget.addItem(string+':'+key+':'+key_inner)
+        else:
+            # if list is composed of more than one string
+
+            dictionary     = self.__selected_class.inner
+            selected_class = self.__get_recursive_class(dictionary,list_of_names[1:])
+
+            # restrict class based on user input
+            self.__input_dictionary_for_selected_simulator[list_of_names[1]] = selected_class
+
+            print_message_flag = True
+            for key,selected_class in self.__input_dictionary_for_selected_simulator.items():
+
+                # if selected_class depends on other classes, and needs more user information
+                if any(selected_class.inner) == True:
+
+                    # one class unspecificed is enough to set flag to false
+                    print_message_flag = False
+
+                    # clear items from widget
+                    self._widget.ListSimulatorsWidget.clear()
+
+                    self._widget.ListSimulatorsWidget.addItem(list_of_names[0])
+                    for key,item in selected_class.inner.items():
+                        # each item is itself a dictionary
+                        for key_inner,item_inner in item.items():
+                            self._widget.ListSimulatorsWidget.addItem(string+':'+key+':'+key_inner)
+
+            if print_message_flag == True:
+                self.__print_simulator_message()
+
+        return
+
+    def __recursion_dictionary_for_selected_class(self,selected_class,selected_simulator_class_name):
+        
+        # initialize empty dictionary
+        parameters_dictionary = {}
+        # initialize counter
+        count = 0
+        for key,item in selected_class.inner.items():
+            
+            selected_class_inner        = item[selected_simulator_class_name[1:][count]]
+            parameters_dictionary_inner = self.__recursion_dictionary_for_selected_class(selected_class_inner,selected_simulator_class_name[1:][count])
+            
+            parameters_dictionary[key]  = selected_class_inner(**parameters_dictionary_inner)
+            count += 1
+
+        return parameters_dictionary
+
+
+    def __print_simulator_message(self):
+        """Print message with parameters associated to chosen controller class"""
+
+        parameters_dictionary = self.__input_dictionary_for_selected_simulator
+
+        string                = self.__selected_class.to_string(**parameters_dictionary)
+        
+        # print message on GUI
+        self._widget.SimulatorMessageInput.setPlainText(string)
+
+     
+        # selected_simulator_class_name = self.__chain_selected_simulators_names
+        # # get class from dictionary of classes
+        # selected_class        = simulators_dictionary.simulators_dictionary[selected_simulator_class_name[0]]
+        
+        # parameters_dictionary = self.__recursion_dictionary_for_selected_class(selected_class,selected_simulator_class_name[1:])
+
+        # string                = selected_class.to_string(**parameters_dictionary)
+        
+        # # print message on GUI
+        # self._widget.ControllerMessageInput.setPlainText(string)
+
+        return 
+
+    def __get_new_simulator_parameters(self):
+        """Request service for new controller with parameters chosen by user"""
+
+        # get string that user modified with new parameters
+        string              = self._widget.SimulatorMessageInput.toPlainText()
+        # get new parameters from string
+        parameters          = string
+
+        rospy.logwarn(self.__selected_class_name)
+        rospy.logwarn(parameters)
+
+
+        # request service
+        try: 
+            # time out of one second for waiting for service
+            rospy.wait_for_service("/"+self.namespace+'ServiceChangeSimulator',2.0)
+            rospy.logwarn('1111')
+            try:
+                rospy.logwarn('222')
+                # RequestingController = rospy.ServiceProxy("/"+self.namespace+'ServiceChangeController', SrvControllerChange)
+                RequestingController = rospy.ServiceProxy("/"+self.namespace+'ServiceChangeSimulator', SrvControllerChangeByStr)
+
+                reply = RequestingController(controller_name = self.__selected_class_name, parameters = parameters)
+
+                if reply.received == True:
+                    # if controller receives message
+                    self._widget.Success.setChecked(True) 
+                    self._widget.Failure.setChecked(False) 
+
+
+            except rospy.ServiceException, e:
+                rospy.logwarn('Proxy for service that sets controller FAILED')
+                self._widget.Success.setChecked(False) 
+                self._widget.Failure.setChecked(True) 
+                # print "Service call failed: %s"%e
+            
+        except:
+            rospy.logwarn('Timeout for service that sets controller')
+            self._widget.Success.setChecked(False) 
+            self._widget.Failure.setChecked(True) 
+            # print "Service not available ..."        
+            pass                 
+
+        return
 
     #@Slot(bool)
     def SetSimulator(self):

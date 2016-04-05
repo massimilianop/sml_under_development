@@ -10,12 +10,12 @@ import utilities.utility_functions as uts
 # import simulator as sim
 import simulator
 
-class NoAttitudeInnerLoopSimulator(simulator.Simulator):
+class AttitudeInnerLoopSimulator(simulator.Simulator):
 
 
     @classmethod
     def description(cls):
-        return "Iris+ simulator without attitude inner loop"
+        return "Iris+ simulator with attitude inner loop"
 
     
     @classmethod
