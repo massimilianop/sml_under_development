@@ -12,9 +12,10 @@ setup_args = generate_distutils_setup(
         'yaw_controllers',
         'systems_functions',
         'quadrotor_tracking_controllers_hierarchical',
-        'controllers_hierarchical'
+        'controllers_hierarchical',
+        'TrajectoryPlanner'
         ],
-    package_dir={'': 'scripts'},
+    package_dir={'': 'src'},
 )
 
 setup(**setup_args)
