@@ -99,14 +99,14 @@ class TrajectorySelectionPlugin(Plugin):
         # get class from dictionary of classes
         selected_class      = trajectories_dictionary.trajectories_dictionary[selected_class_name]
         # get message for chosen class
-        string              = selected_class.parameters_to_string()
+        string              = selected_class.to_string()
         # print message on GUI
         self._widget.TrajectoryMessageInput.setPlainText(string)
 
         # get message associated to offset and rotation
-        string_offset_and_rotation = selected_class.offset_and_rotation_to_string()
+        #string_offset_and_rotation = selected_class.offset_and_rotation_to_string()
         # print message on GUI
-        self._widget.MessageOffsetAndRotation.setPlainText(string_offset_and_rotation)
+        #self._widget.MessageOffsetAndRotation.setPlainText(string_offset_and_rotation)
 
         return 
 
@@ -120,12 +120,12 @@ class TrajectorySelectionPlugin(Plugin):
         # get string that user modified with new parameters
         string              = self._widget.TrajectoryMessageInput.toPlainText()
         # get new parameters from string
-        parameters          = selected_class.string_to_parameters(string)
+        #parameters          = selected_class.string_to_parameters(string)
 
         # get string that user modified with new offset and rotation
-        string_offset_and_rotation = self._widget.MessageOffsetAndRotation.toPlainText()
+        #string_offset_and_rotation = self._widget.MessageOffsetAndRotation.toPlainText()
         # get offset and rotation from string
-        offset, rotation           = selected_class.string_to_offset_and_rotation(string_offset_and_rotation)
+        #offset, rotation           = selected_class.string_to_offset_and_rotation(string_offset_and_rotation)
 
         # request service
         try: 
@@ -135,8 +135,9 @@ class TrajectorySelectionPlugin(Plugin):
             try:
                 SettingTrajectory = rospy.ServiceProxy("/"+self.namespace+'ServiceTrajectoryDesired', SrvTrajectoryDesired)
 
-                reply = SettingTrajectory(selected_class_name,offset,rotation,parameters)
-
+                #reply = SettingTrajectory(selected_class_name,offset,rotation,parameters)
+                reply = SettingTrajectory(selected_class_name, string)
+                    
                 if reply.received == True:
                     # if controller receives message
                     self._widget.Success.setChecked(True) 

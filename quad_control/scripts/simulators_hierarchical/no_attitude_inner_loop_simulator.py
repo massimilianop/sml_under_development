@@ -8,10 +8,14 @@ with no attitude inner loop.
 import numpy as np
 import utilities.utility_functions as uts
 import simulator as sim
-import json
 
 
 class NoAttitudeInnerLoopSimulator(sim.Simulator):
+
+
+    @classmethod
+    def description(cls):
+        return "Iris+ simulator without attitude inner loop"
 
     
     @classmethod
@@ -22,33 +26,6 @@ class NoAttitudeInnerLoopSimulator(sim.Simulator):
     @classmethod
     def get_control_size(cls):
         return 4
-    
-    
-    @classmethod
-    def parameters_to_string(cls,
-            mass=1.442,
-            neutral_throttle=1484,
-            acro_rpp=4.5):
-        
-        dic = {
-            'mass':mass,
-            'neutral_throttle': neutral_throttle,
-            'acro_rpp': acro_rpp
-        }
-        
-        return json.dumps(dic)
-        
-        
-    @classmethod
-    def string_to_parameters(cls, string):
-        
-        dic = json.loads(string)
-        
-        mass = dic['mass']
-        neutral_throttle = dic['neutral_throttle']
-        acro_rpp = dic['acro_rpp']
-        
-        return mass, neutral_throttle, acro_rpp
     
     
     #TODO maybe take the defaults parameters from rospy.getparam
@@ -63,7 +40,7 @@ class NoAttitudeInnerLoopSimulator(sim.Simulator):
         self.__mass = mass
         self.__neutral_throttle = neutral_throttle
         self.__acro_rpp = acro_rpp
-        self.__gain_throttle = mass*self.get_gravity()/neutral_throttle
+        self.__gain_throttle = mass*uts.GRAVITY/neutral_throttle
         
         
     def get_parameters(self):
@@ -88,12 +65,12 @@ class NoAttitudeInnerLoopSimulator(sim.Simulator):
         #TODO make sure that this is a rotation matrix
         # for example, convert to euler angles and back
         rotation = np.reshape(state[6:15], (3,3))
-        versor = rotation.dot(self.get_e3())
+        versor = rotation.dot(uts.E3_VERSOR)
         throttle = control[0]
         omega = np.array(control[1:4])
         
         dot_p = np.array(velocity)
-        dot_v = throttle/self.__mass*versor - self.get_gravity()*self.get_e3()
+        dot_v = throttle/self.__mass*versor - uts.GRAVITY*uts.E3_VERSOR
         dot_r = rotation.dot(uts.skew(omega))
         
         return np.concatenate([dot_p, dot_v, np.reshape(dot_r, 9)])
@@ -104,11 +81,9 @@ class NoAttitudeInnerLoopSimulator(sim.Simulator):
         
 """Test"""
 
-#string = NoAttitudeInnerLoopSimulator.parameters_to_string()
-#print string
-#parameters = NoAttitudeInnerLoopSimulator.string_to_parameters(string)
-#my_sim = NoAttitudeInnerLoopSimulator(0.0, None, None, *parameters)
-#print my_sim
-#my_sim.run(0.01)
-#print my_sim
+string = NoAttitudeInnerLoopSimulator.to_string()
+print string
+sim = NoAttitudeInnerLoopSimulator.from_string(string)
+print sim
+print sim.vector_field(0.0, np.ones(15), np.ones(4))
 

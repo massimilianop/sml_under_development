@@ -1,61 +1,19 @@
-import os
-import rospy
-import QtGui
+import os, rospy
+
+import QtGui, PyQt4.QtCore
+
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtGui import QWidget
 from PyQt4.QtCore import QObject, pyqtSignal
-import PyQt4.QtCore
-import pyqtgraph as pg
 
-# necessary to have gui as a client, asking controller to save data
-# from python_qt_binding.QtCore import QTimer, Slot
-# from python_qt_binding.QtCore import pyqtSlot
-
-
-import numpy
-
-# import analysis
-# import utils
-import subprocess
-
-
-
-# import services defined in quad_control
-# SERVICE BEING USED: Controller_srv
-from quad_control.srv import *
-
-# import message of the type controller_state
-# because this gui will be able to display the state of the controller
-from quad_control.msg import Controller_State
-
+# import services defined in quad_control; service being used: SrvControllerChangeByStr
+from quad_control.srv import SrvControllerChangeByStr
 
 import argparse
 
-
-
-
-
-# to work with directories relative to ROS packages
-from rospkg import RosPack
-# determine ROS workspace directory
-rp = RosPack()
-# determine ROS workspace directory where data is saved
-package_path = rp.get_path('quad_control')
-# import sys
-import sys
-sys.path.insert(0, package_path)
-# import trajectories dictionaries
-# from scripts.quadrotor_tracking_controllers_hierarchical import controllers_dictionary
-
-
-# from scripts.systems_functiosn.double_integrator_controllers import double_integrator_controllers_dictionaries
-
-
-# from scripts.controllers_hierarchical.fully_actuated_controllers import database
-
+# no need to get quad_control path, since it is package; import controllers dictionary
 from scripts.controllers_hierarchical.fully_actuated_controllers import controllers_dictionary
-
 
 class ChooseControllerPlugin(Plugin):
 
@@ -108,65 +66,75 @@ class ChooseControllerPlugin(Plugin):
         self._widget.SetIrisNeutralValue.clicked.connect(self.set_iris_neutral_value)
 
         # ---------------------------------------------- #
-        # ---------------------------------------------- #
         
         # button to request service for setting new controller, with new parameters
         self._widget.SetControllerButton.clicked.connect(self.__get_new_controller_parameters)
 
-        self.__reset_controllers_widget()
-
-    def __reset_controllers_widget(self):
-        
-        # create list of available controller classes based on dictionary 
-        count = 0
-        for key in controllers_dictionary.controllers_dictionary.keys():
-            self._widget.ListControllersWidget.insertItem(count,key)
-            count +=1
-
         # if item in list is selected, print corresponding message
         self._widget.ListControllersWidget.itemClicked.connect(self.__controller_item_clicked)
+
+        self.__reset_controllers_widget()
+
+        # button for resetting list of available controllers
+        self._widget.ResetControllersList.clicked.connect(self.__reset_controllers_widget)
+
+    def __reset_controllers_widget(self):
+        """ Clear widget with controllers list and print it again """
         
-        # 
-        self.__chain_selected_controllers_names = []
+        # clear items from widget
+        self._widget.ListControllersWidget.clear()
+
+        # create list of available controller classes based on **imported dictionary** 
+        count = 0
+        for key in controllers_dictionary.controllers_dictionary.keys():
+            # print all elements in dictionary
+            self._widget.ListControllersWidget.insertItem(count,key)
+            count +=1
 
         # default selected class
         self.__selected_class = controllers_dictionary.controllers_dictionary['NeutralController']
 
+        # selected class may depend on other (parent) classes
+        # initialize dictionary which will be input to construct class object
         self.__input_dictionary_for_selected_controller = {} 
 
 
+    #TODO: this needs a correction: it can return dictionary
     def __get_recursive_class(self,dictionary,list_of_names):
-        rospy.logwarn('222222222222')
-        rospy.logwarn(dictionary)
-
-        rospy.logwarn(list_of_names[0])
+        """ From given dictionary and list of names get dictionary **or** selected class"""
 
         # this may yield a dictionary with classes for values, or may yield a class
         dictionary_selected_class = dictionary[list_of_names[0]]
 
+        # this try/except is necessary since dictionary_selected_class may not be dictionary
         try:
             if any(dictionary_selected_class) == True:
+                # go deeper in the dictionary and get next dictionary or class
                 return self.__get_recursive_class(dictionary_selected_class,list_of_names[1:])
 
         except Exception, e:
+            #
             selected_class = dictionary_selected_class
             return selected_class         
 
+
     def __controller_item_clicked(self):
+        """ what to do when user clicks on an option """
         
-        # get selected class name on list of classes
+        # get string that user selected
         string = self._widget.ListControllersWidget.currentItem().text()
 
-        rospy.logwarn(string)
+        # string is composed of string separated by :
+        # split string in portions
         list_of_names = string.split(':')
-        rospy.logwarn('asasasasasas')
-        rospy.logwarn(list_of_names)
 
 
         if len(list_of_names) == 1:
-            rospy.logwarn(list_of_names)
-            selected_class        = controllers_dictionary.controllers_dictionary[list_of_names[0]]
+            # is list is composed of one string 
             
+            selected_class             = controllers_dictionary.controllers_dictionary[list_of_names[0]]
+
+            # save selected class and its names, to be used in printing message to user
             self.__selected_class_name = list_of_names[0]
             self.__selected_class      = selected_class
 
@@ -189,6 +157,7 @@ class ChooseControllerPlugin(Plugin):
                     for key_inner,item_inner in item.items():
                         self._widget.ListControllersWidget.addItem(string+':'+key+':'+key_inner)
         else:
+            # if list is composed of more than one string
 
             dictionary     = self.__selected_class.contained_objects()
             selected_class = self.__get_recursive_class(dictionary,list_of_names[1:])
@@ -196,15 +165,10 @@ class ChooseControllerPlugin(Plugin):
             # restrict class based on user input
             self.__input_dictionary_for_selected_controller[list_of_names[1]] = selected_class
 
-            rospy.logwarn(selected_class)
-
             print_message_flag = True
             for key,selected_class in self.__input_dictionary_for_selected_controller.items():
-                
-                rospy.logwarn(selected_class)
 
                 # if selected_class depends on other classes, and needs more user information
-                rospy.logwarn(any(selected_class.contained_objects()))
                 if any(selected_class.contained_objects()) == True:
 
                     # one class unspecificed is enough to set flag to false
@@ -273,16 +237,12 @@ class ChooseControllerPlugin(Plugin):
         # get new parameters from string
         parameters          = string
 
-        rospy.logwarn(parameters)
-
-
         # request service
         try: 
             # time out of one second for waiting for service
             rospy.wait_for_service("/"+self.namespace+'ServiceChangeController',2.0)
             
             try:
-                rospy.logwarn('33333333333333333')
                 # RequestingController = rospy.ServiceProxy("/"+self.namespace+'ServiceChangeController', SrvControllerChange)
                 RequestingController = rospy.ServiceProxy("/"+self.namespace+'ServiceChangeController', SrvControllerChangeByStr)
 

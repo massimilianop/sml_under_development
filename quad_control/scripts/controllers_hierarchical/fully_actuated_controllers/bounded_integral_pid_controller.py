@@ -3,37 +3,26 @@
 """This is a dynamic controller, not a static controller"""
 
 # in case we want to use rospy.logwarn or logerror
-
 import rospy
+
 import numpy
+
 from utilities import utility_functions
+
 import json
 
 from controllers_hierarchical import controller
-from controllers_hierarchical.double_integrator_controllers import database as dics
 
-import controllers_hierarchical.double_integrator_controllers.double_integrator_controller as dic
-
-# from controllers_hierarchical.double_integrator_controllers.di_ctrl_dictionary import di_ctrl_dictionary
-
-
-dics_db = dics.data
-
-
+# import dictionary with available double integrator controllers
+from controllers_hierarchical.double_integrator_controllers import database_dic
 
 
 class BoundedIntegralPIDController(controller.Controller):
 
-#    parent_class = True
-#    children     = double_integrator_controllers_dictionaries.double_integrator_controllers_dictionaries
-
-    # @classmethod
-    # def contained_objects(cls):
-    #     return {}
     
     @classmethod
     def contained_objects(cls):
-        return {"double_integrator_controller": dics_db}
+        return {"double_integrator_controller": database_dic.database_dic}
 
 
     @classmethod
@@ -43,7 +32,7 @@ class BoundedIntegralPIDController(controller.Controller):
     
     @classmethod
     def parameters_to_string(cls, \
-            double_integrator_controller = dics.data["DoubleIntegratorDefaultController"],\
+            double_integrator_controller = database_dic.database_dic["DefaultDIC"],\
             integral_gain_xy   = 0.0, \
             bound_integral_xy  = 0.0, \
             integral_gain_z    = 0.5, \
@@ -60,13 +49,6 @@ class BoundedIntegralPIDController(controller.Controller):
             'bound_integral_z'   :bound_integral_z     ,
             'quad_mass'          :quad_mass
             }
-
-#        DIControllerClass = double_integrator_controllers_dictionaries.double_integrator_controllers_dictionaries[child_class_name]
-
-#        dict_di_controller = json.loads(DIControllerClass.parameters_to_string())
-
-#        dic = dict(dict_di_controller,**dict_integral)
-#        dic['di_controller_class_name'] = child_class_name
 
         return json.dumps(params, indent=4)
 
@@ -86,42 +68,10 @@ class BoundedIntegralPIDController(controller.Controller):
                 inner_params = dict()
             dic[key] = InnerCls(**inner_params)
             
-        
-#        integral_gain_xy     = dic['integral_gain_xy']
-#        bound_integral_xy    = dic['bound_integral_xy']
-#        integral_gain_z      = dic['integral_gain_z']
-#        bound_integral_z     = dic['bound_integral_z']
-
-#        di_controller_class_name   = dic['di_controller_class_name']
-#        DIControllerClass          = double_integrator_controllers_dictionaries.double_integrator_controllers_dictionaries[di_controller_class_name]
-#        di_controller_parameters   = DIControllerClass.string_to_parameters(string)
-#        di_controller_class_number = double_integrator_controllers_dictionaries.double_integrator_controllers_numbered[di_controller_class_name]
-
-        # return di_controller_class_number, integral_gain_xy, bound_integral_xy, integral_gain_z , bound_integral_z
-        #return di_controller_class_number, di_controller_parameters, integral_gain_xy, bound_integral_xy, integral_gain_z , bound_integral_z
-
         return dic
-        
-    # @classmethod
-    # def string_to_parameters(cls, string):
-    #     dic = json.loads(string)
-        
-    #     integral_gain_xy     = dic['integral_gain_xy']
-    #     bound_integral_xy    = dic['bound_integral_xy']
-    #     integral_gain_z      = dic['integral_gain_z']
-    #     bound_integral_z     = dic['bound_integral_z']
-
-    #     di_controller_class_name = dic['di_controller_class_name']
-    #     DIControllerClass        = double_integrator_controllers_dictionaries.double_integrator_controllers_dictionaries[di_controller_class_name]
-    #     di_controller_parameters = DIControllerClass.string_to_parameters(string)
-    #     DIControllerObject       = DIControllerClass(di_controller_parameters)
-
-    #     return DIControllerObject,integral_gain_xy, bound_integral_xy, integral_gain_z , bound_integral_z
-
-
 
     def __init__(self,\
-            double_integrator_controller = dic.DoubleIntegratorController() ,\
+            double_integrator_controller = database_dic.database_dic["DefaultDIC"] ,\
             integral_gain_xy     = 0.0        ,\
             bound_integral_xy    = 0.0        ,\
             integral_gain_z      = 0.5        ,\
@@ -154,8 +104,6 @@ class BoundedIntegralPIDController(controller.Controller):
         pass
 
 
-        
-        
     def __str__(self):
         #TODO add the remaining parameters
         string = controller.Controller.__str__(self)
@@ -214,30 +162,28 @@ class BoundedIntegralPIDController(controller.Controller):
         return
 
 
+# #Test
 
+# inner_objs = BoundedIntegralPIDController.contained_objects()
+# print inner_objs
 
-#Test
+# Dic = inner_objs['double_integrator_controller']['DoubleIntegratorBoundedNotComponentWiseController']
+# print Dic
 
-inner_objs = BoundedIntegralPIDController.contained_objects()
-print inner_objs
+# dic_parameters = Dic.string_to_parameters(Dic.parameters_to_string())
+# print dic_parameters
 
-Dic = inner_objs['double_integrator_controller']['DoubleIntegratorBoundedNotComponentWiseController']
-print Dic
+# dic = Dic(**dic_parameters)
+# print dic
 
-dic_parameters = Dic.string_to_parameters(Dic.parameters_to_string())
-print dic_parameters
+# params = BoundedIntegralPIDController.string_to_parameters(BoundedIntegralPIDController.parameters_to_string())
+# print params
 
-dic = Dic(**dic_parameters)
-print dic
+# params['double_integrator_controller'] = dic
+# print params
 
-params = BoundedIntegralPIDController.string_to_parameters(BoundedIntegralPIDController.parameters_to_string())
-print params
-
-params['double_integrator_controller'] = dic
-print params
-
-con = BoundedIntegralPIDController(**params)
-print con
-print con.output(0.0, numpy.zeros(9), numpy.zeros(9))
+# con = BoundedIntegralPIDController(**params)
+# print con
+# print con.output(0.0, numpy.zeros(9), numpy.zeros(9))
 
 

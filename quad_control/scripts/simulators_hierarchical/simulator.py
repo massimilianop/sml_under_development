@@ -4,6 +4,7 @@
 import numpy as np
 import scipy.integrate as spi
 import json
+from utilities import jsonable as js
 
 
 
@@ -36,26 +37,12 @@ def stabilize_mode_command_to_thrust_and_yaw_rate(command):
 
 
 
-class Simulator():
-
-
-    __GRAVITY = 9.81
-    __E3_VERSOR = np.array([0.0, 0.0, 1.0])
+class Simulator(js.Jsonable):
 
 
     @classmethod
     def description(cls):
         return "Abstract Simulator"
-        
-        
-    @classmethod
-    def get_gravity(cls):
-        return float(cls.__GRAVITY)
-        
-        
-    @classmethod
-    def get_e3(cls):
-        return np.array(cls.__E3_VERSOR)
         
        
     @classmethod
@@ -66,56 +53,13 @@ class Simulator():
     @classmethod
     def get_control_size(cls):
         raise NotImplementedError()
-        
-        
-    @classmethod
-    def initials_to_string(cls, initial_time=0.0, initial_state=None,
-            initial_control=None):
-        
-        if initial_state == None:
-            initial_state = np.zeros(cls.get_state_size())
-            
-        assert len(initial_state) == cls.get_state_size()
-        
-        if initial_control == None:
-            initial_control = np.zeros(cls.get_control_size())
-            
-        assert len(initial_control) == cls.get_control_size()
-        
-        dic = {
-            'initial_time': initial_time,
-            'initial_state': initial_state,
-            'initial_control': initial_control
-        }
-        
-        return json.dumps(dic)
 
 
-    @classmethod
-    def string_to_initials(cls, string):
-        
-        dic = json.loads(string)
-        
-        initial_time = dic['initial_time']
-        initial_state = dic['initial_state']
-        initial_control = dic['initial_control']
-        
-        return initial_time, initial_state, initial_control
-
-
-    @classmethod
-    def parameters_to_string(cls, parameters):
-        raise NotImplementedError()
-        
-        
-    @classmethod
-    def string_to_parameters(cls, string):
-        raise NotImplementedError()
-
-
-    def __init__(self, initial_time=0.0,
+    def __init__(self,
+            initial_time=0.0,
             initial_state=None,
-            initial_control=None):
+            initial_control=None
+            ):
         
         if initial_state==None:
             initial_state = np.zeros(self.get_state_size())

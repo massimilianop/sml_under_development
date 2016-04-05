@@ -9,7 +9,8 @@ from PyQt4.QtCore import QObject, pyqtSignal
 import subprocess
 
 
-from quad_control.srv import Controller_Srv
+
+from quad_control.srv import SrvControllerChangeByStr
 from quad_control.srv import MocapBodies
 
 from mavros_msgs.srv import CommandBool
@@ -137,12 +138,12 @@ class saver_mavrosPlugin(Plugin):
         #Change the flight mode on the Pixhawk flight controller
         try:
             # it waits for service for 2 seconds
-            rospy.wait_for_service(self.namespace+'Controller_GUI',1.0)
+            rospy.wait_for_service(self.namespace+'ServiceChangeController',1.0)
 
             try:
-                AskForMinThrotlle = rospy.ServiceProxy(self.namespace+'Controller_GUI',Controller_Srv)
+                AskForMinThrotlle = rospy.ServiceProxy(self.namespace+'ServiceChangeController',SrvControllerChangeByStr)
                 
-                answer = AskForMinThrotlle(4,None)
+                answer = AskForMinThrotlle(controller_name = "NeutralController", parameters = "")
                 if answer.received:
                     rospy.logwarn('Min Throttle')
                     # return True
