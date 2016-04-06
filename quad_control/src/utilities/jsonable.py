@@ -41,6 +41,7 @@ class Jsonable:
         args = spec.args
         defs = spec.defaults
         arg_dic = dict()
+        max_length = 0
         for i in range(len(defs)):
             arg = args[i+1]
             if arg in cls.inner.keys():
