@@ -9,6 +9,10 @@ import numpy as np
 import utilities.utility_functions as uts
 # import simulator as sim
 import simulator
+import rospy
+
+
+
 
 class AttitudeInnerLoopSimulator(simulator.Simulator):
 
@@ -34,28 +38,32 @@ class AttitudeInnerLoopSimulator(simulator.Simulator):
     def __init__(self, initial_time=0.0,
             initial_state=None,
             initial_control=None,
-            mass=1.442, neutral_throttle=1484, acro_rpp=4.5):
+            mass=1.442,
+            neutral_throttle=1484,
+            acro_rpp=4.5
+            ):
+            
         simulator.Simulator.__init__(self, initial_time, initial_state,
             initial_control)
-        self.__mass = mass
-        self.__neutral_throttle = neutral_throttle
-        self.__acro_rpp = acro_rpp
-        self.__gain_throttle = mass*uts.GRAVITY/neutral_throttle
+        self.mass = mass
+        self.neutral_throttle = neutral_throttle
+        self.acro_rpp = acro_rpp
+        self.throttle_gain = mass*uts.GRAVITY/neutral_throttle
         
         
-    def get_parameters(self):
-        return self.__mass, self.__neutral_throttle, self.__acro_rpp
+    def get_position(self):
+        return self.state[0:3]
         
         
-    def set_parameters(self, mass, neutral_throttle, acro_rpp):
-        self.__mass = mass
-        self.__neutral_throttle = neutral_throttle
-        self.__acro_rpp = acro_rpp
+    def get_attitude(self):
+        return uts.GetEulerAnglesDeg(np.reshape(self.state, (3,3)))
         
         
-    def reset(self, initial_time=0.0, initial_state=None,
-            initial_control=None):
-        simulator.Simulator.reset(self, initial_time, initial_state, initial_control)
+    def set_control(self, command):
+        throttle, ang_vel = simulator.acro_mode_command_to_throttle_and_angular_velocity(
+            command, self.mass, self.throttle_gain, self.acro_rpp)
+        self.control[0] = throttle
+        self.control[1:4] = ang_vel
         
         
     def vector_field(self, time, state, control):
@@ -70,7 +78,7 @@ class AttitudeInnerLoopSimulator(simulator.Simulator):
         omega = np.array(control[1:4])
         
         dot_p = np.array(velocity)
-        dot_v = throttle/self.__mass*versor - uts.GRAVITY*uts.E3_VERSOR
+        dot_v = throttle/self.mass*versor - uts.GRAVITY*uts.E3_VERSOR
         dot_r = rotation.dot(uts.skew(omega))
         
         return np.concatenate([dot_p, dot_v, np.reshape(dot_r, 9)])

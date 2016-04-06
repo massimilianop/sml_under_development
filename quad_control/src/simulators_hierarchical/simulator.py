@@ -19,12 +19,12 @@ def acro_mode_command_to_throttle_and_angular_velocity(
     ang_vel_cmd[0] = command[0]
     ang_vel_cmd[1] = command[1]
     ang_vel_cmd[2] = command[3]
-    ths = acro_rpp*4500/100*np.pi/180
-    throttle = throttle_gain*throttle_cmd/mass
+    ths = acro_rpp*4500.0/100.0*np.pi/180.0
+    throttle = throttle_gain*throttle_cmd
     ang_vel = np.zeros(3)
-    ang_vel[0] =  (ang_vel_cmd[0] - 1500)/500*ths
-    ang_vel[1] = -(ang_vel_cmd[1] - 1500)/500*ths
-    ang_vel[2] = -(ang_vel_cmd[2] - 1500)/500*ths
+    ang_vel[0] =  (ang_vel_cmd[0] - 1500.0)/500.0*ths
+    ang_vel[1] = -(ang_vel_cmd[1] - 1500.0)/500.0*ths
+    ang_vel[2] = -(ang_vel_cmd[2] - 1500.0)/500.0*ths
     
     return throttle, ang_vel
     
@@ -53,7 +53,7 @@ class Simulator(js.Jsonable):
     @classmethod
     def get_control_size(cls):
         raise NotImplementedError()
-
+    
 
     def __init__(self,
             initial_time=0.0,
@@ -67,69 +67,52 @@ class Simulator(js.Jsonable):
         if initial_control==None:
             initial_control = np.zeros(self.get_control_size())
             
-        self.__time = initial_time
+        self.time = initial_time
        
         assert len(initial_state) == self.get_state_size()
-        self.__state = np.array(initial_state)
+        self.state = np.array(initial_state)
         
         assert len(initial_control) == self.get_control_size()
-        self.__control = np.array(initial_control)
+        self.control = np.array(initial_control)
         
         #TODO This is not very nice stylistically.
         # We should change f into a descriptive name
         # or use a lambda function.
         def f(t,x):
-            return self.vector_field(t, x, self.__control)
-        self.__solver = spi.ode(f).set_integrator('dopri5')
+            return self.vector_field(t, x, self.control)
+        self.solver = spi.ode(f).set_integrator('dopri5')
                 
-        self.__time_record    = []
-        self.__state_record   = [[] for index in range(self.get_state_size())]
-        self.__control_record = [[] for index in range(self.get_control_size())]
+        self.time_record = []
+        self.state_record = [[] for index in range(self.get_state_size())]
+        self.control_record = [[] for index in range(self.get_control_size())]
                 
                 
     def __str__(self):
         string = self.description()
-        string += "\nTime: " + str(self.__time)
-        string += "\nState: " + str(self.__state)
-        string += "\nControl: " + str(self.__control)
+        string += "\nTime: " + str(self.time)
+        string += "\nState: " + str(self.state)
+        string += "\nControl: " + str(self.control)
         return string
         
         
     def get_time(self):
-        return float(self.__time)
+        return self.time
         
     
     def get_state(self):
-        return np.array(self.__state)
+        return np.array(self.state)
         
         
-    def get_control(self):
-        return self.__control
-        
-        
-    def get_time_record(self):
-        return list(self.__time_record)
-        
-    
-    def get_state_record(self):
-        return list(self.__state_record)
-        
-        
-    def get_control_record(self):
-        return list(self.__control_record)
-        
-        
-    def get_parameters(self):
+    def get_position(self):
         raise NotImplementedError()
         
         
-    def set_control(self, control):
-        assert len(control) == self.get_control_size()
-        self.__control = np.array(control) 
-    
-    
-    def set_parameters(self, parameters):
+    def get_attitude(self):
         raise NotImplementedError()
+        
+        
+    def set_control(self, command):
+        raise NotImplementedError
     
         
     def reset(self, initial_time=0.0,
@@ -142,15 +125,15 @@ class Simulator(js.Jsonable):
         if initial_control==None:
             initial_control = np.zeros(self.get_control_size())
         
-        self.__time = initial_time
+        self.time = initial_time
         
         assert len(initial_state) == self.get_state_size()
-        self.__state = np.array(initial_state)
+        self.state = np.array(initial_state)
         
         assert len(initial_control) == self.get_control_size()
-        self.__control = np.array(initial_control)
+        self.control = np.array(initial_control)
         
-        self.__solver.set_initial_value(initial_time, initial_state)
+        self.solver.set_initial_value(initial_time, initial_state)
                 
                 
     def vector_field(self, time, state, control):
@@ -158,17 +141,15 @@ class Simulator(js.Jsonable):
         
         
     def run(self, time_step):
-        self.__time_record.append(self.__time)
-        for index in range(self.get_state_size()):
-            self.__state_record[index].append(self.__state[index])
-        for index in range(self.get_control_size()):
-            self.__control_record[index].append(self.__control[index])
-        self.__solver.set_initial_value(np.array(self.__state), self.__time)
-        self.__solver.integrate(self.__time + time_step)
-        self.__time = self.__solver.t
-        self.__state = np.array(self.__solver.y)
-        
-        
+        self.time_record.append(self.time)
+        self.state_record.append(list(self.state))
+        self.control_record.append(list(self.control))
+        self.solver.set_initial_value(np.array(self.state), self.time)
+        self.solver.integrate(self.time + time_step)
+        self.time = self.solver.t
+        self.state = np.array(self.solver.y)
+              
+  
         
         
 #"""Test"""
