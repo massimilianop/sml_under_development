@@ -6,9 +6,9 @@ Double integrator control law, i.e., a function **u**(**p**,**v**) of the positi
 
 Particularly
 
-<img src="https://latex.codecogs.com/svg.latex?\mathbf{u}\in\mathcal{C}^{2}(\mathbb{R}^{n}\times\mathbb{R}^{n},\mathbb{R}^{n})">
+<img src="https://latex.codecogs.com/svg.latex?\mathbf{u}\in\mathcal{C}^{2}(\mathbb{R}^{3}\times\mathbb{R}^{3},\mathbb{R}^{3})">
 
-where n is determined by the controller, by checking the size of the position state **pp**.  The control law is given by 
+which is a 3D double integrator controller. The control law is given by
 
 <img src="https://latex.codecogs.com/svg.latex?\mathbf{u}(\mathbf{p},\mathbf{v})&space;=&space;-&space;k_{\scriptsize{p}}&space;\boldsymbol{\sigma}_{\scriptsize{p}}(\mathbf{p})&space;-&space;k_{\scriptsize{v}}&space;\boldsymbol{\sigma}_{\scriptsize{v}}(\mathbf{v})&space;">
 

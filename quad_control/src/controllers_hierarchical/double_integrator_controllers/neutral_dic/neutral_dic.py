@@ -4,12 +4,9 @@
 import numpy
 import json
 
+from .. import double_integrator_controller as dic
 
-import controllers_hierarchical.double_integrator_controllers.double_integrator_controller as dic 
-
-
-
-class DoubleIntegratorNeutralController(dic.DoubleIntegratorController):
+class NeutralDIC(dic.DoubleIntegratorController):
 
     
     @classmethod
