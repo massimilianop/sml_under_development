@@ -6,6 +6,10 @@ import inspect
 import numpy as np
 
 
+
+
+
+
 class Jsonable:
     """A Jsonable object is an object that can be constructed
     from a json string.
@@ -31,6 +35,7 @@ class Jsonable:
     "PICon": PICon, "PIDCon", PIDCon}}.
     """
     
+    
     @classmethod
     def to_string(cls, inner=dict()):
         """Returns a string
@@ -51,8 +56,9 @@ class Jsonable:
         for i in range(len(defs)):
             arg = args[i+1]
             if arg in cls.inner.keys():
-                cls_key = inner[arg]
-                val = (cls_key, json.loads(cls.inner[arg][cls_key].to_string()))
+                inner_key = inner[arg][0]
+                inner_inner = inner[arg][1]
+                val = (inner_key, json.loads(cls.inner[arg][inner_key].to_string(inner_inner)))
             elif type(defs[i]) is np.ndarray:
                 val = str(list(defs[i]))
             else:
@@ -85,40 +91,81 @@ class Jsonable:
         
         
         
-#    def __init__(self, arg1=1, arg2=2, arg3=3):
-#        pass
+
+
+
+###############
+# TESTING
+###############
+
+# Comment out all that follows for actual use of this module.
+
+class Pillow(Jsonable):
+    
+    def __init__(self, is_soft=True):
+        pass
         
         
-        
-        
 
-#string = Jsonable.to_string()
-#print string
-#jsn = Jsonable.from_string(string)
-#print jsn
+class Bed(Jsonable):
+
+    inner = {
+        'pillow': {'Pillow1': Pillow, 'Pillow2': Pillow},
+        'cushion': {'Cushion1': Pillow, 'Cushion2': Pillow}
+        }
+    
+    def __init__(self, length=2.0, pillow=Pillow()):
+        pass
 
 
-#class Inner(Jsonable):
-#    
-#    def __init__(self, arg1=1):
-#        pass
-#        
-#        
 
-#class Outer(Jsonable):
+class Room(Jsonable):
 
-#    inner = {"sub": {"Inner": Inner}}
-#    
-#    def __init__(self, arg2=2, sub=Inner()):
-#        pass
-#        
-#        
-#        
-#string = Inner.to_string()
-#print string
-#sub = Inner.from_string(string)
-#print sub
-#string = Outer.to_string(inner={'sub':Inner})
-#print string
-#boss = Outer.from_string(string)
-#print boss
+    inner = {'bed': {'Bed1': Bed, 'Bed2': Bed}}
+    
+    def __init__(self, area=18.0, bed=Bed()):
+        pass
+
+
+
+
+# TODO This function must be moved to the GUI
+# but can be used in the GUI as it is.
+# (Apart from the print statement, which should be substituted to some message
+# printed on the GUI.)
+def __construct_inner(top_dictionary, top_key):
+
+    inner = {}
+    TopClass = top_dictionary[top_key]
+    for param_name, param_dict in TopClass.inner.items():
+        print "A " + top_key + " contains a parameter called '" + param_name + "', which can be any of the following types. Please choose the type that you want for the parameter '" + param_name + "'."
+        key = __get_key_from_user(param_dict)
+        inner[param_name] = []
+        inner[param_name].append(key)
+        inner[param_name].append(__construct_inner(param_dict, key))
+    return inner
+    
+
+#TODO This function must be moved to the GUI and modified.
+# Instead of printing the key on the terminal, they must be printed on a GUI box.
+# Then, instead of getting the user input from the terminal, the input is
+# obtained by detecting which key the user has clicked on.
+def __get_key_from_user(dictionary):
+    for key in dictionary.keys():
+        print key
+    return raw_input('Your choice: ')
+
+
+
+
+
+
+print "Choose the type of room that you want."
+top_dictionary = {'Room1': Room, 'Room2': Room, 'Room3': Room}
+top_key = __get_key_from_user(top_dictionary)
+inner = __construct_inner(top_dictionary, top_key)
+print inner
+string = Room.to_string(inner)
+print string
+my_room = Room.from_string(string)
+print my_room
