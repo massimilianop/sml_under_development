@@ -10,34 +10,6 @@ class ComponentWise3DDIC(dic.DoubleIntegratorController):
 
 
     @classmethod
-    def parameters_to_string(cls,
-            natural_frequency       = 0.5,
-            damping                 = numpy.sqrt(2.0)/2.0,
-            proportional_gain       = None,
-            derivative_gain         = None,
-            position_saturation     = 1.0,
-            velocity_saturation     = 1.0
-            ):
-            
-        params = {}
-        
-        params["natural_frequency"]         = natural_frequency
-        params["damping"]                   = damping
-        params["proportional_gain"]         = proportional_gain
-        params["derivative_gain"]           = derivative_gain
-        params["position_saturation"]       = position_saturation
-        params["velocity_saturation"]       = velocity_saturation
-        
-        return json.dumps(params, indent=4)
-        
-        
-    @classmethod
-    def string_to_parameters(cls, string):
-        params = json.loads(string)
-        return params
-
-
-    @classmethod
     def description(cls):
         return "Double-integrator bounded and component-wise controller" 
 
@@ -52,7 +24,7 @@ class ComponentWise3DDIC(dic.DoubleIntegratorController):
             velocity_saturation     = 1.0
             ):
         
-        if proportional_gain == None or derivative_gain==None:
+        if proportional_gain is None or derivative_gain is None:
             
             dic.DoubleIntegratorController.__init__(self,
                 proportional_gain=natural_frequency**2,
@@ -215,7 +187,8 @@ class ComponentWise3DDIC(dic.DoubleIntegratorController):
         
        
 # Test
-# con = DoubleIntegratorBoundedAndComponentWiseController()
+#string = DoubleIntegratorBoundedAndComponentWiseController.to_string()
+#print string
+#con = DoubleIntegratorBoundedAndComponentWiseController.from_string(string)
 #print con
-#print con.output(numpy.zeros(3), numpy.zeros(3))
-#print con.parameters_to_string()
+#print con.output(zeros(3), zeros(3))

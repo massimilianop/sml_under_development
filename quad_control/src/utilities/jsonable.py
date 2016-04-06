@@ -14,6 +14,10 @@ class Jsonable:
     those should be declared in the class variable `inner`.
     """
 
+    @classmethod
+    def contained_objects(cls):
+        return cls.inner
+
 
     inner = dict()
     """This is the only object that needs to be redefined by the children.
@@ -40,23 +44,28 @@ class Jsonable:
         spec = inspect.getargspec(cls.__init__)
         args = spec.args
         defs = spec.defaults
+        if defs is None:
+            defs = []
         arg_dic = dict()
         max_length = 0
         for i in range(len(defs)):
             arg = args[i+1]
             if arg in cls.inner.keys():
-                val = (inner[arg].__name__, inner[arg].to_string())
+                cls_key = inner[arg]
+                val = (cls_key, json.loads(cls.inner[arg][cls_key].to_string()))
             elif type(defs[i]) is np.ndarray:
                 val = str(list(defs[i]))
             else:
                 val = defs[i]
             arg_dic[arg] = val
+        # string = json.dumps(arg_dic)
         # string = json.dumps(arg_dic, indent=4, separators=(', ', ':\n\t'))
         string = json.dumps(arg_dic, separators=(', \n', '\t:\t'))
         string = string.replace('"[','[')
         string = string.replace(']"',']')
         string = string.replace('{','{\n')
         string = string.replace('}','\n}')
+        #string = string.replace('"','')
         return string
         
         
@@ -70,7 +79,7 @@ class Jsonable:
         for key, value in arg_dic.items():
             if key in cls.inner.keys():
                 InnerObjType = cls.inner[key][value[0]]
-                inner_obj = InnerObjType.from_string(value[1])
+                inner_obj = InnerObjType.from_string(json.dumps(value[1]))
                 arg_dic[key] = inner_obj
         return cls(**arg_dic)
         

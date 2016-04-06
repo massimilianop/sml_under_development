@@ -3,34 +3,22 @@
 
 # in case we want to use rospy.logwarn or logerror
 import rospy
-
 import numpy
-import json
 
 from controllers_hierarchical import controller
 
 
-class NeutralController(controller.Controller):
 
-    
-    @classmethod
-    def contained_objects(cls):
-        return {}
+class NeutralController(controller.Controller):
     
     
     @classmethod
     def description(cls):
         return "Neutral Controller"
-    
-    
-    @classmethod
-    def parameters_to_string(cls, parameters=None):
-        return json.dumps(parameters)
-        
-        
-    @classmethod
-    def string_to_parameters(cls, string=None):
-        return dict()
+
+
+    def __init__(self):
+        pass
 
 
     def output(self, delta_t, state, reference):
@@ -38,4 +26,7 @@ class NeutralController(controller.Controller):
         return numpy.zeros(3)
         
         
-        
+# Test
+string = NeutralController.to_string()
+print string
+con = NeutralController.from_string(string)
