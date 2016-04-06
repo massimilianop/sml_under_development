@@ -14,22 +14,7 @@ class DoubleIntegratorNeutralController(dic.DoubleIntegratorController):
     
     @classmethod
     def description(cls):
-        return "Double-integrator neutral controller"
-    
-    
-    @classmethod
-    def parameters_to_string(cls, parameters=None):
-        return json.dumps(parameters)
-        
-        
-    @classmethod
-    def string_to_parameters(cls, string):
-        return json.loads(string)
-        
-
-    @classmethod
-    def contained_objects(cls):
-        return dict()        
+        return "Double-integrator neutral controller"       
 
     
     def output(self, position, velocity):

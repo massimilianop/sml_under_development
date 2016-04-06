@@ -2,32 +2,16 @@
 # this line is just used to define the type of document
 
 
+from utilities import jsonable as js
 
-class Controller:
 
 
-    @classmethod
-    def contained_objects(cls):
-        raise NotImplementedError()
+class Controller(js.Jsonable):
 
     
     @classmethod
     def description(cls):
-        return "Abstract Tracking controller"
-    
-    
-    @classmethod
-    def parameters_to_string(cls, parameters):
-        raise NotImplementedError()
-        
-        
-    @classmethod
-    def string_to_parameters(cls, string):
-        raise NotImplementedError()
-        
-        
-    def __init__(self):
-        pass
+        return "Abstract tracking controller"
         
         
     def __str__(self):

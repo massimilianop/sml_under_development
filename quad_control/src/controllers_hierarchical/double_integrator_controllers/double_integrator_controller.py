@@ -12,22 +12,6 @@ class DoubleIntegratorController(controller.Controller):
     @classmethod
     def description(cls):
         return "Abstract Double Integrator Controller"
-    
-    
-    @classmethod
-    def parameters_to_string(cls, parameters=None):
-        raise NotImplementedError()
-        
-        
-    @classmethod
-    def string_to_parameters(cls, string):
-        raise NotImplementedError()
-
-
-    @classmethod
-    def contained_objects(cls):
-        return {}
-        # raise NotImplementedError()
 
 
     #TODO do these have special parameters?

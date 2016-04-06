@@ -26,37 +26,6 @@ class DoubleIntegratorBoundedNotComponentWiseController(dic.DoubleIntegratorCont
     def description(cls):
         return "Double-integrator bounded but not component-wise controller"
 
-    
-    @classmethod
-    def parameters_to_string(cls,   \
-        proportional_gain     = 1.0, \
-        derivative_gain       = 1.0, \
-        position_saturation   = 1.0, \
-        velocity_saturation   = 1.0):
-
-        dic = {
-            'proportional_gain'   :proportional_gain    ,\
-            'derivative_gain'     :derivative_gain      ,\
-            'position_saturation' :position_saturation  ,\
-            'velocity_saturation' :velocity_saturation
-            }
-
-        return json.dumps(dic, indent=4)    
-        
-    @classmethod
-    def string_to_parameters(cls, string):
-        
-        dic = json.loads(string)
-        
-#        proportional_gain   = dic['proportional_gain']
-#        derivative_gain     = dic['derivative_gain']
-#        saturation_position = dic['saturation_position']
-#        saturation_velocity = dic['saturation_velocity']
-
-#        return proportional_gain, derivative_gain, saturation_position, saturation_velocity
-        
-        return dic 
-
 
     def __init__(self,
             natural_frequency       = 0.5,
@@ -229,7 +198,10 @@ class DoubleIntegratorBoundedNotComponentWiseController(dic.DoubleIntegratorCont
         
         
 # Test
-con = DoubleIntegratorBoundedNotComponentWiseController()
+#string = DoubleIntegratorBoundedNotComponentWiseController.to_string()
+#print string
+#con = DoubleIntegratorBoundedNotComponentWiseController.from_string(string)
 #print con
+#print con.output(zeros(3),zeros(3))
 #print con.output(zeros(3), zeros(3))
 #print con.parameters_to_string()
