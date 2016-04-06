@@ -154,10 +154,11 @@ class quad_controller():
     # callback when ROTORS simulator publishes states
     def get_state_from_rotorS_simulator(self,odometry_rotor_s):
 
-        # RotorS has attitude inner loop that needs to known attitude of quad 
-        self.RotorSObject.rotor_s_attitude_for_control(odometry_rotor_s)
-        # get state from rotorS simulator
-        self.state_quad = self.RotorSObject.get_quad_state(odometry_rotor_s)        
+        # # RotorS has attitude inner loop that needs to known attitude of quad 
+        # self.RotorSObject.rotor_s_attitude_for_control(odometry_rotor_s)
+        # # get state from rotorS simulator
+        # self.state_quad = self.RotorSObject.get_quad_state(odometry_rotor_s)       
+        return 
 
     # for obtaining current desired state
     def traj_des(self):
@@ -244,10 +245,8 @@ class quad_controller():
         # controller_class_name = req.controller_name
         # chosen class taken from dictionary
         ControllerClass = controllers_dictionary.controllers_dictionary[req.controller_name]
-
-        parameters_dictionary = ControllerClass.string_to_parameters(req.parameters)
         
-        self.ControllerObject = ControllerClass(**parameters_dictionary)
+        self.ControllerObject = ControllerClass.from_string(req.parameters)
 
         #rospy.logwarn(self.ControllerObject.__class__.__name__)
         rospy.logwarn('444444444444')
@@ -581,7 +580,13 @@ class quad_controller():
 
             # compute input to send to QUAD
             # rospy.logwarn(self.ControllerObject.__class__.__name__)
+            # rospy.logwarn(self.state_quad[0:3])
+            # rospy.logwarn('bbbbbbbbbbbbbbbbbbbbbb')
+            # rospy.logwarn(states_d[0:3])
+            # rospy.logwarn('ccccccccccccccccccccccccccc')
             desired_3d_force_quad = self.ControllerObject.output(time,self.state_quad,states_d)
+            # rospy.logwarn('dddddddddddddd')
+            # rospy.logwarn(desired_3d_force_quad)
             self.DesiredZForceMedian.update_data(desired_3d_force_quad[2])
 
 

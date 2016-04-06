@@ -7,7 +7,7 @@ with no attitude inner loop.
 
 import numpy as np
 import utilities.utility_functions as uts
-import simulator as sm
+from .. import simulator as sm
 import rospy
 
 
