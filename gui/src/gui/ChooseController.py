@@ -103,7 +103,8 @@ class ChooseControllerPlugin(Plugin):
 
         # selected class may depend on other (parent) classes
         # initialize dictionary which will be input to construct class object
-        self.__input_dictionary_for_selected_controller = {} 
+        self.__input_dictionary_for_selected_controller = {}
+        self.__input_dictionary_for_selected_controller_b = {} 
 
 
     #TODO: this needs a correction: it can return dictionary
@@ -122,8 +123,25 @@ class ChooseControllerPlugin(Plugin):
         except Exception, e:
             #
             selected_class = dictionary_selected_class
-            return selected_class         
+            return selected_class     
 
+    #TODO: this needs a correction: it can return dictionary
+    def __get_recursive_class_b(self,dictionary,list_of_names):
+        """ From given dictionary and list of names get dictionary **or** selected class"""
+
+        # this may yield a dictionary with classes for values, or may yield a class
+        dictionary_selected_class = dictionary[list_of_names[0]]
+
+        # this try/except is necessary since dictionary_selected_class may not be dictionary
+        try:
+            if any(dictionary_selected_class) == True:
+                # go deeper in the dictionary and get next dictionary or class
+                return self.__get_recursive_class(dictionary_selected_class,list_of_names[1:])
+
+        except Exception, e:
+            #
+            selected_class = dictionary_selected_class
+            return list_of_names[0]
 
     def __controller_item_clicked(self):
         """ what to do when user clicks on an option """
@@ -154,6 +172,7 @@ class ChooseControllerPlugin(Plugin):
                 # this dictionary contains **abstracts** of classes
                 # TODO: maybe have default controllers in constructors of classes
                 self.__input_dictionary_for_selected_controller = selected_class.contained_objects()
+                self.__input_dictionary_for_selected_controller_b = selected_class.contained_objects()
 
                 # clear items from widget
                 self._widget.ListControllersWidget.clear()
@@ -171,6 +190,10 @@ class ChooseControllerPlugin(Plugin):
 
             # restrict class based on user input
             self.__input_dictionary_for_selected_controller[list_of_names[1]] = selected_class
+
+            selected_class_b = self.__get_recursive_class_b(dictionary,list_of_names[1:])
+            # restrict class based on user input
+            self.__input_dictionary_for_selected_controller[list_of_names[1]] = selected_class_b
 
             print_message_flag = True
             for key,selected_class in self.__input_dictionary_for_selected_controller.items():
@@ -215,9 +238,11 @@ class ChooseControllerPlugin(Plugin):
     def __print_controller_message(self):
         """Print message with parameters associated to chosen controller class"""
 
-        parameters_dictionary = self.__input_dictionary_for_selected_controller
+        parameters_dictionary = self.__input_dictionary_for_selected_controller_b
 
-        string                = self.__selected_class.parameters_to_string(**parameters_dictionary)
+        rospy.logwarn(parameters_dictionary)
+
+        string                = self.__selected_class.to_string(parameters_dictionary)
         
         # print message on GUI
         self._widget.ControllerMessageInput.setPlainText(string)
@@ -357,6 +382,3 @@ class ChooseControllerPlugin(Plugin):
         # Comment in to signal that the plugin has a way to configure
         # This will enable a setting button (gear icon) in each dock widget title bar
         # Usually used to open a modal configuration dialog
-
-    
-

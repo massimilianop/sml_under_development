@@ -244,10 +244,8 @@ class quad_controller():
         # controller_class_name = req.controller_name
         # chosen class taken from dictionary
         ControllerClass = controllers_dictionary.controllers_dictionary[req.controller_name]
-
-        parameters_dictionary = ControllerClass.string_to_parameters(req.parameters)
         
-        self.ControllerObject = ControllerClass(**parameters_dictionary)
+        self.ControllerObject = ControllerClass.from_string(req.parameters)
 
         #rospy.logwarn(self.ControllerObject.__class__.__name__)
         rospy.logwarn('444444444444')
