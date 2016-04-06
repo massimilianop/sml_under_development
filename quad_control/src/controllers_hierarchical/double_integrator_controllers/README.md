@@ -16,6 +16,10 @@ When constructing a new controller
   2. **database_dic["MeaningfulNameDIC"] = meaningful_name_dic.meaningful_name_dic.MeaningfulNameDIC**
 
 
-[logo]: https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png "Logo Title Text 2"
+![alt text][logo2]
+
+[logo2]: https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png "Logo Title Text 2"
+
+![alt text][logo]
 
 [logo]: https://latex.codecogs.com/svg.latex?\begin{align}&space;&\dot{\mathbf{p}}(t)&space;=&space;\mathbf{v}(t)&space;\notag&space;\\&space;&\dot{\mathbf{v}}(t)&space;=&space;\mathbf{u}(\mathbf{p}(t),\mathbf{v}(t))&space;\notag&space;\end{align} "Logo Title Text 2"
