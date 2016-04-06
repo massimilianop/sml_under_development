@@ -26,50 +26,6 @@ class SimpleBoundedIntegralPIDController(controller.Controller):
     @classmethod
     def description(cls):
         return "PID Controller, with saturation on integral part"
-    
-    @classmethod
-    def parameters_to_string(cls,   \
-        proportional_gain_xy = 1.0, \
-        derivative_gain_xy   = 1.0, \
-        integral_gain_xy     = 0.0, \
-        bound_integral_xy    = 0.0, \
-        proportional_gain_z  = 1.0, \
-        derivative_gain_z    = 1.0, \
-        integral_gain_z      = 0.5, \
-        bound_integral_z    = 0.0):
-
-        dic = {
-        'proportional_gain_xy':proportional_gain_xy,\
-        'derivative_gain_xy' :derivative_gain_xy,\
-        'integral_gain_xy'   :integral_gain_xy,\
-        'bound_integral_xy'  :bound_integral_xy,\
-        'proportional_gain_z':proportional_gain_z,\
-        'derivative_gain_z'  :derivative_gain_z,\
-        'integral_gain_z'    :integral_gain_z,\
-        'bound_integral_z'   :bound_integral_z
-        }
-        
-        return json.dumps(dic, indent=4)    
-        
-        
-    @classmethod
-    def string_to_parameters(cls, string):
-        
-        dic = json.loads(string)
-#        
-#        proportional_gain_xy = dic['proportional_gain_xy']
-#        derivative_gain_xy   = dic['derivative_gain_xy']
-#        integral_gain_xy     = dic['integral_gain_xy']
-#        bound_integral_xy    = dic['bound_integral_xy']
-#        proportional_gain_z  = dic['proportional_gain_z']
-#        derivative_gain_z    = dic['derivative_gain_z']
-#        integral_gain_z      = dic['integral_gain_z']
-#        bound_integral_z     = dic['bound_integral_z']
-#        
-#        return proportional_gain_xy, derivative_gain_xy, integral_gain_xy, bound_integral_xy, proportional_gain_z, derivative_gain_z, integral_gain_z , bound_integral_z
-        
-        return dic
-        
 
 
     def __init__(self,              \
@@ -193,7 +149,8 @@ class SimpleBoundedIntegralPIDController(controller.Controller):
         
         
 # Test
-#con = SimpleBoundedIntegralPIDController()
+#string = SimpleBoundedIntegralPIDController.to_string()
+#print string
+#con = SimpleBoundedIntegralPIDController.from_string(string)
 #print con
-#print con.parameters_to_string()
-#print con.output(0.1, numpy.zeros(9), numpy.zeros(9))    
+#print con.output(0.1, numpy.zeros(9), numpy.zeros(9))
