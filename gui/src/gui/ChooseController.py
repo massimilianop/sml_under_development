@@ -21,6 +21,7 @@ import sys
 sys.path.insert(0, rospack.get_path('quad_control'))
 # no need to get quad_control path, since it is package; import controllers dictionary
 from src.controllers_hierarchical.fully_actuated_controllers import controllers_dictionary
+from src.utilities import jsonable
 
 class ChooseControllerPlugin(Plugin):
 
@@ -91,150 +92,80 @@ class ChooseControllerPlugin(Plugin):
         # clear items from widget
         self._widget.ListControllersWidget.clear()
 
-        # create list of available controller classes based on **imported dictionary** 
-        count = 0
+        # create list of available controller classes based on **imported dictionary**
         for key in controllers_dictionary.controllers_dictionary.keys():
             # print all elements in dictionary
-            self._widget.ListControllersWidget.insertItem(count,key)
-            count +=1
+            self._widget.ListControllersWidget.addItem(key)
 
-        # default selected class
-        self.__selected_class = controllers_dictionary.controllers_dictionary['NeutralController']
-
-        # selected class may depend on other (parent) classes
-        # initialize dictionary which will be input to construct class object
-        self.__input_dictionary_for_selected_controller = {}
-        self.__user_input_dictionary_for_selected_controller = {}
-
-
-
-    #TODO: this needs a correction: it can return dictionary
-    def __get_recursive_class(self,dictionary,list_of_names):
-        """ From given dictionary and list of names get dictionary **or** selected class"""
-
-        # this may yield a dictionary with classes for values, or may yield a class
-        dictionary_selected_class = dictionary[list_of_names[0]]
-
-        # this try/except is necessary since dictionary_selected_class may not be dictionary
-        try:
-            if any(dictionary_selected_class) == True:
-                # go deeper in the dictionary and get next dictionary or class
-                return self.__get_recursive_class(dictionary_selected_class,list_of_names[1:])
-
-        except Exception, e:
-            #
-            # selected_class = dictionary_selected_class
-            return list_of_names[0] 
-
-
-    def __controller_item_clicked(self):
-        """ what to do when user clicks on an option """
+        self.__head_class_set = False
         
-        rospy.logwarn(self._widget.ListControllersWidget.currentRow())
-        return
-    #     # get string that user selected
-    #     string = self._widget.ListControllersWidget.currentItem().text()
+    def __controller_item_clicked(self):
 
-    #     # string is composed of strings separated by ":"
-    #     # split string in portions
-    #     list_of_names = string.split(':')
+        if self.__head_class_set == False:
 
-
-    #     if len(list_of_names) == 1:
-    #         # if list is composed of one string 
-    #         selected_class             = controllers_dictionary.controllers_dictionary[list_of_names[0]]
-
-    #         # save selected class and its names, to be used in printing message to user
-    #         self.__selected_class_name = list_of_names[0]
-    #         self.__selected_class      = selected_class
-
-    #         if any(selected_class.contained_objects()) == False:
-    #             # in selected class depends on nothing else, we can print message immediately
-    #             self.__print_controller_message()
-    #         else:
-    #             # if selected_class depends on other classes, and needs more user information
-
-    #             # initialize dictionary, containing **abstracts** of classes that selected class depends on
-    #             # TODO: maybe have default controllers in constructors of classes
-    #             # copy dictionary, otherwise dictionary of class is changed
-    #             self.__input_dictionary_for_selected_controller = selected_class.contained_objects().copy()
-
-    #             self.__print_items_on_widget()
-
-    #     else:
-    #         # if list is composed of more than one string
-
-    #         dictionary     = self.__selected_class.contained_objects()
-    #         selected_class = self.__get_recursive_class(dictionary,list_of_names[1:])
-
-    #         # restrict class based on user input
-    #         self.__input_dictionary_for_selected_controller[list_of_names[1]] = selected_class
-
-    #         self.__print_items_on_widget(self.__selected_class_name)
-
-    #     return
-
-
-    # def __print_items_on_widget_recursive(self,name,dictionary,list_names):
-
-    #     self._widget.ListControllersWidget.addItem(name+':'+list_names[0])
-
-    #     for key_inner_dictionary,value_inner_dictionary in dictionary.items():    
-
-    #         # value_inner_dictionary is either 
-    #         # . a **dictionary** with strings only, in which case class is chosen
-    #         # . or a dictionary
-
-    #         # if it is a **dictionary** with strings only
-    #         if self.check_dictionary(value_inner_dictionary) == True:
-    #             self.print_dictionary_of_strings(name,value_inner_dictionary)
-    #         else:
-
-    #             if key_inner_dictionary == list_names[1]:
-
-    #                 self.__print_items_on_widget_recursive(name+':'+list_names[1],value_inner_dictionary,list_names[1:])
-    #             else:
-    #                 for key_inner_inner_dictionary,value_inner_inner_dictionary in value_inner_dictionary.items():
-    #                     self._widget.ListControllersWidget.addItem(name+':'key_inner_dictionary+':'+key_inner_inner_dictionary)   
-
-    # # clear items from widget
-    # self._widget.ListControllersWidget.clear()
-
-    # def __print_items_on_widget_recursive(self,name,dictionary_of_dictionaries,list_names):    
-
-    #     for key_inner_dictionary,value_inner_dictionary in dictionary_of_dictionaries.items():
+            self.__head_class_set = True
+            self.__head_class_key = self._widget.ListControllersWidget.currentItem().text()
+            self.__HeadClass      = controllers_dictionary.controllers_dictionary[self.__head_class_key]
             
-    #         # value_inner_dictionary is either 
-    #         # . a **dictionary** with strings only, in which case class is chosen
-    #         # . or a dictionary
+            head_class_input_dic = {}
+            for key in self.__HeadClass.inner.keys():
+                head_class_input_dic[key] = []
+            self.__head_class_input_dic = head_class_input_dic
 
-    #         # if it is a **dictionary** with strings only
-    #         if self.check_dictionary(value_inner_dictionary) == True:
-    #             self.print_dictionary_of_strings(value_inner_dictionary)
-    #         else:
+            if jsonable.check_completeness(self.__head_class_input_dic):
+                self.__print_controller_message()
+            else:
+                self.__list_keys = self.__head_class_input_dic.keys()
+                self.print_new_list()
 
-    #             self._widget.ListControllersWidget.addItem(name+':'key_inner_dictionary+':'+key_inner_inner_dictionary)
+        else:
+            chosen_class = self._widget.ListControllersWidget.currentItem().text()
+            ChosenClass  = self.dic_to_print[chosen_class]
+            # chosen_class_list_of_keys = ChosenClass.inner.keys()
 
-    #         if key_inner_dictionary = list_names[1]:
-    #             self.__print_items_on_widget_recursive(name+':'+list_names[1],value_inner_dictionary,list_names[1:])
-    #         else:
-    #             # if key_inner_dictionary is not list_names[1] print as before
-    #             for key_inner_inner_dictionary,value_inner_inner_dictionary in value_inner_dictionary.items():
-    #                 self._widget.ListControllersWidget.addItem(name+':'key_inner_dictionary+':'+key_inner_inner_dictionary) 
+            nested_dictionary = {}
+            for key in ChosenClass.inner.keys():
+                nested_dictionary[key] = []
 
+            list_of_keys_appended = self.__list_keys[0]
+
+            input_dictionary  = self.__head_class_input_dic
+            list_keys         = list_of_keys_appended.split(':')
+            input_dictionary  = jsonable.nest_dictionary(input_dictionary,list_keys,chosen_class,nested_dictionary)
+            self.__head_class_input_dic = input_dictionary
+
+            if jsonable.check_completeness(self.__head_class_input_dic):
+                self.__print_controller_message()
+            else:
+                list_of_keys_appended = self.__list_keys[0]
+                self.__list_keys      = self.__list_keys[1:]
+                
+                for chosen_class_key in ChosenClass.inner.keys():
+                    self.__list_keys.insert(0,list_of_keys_appended+':'+chosen_class_key)
+                
+                self.print_new_list()
+
+    def print_new_list(self):
+
+        input_dictionary  = self.__head_class_input_dic
+        list_of_keys      = self.__list_keys[0]
+        list_of_keys      = list_of_keys.split(':')
+        self.dic_to_print = self.__HeadClass.get_dic_recursive(input_dictionary,list_of_keys)
+
+        # clear items from widget
+        self._widget.ListControllersWidget.clear()
+        for key in self.dic_to_print.keys():
+            # add item
+            self._widget.ListControllersWidget.addItem(key)
 
     def __print_controller_message(self):
         """Print message with parameters associated to chosen controller class"""
 
-        parameters_dictionary = self.__input_dictionary_for_selected_controller
-        # rospy.logwarn(parameters_dictionary)
-
-        # rospy.logwarn(self.__selected_class)
-        string                = self.__selected_class.to_string(parameters_dictionary)
-        
+        string = self.__HeadClass.to_string(self.__head_class_input_dic)
         # print message on GUI
         self._widget.ControllerMessageInput.setPlainText(string)
 
+        self.__reset_controllers_widget()
 
         return 
 
@@ -315,19 +246,6 @@ class ChooseControllerPlugin(Plugin):
             rospy.logwarn('Service for seting neutral value failed')      
             pass            
 
-
-
-    def RESET_xy_PID(self):
-        # IMPORTANT
-        flag_PID_Controller = 1
-        self.ReceiveControllerState(flag_PID_Controller,[1])
-            
-    def RESET_z_PID(self):
-        # IMPORTANT
-        flag_PID_Controller = 1
-        self.ReceiveControllerState(flag_PID_Controller,[2])
-
-
     def _parse_args(self, argv):
 
         parser = argparse.ArgumentParser(prog='saver', add_help=False)
@@ -359,6 +277,3 @@ class ChooseControllerPlugin(Plugin):
         # Comment in to signal that the plugin has a way to configure
         # This will enable a setting button (gear icon) in each dock widget title bar
         # Usually used to open a modal configuration dialog
-
-    
-
