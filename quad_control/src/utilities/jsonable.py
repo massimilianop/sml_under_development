@@ -6,6 +6,44 @@ import inspect
 import numpy as np
 
 
+dictionary = {
+    'bed'   :['Bed1', {'pillow':[],'doll':[]}],
+    'lamp'  :['Lamp1', {}]
+    }
+
+
+
+def check_completeness(dictionary):
+    if any([len(value)==0 for value in dictionary.values()]):
+        return False
+    else:
+        return all([check_completeness(value[1]) for value in dictionary.values()])
+
+
+
+print check_completeness(dictionary)
+
+
+
+def update_input_dictionary(dictionary, list_of_keys, NestedClassName, nested_dictionary):
+    inner_dictionary = dict(dictionary)
+    for key in list_of_keys[0:-1]:
+        inner_dictionary = dict(inner_dictionary[key][1])
+    empty_list = inner_dictionary[list_of_keys[-1]]
+    empty_list.append(NestedClassName)
+    empty_list.append(nested_dictionary)
+    
+    
+    
+
+update_input_dictionary(dictionary, ['bed', 'doll'], 'Doll1', {})
+print dictionary 
+print check_completeness(dictionary)
+
+
+
+
+
 class Jsonable:
     """A Jsonable object is an object that can be constructed
     from a json string.
@@ -13,6 +51,23 @@ class Jsonable:
     If a Jsonable contains nested Jsoable objects,
     those should be declared in the class variable `inner`.
     """
+
+
+
+    @classmethod
+    def get_dic_recursive(cls, dictionary, list_of_keys):
+        CurrentClass = cls
+        currennt_dictionary = dict(dictionary)
+        current_inner = dict(cls.inner)
+        for key in list_of_keys:
+            CurrentClass = current_dictionary[key][0]
+            print CurrentClass
+            current_inner = dict(CurrentClass.inner)
+            print current_inner
+            current_dictionary = dict(current_dictionary[key][1])
+            print current_dictionary
+            
+
 
     @classmethod
     def contained_objects(cls):
