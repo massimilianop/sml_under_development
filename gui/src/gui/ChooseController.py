@@ -104,6 +104,8 @@ class ChooseControllerPlugin(Plugin):
         # selected class may depend on other (parent) classes
         # initialize dictionary which will be input to construct class object
         self.__input_dictionary_for_selected_controller = {}
+        self.__user_input_dictionary_for_selected_controller = {}
+
 
 
     #TODO: this needs a correction: it can return dictionary
@@ -128,98 +130,97 @@ class ChooseControllerPlugin(Plugin):
     def __controller_item_clicked(self):
         """ what to do when user clicks on an option """
         
-        # get string that user selected
-        string = self._widget.ListControllersWidget.currentItem().text()
-
-        # string is composed of strings separated by ":"
-        # split string in portions
-        list_of_names = string.split(':')
-
-
-        if len(list_of_names) == 1:
-            # if list is composed of one string 
-            selected_class             = controllers_dictionary.controllers_dictionary[list_of_names[0]]
-
-            # save selected class and its names, to be used in printing message to user
-            self.__selected_class_name = list_of_names[0]
-            self.__selected_class      = selected_class
-
-            if any(selected_class.contained_objects()) == False:
-                # in selected class depends on nothing else, we can print message immediately
-                self.__print_controller_message()
-            else:
-                # if selected_class depends on other classes, and needs more user information
-
-                # initialize dictionary, containing **abstracts** of classes that selected class depends on
-                # TODO: maybe have default controllers in constructors of classes
-                # copy dictionary, otherwise dictionary of class is changed
-                self.__input_dictionary_for_selected_controller = selected_class.contained_objects().copy()
-
-                self.__print_items_on_widget()
-
-        else:
-            # if list is composed of more than one string
-
-            dictionary     = self.__selected_class.contained_objects()
-            selected_class = self.__get_recursive_class(dictionary,list_of_names[1:])
-
-            # restrict class based on user input
-            self.__input_dictionary_for_selected_controller[list_of_names[1]] = selected_class
-
-            self.__print_items_on_widget(self.__selected_class_name)
-
+        rospy.logwarn(self._widget.ListControllersWidget.currentRow())
         return
+    #     # get string that user selected
+    #     string = self._widget.ListControllersWidget.currentItem().text()
+
+    #     # string is composed of strings separated by ":"
+    #     # split string in portions
+    #     list_of_names = string.split(':')
 
 
-    def __print_items_on_widget_recursive(self,name,dictionary,list_names):
+    #     if len(list_of_names) == 1:
+    #         # if list is composed of one string 
+    #         selected_class             = controllers_dictionary.controllers_dictionary[list_of_names[0]]
 
-        self._widget.ListControllersWidget.addItem(name+':'+list_names[0])
+    #         # save selected class and its names, to be used in printing message to user
+    #         self.__selected_class_name = list_of_names[0]
+    #         self.__selected_class      = selected_class
 
-        for key_inner_dictionary,value_inner_dictionary in dictionary.items():    
+    #         if any(selected_class.contained_objects()) == False:
+    #             # in selected class depends on nothing else, we can print message immediately
+    #             self.__print_controller_message()
+    #         else:
+    #             # if selected_class depends on other classes, and needs more user information
 
-            # value_inner_dictionary is either 
-            # . a **dictionary** with strings only, in which case class is chosen
-            # . or a dictionary
+    #             # initialize dictionary, containing **abstracts** of classes that selected class depends on
+    #             # TODO: maybe have default controllers in constructors of classes
+    #             # copy dictionary, otherwise dictionary of class is changed
+    #             self.__input_dictionary_for_selected_controller = selected_class.contained_objects().copy()
 
-            # if it is a **dictionary** with strings only
-            if self.check_dictionary(value_inner_dictionary) == True:
-                self.print_dictionary_of_strings(name,value_inner_dictionary)
-            else:
+    #             self.__print_items_on_widget()
 
-                if key_inner_dictionary == list_names[1]:
+    #     else:
+    #         # if list is composed of more than one string
 
-                    self.__print_items_on_widget_recursive(name+':'+list_names[1],value_inner_dictionary,list_names[1:])
-                else:
-                    for key_inner_inner_dictionary,value_inner_inner_dictionary in value_inner_dictionary.items():
-                        self._widget.ListControllersWidget.addItem(name+':'key_inner_dictionary+':'+key_inner_inner_dictionary)   
+    #         dictionary     = self.__selected_class.contained_objects()
+    #         selected_class = self.__get_recursive_class(dictionary,list_of_names[1:])
 
-    def __print_items_on_widget(self,list_names):    
+    #         # restrict class based on user input
+    #         self.__input_dictionary_for_selected_controller[list_of_names[1]] = selected_class
 
-        # clear items from widget
-        self._widget.ListControllersWidget.clear()
-        self._widget.ListControllersWidget.addItem(list_names[0])
+    #         self.__print_items_on_widget(self.__selected_class_name)
 
-        print_message_flag = True  
+    #     return
 
-        for key_inner_dictionary,value_inner_dictionary in self.__input_dictionary_for_selected_controller.items():
+
+    # def __print_items_on_widget_recursive(self,name,dictionary,list_names):
+
+    #     self._widget.ListControllersWidget.addItem(name+':'+list_names[0])
+
+    #     for key_inner_dictionary,value_inner_dictionary in dictionary.items():    
+
+    #         # value_inner_dictionary is either 
+    #         # . a **dictionary** with strings only, in which case class is chosen
+    #         # . or a dictionary
+
+    #         # if it is a **dictionary** with strings only
+    #         if self.check_dictionary(value_inner_dictionary) == True:
+    #             self.print_dictionary_of_strings(name,value_inner_dictionary)
+    #         else:
+
+    #             if key_inner_dictionary == list_names[1]:
+
+    #                 self.__print_items_on_widget_recursive(name+':'+list_names[1],value_inner_dictionary,list_names[1:])
+    #             else:
+    #                 for key_inner_inner_dictionary,value_inner_inner_dictionary in value_inner_dictionary.items():
+    #                     self._widget.ListControllersWidget.addItem(name+':'key_inner_dictionary+':'+key_inner_inner_dictionary)   
+
+    # # clear items from widget
+    # self._widget.ListControllersWidget.clear()
+
+    # def __print_items_on_widget_recursive(self,name,dictionary_of_dictionaries,list_names):    
+
+    #     for key_inner_dictionary,value_inner_dictionary in dictionary_of_dictionaries.items():
             
-            # value_inner_dictionary is either 
-            # . a **dictionary** with strings only, in which case class is chosen
-            # . or a dictionary
+    #         # value_inner_dictionary is either 
+    #         # . a **dictionary** with strings only, in which case class is chosen
+    #         # . or a dictionary
 
-            # if it is a **dictionary** with strings only
-            if self.check_dictionary(value_inner_dictionary) == True:
-                self.print_dictionary_of_strings(value_inner_dictionary)
-            else:
+    #         # if it is a **dictionary** with strings only
+    #         if self.check_dictionary(value_inner_dictionary) == True:
+    #             self.print_dictionary_of_strings(value_inner_dictionary)
+    #         else:
 
-                self._widget.ListControllersWidget.addItem(name+':'key_inner_dictionary+':'+key_inner_inner_dictionary)
+    #             self._widget.ListControllersWidget.addItem(name+':'key_inner_dictionary+':'+key_inner_inner_dictionary)
 
-            if key_inner_dictionary = list_names[1]:
-                self.__print_items_on_widget_recursive(list_names[0]+':'+list_names[1],value_inner_dictionary,list_names[1:])
-            else:
-
-                for key_inner_inner_dictionary,value_inner_inner_dictionary in value_inner_dictionary.items():
-                    self._widget.ListControllersWidget.addItem(name+':'key_inner_dictionary+':'+key_inner_inner_dictionary) 
+    #         if key_inner_dictionary = list_names[1]:
+    #             self.__print_items_on_widget_recursive(name+':'+list_names[1],value_inner_dictionary,list_names[1:])
+    #         else:
+    #             # if key_inner_dictionary is not list_names[1] print as before
+    #             for key_inner_inner_dictionary,value_inner_inner_dictionary in value_inner_dictionary.items():
+    #                 self._widget.ListControllersWidget.addItem(name+':'key_inner_dictionary+':'+key_inner_inner_dictionary) 
 
 
     def __print_controller_message(self):
