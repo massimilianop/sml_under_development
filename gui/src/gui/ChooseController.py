@@ -107,6 +107,37 @@ class ChooseControllerPlugin(Plugin):
         self.__input_dictionary_for_selected_controller_b = {} 
 
 
+    #TODO The following two functions have been copied from jsonable.py.
+    # They must be modified to allow object construction in the GUI.
+    
+    # TODO This function must be moved to the GUI
+    # but can be used in the GUI as it is.
+    # (Apart from the print statement, which should be substituted to some message
+    # printed on the GUI.)
+    def self.__construct_inner(top_dictionary, top_key):
+
+        inner = {}
+        TopClass = top_dictionary[top_key]
+        for param_name, param_dict in TopClass.inner.items():
+            print "A " + top_key + " contains a parameter called '" + param_name + "', which can be any of the following types. Please choose the type that you want for the parameter '" + param_name + "'."
+            key = self.__get_key_from_user(param_dict)
+            inner[param_name] = []
+            inner[param_name].append(key)
+            inner[param_name].append(self.__construct_inner(param_dict, key))
+        return inner
+        
+
+    #TODO This function must be moved to the GUI and modified.
+    # Instead of printing the key on the terminal, they must be printed on a GUI box.
+    # Then, instead of getting the user input from the terminal, the input is
+    # obtained by detecting which key the user has clicked on.
+    def self.__get_key_from_user(dictionary):
+        for key in dictionary.keys():
+            print key
+        return raw_input('Your choice: ')
+        
+
+
     #TODO: this needs a correction: it can return dictionary
     def __get_recursive_class(self,dictionary,list_of_names):
         """ From given dictionary and list of names get dictionary **or** selected class"""
@@ -142,6 +173,8 @@ class ChooseControllerPlugin(Plugin):
             #
             selected_class = dictionary_selected_class
             return list_of_names[0]
+
+
 
     def __controller_item_clicked(self):
         """ what to do when user clicks on an option """
