@@ -131,7 +131,9 @@ class ChooseControllerPlugin(Plugin):
 
             input_dictionary  = self.__head_class_input_dic
             list_keys         = list_of_keys_appended.split(':')
-            input_dictionary  = jsonable.nest_dictionary(input_dictionary,list_keys,chosen_class,nested_dictionary)
+            
+            rospy.logwarn(self.__head_class_input_dic)
+            jsonable.update_input_dictionary(input_dictionary,list_keys,chosen_class,nested_dictionary)
             self.__head_class_input_dic = input_dictionary
 
             if jsonable.check_completeness(self.__head_class_input_dic):
@@ -177,6 +179,8 @@ class ChooseControllerPlugin(Plugin):
         # get new parameters from string
         parameters          = string
 
+        rospy.logwarn(parameters)
+
         # request service
         try: 
             # time out of one second for waiting for service
@@ -186,7 +190,7 @@ class ChooseControllerPlugin(Plugin):
                 # RequestingController = rospy.ServiceProxy("/"+self.namespace+'ServiceChangeController', SrvControllerChange)
                 RequestingController = rospy.ServiceProxy("/"+self.namespace+'ServiceChangeController', SrvControllerChangeByStr)
 
-                reply = RequestingController(controller_name = self.__selected_class_name, parameters = parameters)
+                reply = RequestingController(controller_name = self.__head_class_key, parameters = parameters)
 
                 if reply.received == True:
                     # if controller receives message

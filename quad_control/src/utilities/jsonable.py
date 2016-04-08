@@ -6,8 +6,41 @@ import inspect
 import numpy as np
 
 
-def check_completeness(dic):
-    return True
+
+# dictionary = {
+#     'bed'   :['Bed1', {'pillow':[],'doll':[]}],
+#     'lamp'  :['Lamp1', {}]
+#     }
+
+
+
+def check_completeness(dictionary):
+    if any([len(value)==0 for value in dictionary.values()]):
+        return False
+    else:
+        return all([check_completeness(value[1]) for value in dictionary.values()])
+
+
+
+# print check_completeness(dictionary)
+
+
+
+def update_input_dictionary(dictionary, list_of_keys, NestedClassName, nested_dictionary):
+    inner_dictionary = dict(dictionary)
+    for key in list_of_keys[0:-1]:
+        inner_dictionary = dict(inner_dictionary[key][1])
+    empty_list = inner_dictionary[list_of_keys[-1]]
+    empty_list.append(NestedClassName)
+    empty_list.append(nested_dictionary)
+    
+    
+    
+
+# update_input_dictionary(dictionary, ['bed', 'doll'], 'Doll1', {})
+#print dictionary 
+#print check_completeness(dictionary)
+
 
 
 
@@ -18,6 +51,30 @@ class Jsonable:
     If a Jsonable contains nested Jsoable objects,
     those should be declared in the class variable `inner`.
     """
+
+
+
+    @classmethod
+    def get_dic_recursive(cls, dictionary, list_of_keys):
+        CurrentClass = cls
+        #print CurrentClass
+        current_dictionary = dict(dictionary)
+        #print current_dictionary
+        current_inner = dict(cls.inner)
+        #print current_inner
+        for key in list_of_keys[0:-1]:
+            CurrentClassName = current_dictionary[key][0]
+            #print CurrentClassName
+            CurrentClass = current_inner[key][CurrentClassName]
+            #print CurrentClass
+            current_inner = dict(CurrentClass.inner)
+            #print current_inner
+            current_dictionary = dict(current_dictionary[key][1])
+            #print current_dictionary
+        #print CurrentClass.inner[list_of_keys[-1]]
+        return CurrentClass.inner[list_of_keys[-1]]
+            
+
 
     @classmethod
     def contained_objects(cls):
@@ -130,43 +187,46 @@ class Room(Jsonable):
 
 
 
-# TODO This function must be moved to the GUI
-# but can be used in the GUI as it is.
-# (Apart from the print statement, which should be substituted to some message
-# printed on the GUI.)
-def __construct_inner(top_dictionary, top_key):
-
-    inner = {}
-    TopClass = top_dictionary[top_key]
-    for param_name, param_dict in TopClass.inner.items():
-        print "A " + top_key + " contains a parameter called '" + param_name + "', which can be any of the following types. Please choose the type that you want for the parameter '" + param_name + "'."
-        key = __get_key_from_user(param_dict)
-        inner[param_name] = []
-        inner[param_name].append(key)
-        inner[param_name].append(__construct_inner(param_dict, key))
-    return inner
-    
-
-#TODO This function must be moved to the GUI and modified.
-# Instead of printing the key on the terminal, they must be printed on a GUI box.
-# Then, instead of getting the user input from the terminal, the input is
-# obtained by detecting which key the user has clicked on.
-def __get_key_from_user(dictionary):
-    for key in dictionary.keys():
-        print key
-    return raw_input('Your choice: ')
+# dictionary = {'bed': ['Bed1', {'pillow': []}]}
+# list_of_keys = ['bed', 'pillow']
+# Room.get_dic_recursive(dictionary, list_of_keys)
 
 
+## TODO This function must be moved to the GUI
+## but can be used in the GUI as it is.
+## (Apart from the print statement, which should be substituted to some message
+## printed on the GUI.)
+#def __construct_inner(top_dictionary, top_key):
+
+#    inner = {}
+#    TopClass = top_dictionary[top_key]
+#    for param_name, param_dict in TopClass.inner.items():
+#        print "A " + top_key + " contains a parameter called '" + param_name + "', which can be any of the following types. Please choose the type that you want for the parameter '" + param_name + "'."
+#        key = __get_key_from_user(param_dict)
+#        inner[param_name] = []
+#        inner[param_name].append(key)
+#        inner[param_name].append(__construct_inner(param_dict, key))
+#    return inner
+#    
+
+##TODO This function must be moved to the GUI and modified.
+## Instead of printing the key on the terminal, they must be printed on a GUI box.
+## Then, instead of getting the user input from the terminal, the input is
+## obtained by detecting which key the user has clicked on.
+#def __get_key_from_user(dictionary):
+#    for key in dictionary.keys():
+#        print key
+#    return raw_input('Your choice: ')
 
 
 
 
-# print "Choose the type of room that you want."
-# top_dictionary = {'Room1': Room, 'Room2': Room, 'Room3': Room}
-# top_key = __get_key_from_user(top_dictionary)
-# inner = __construct_inner(top_dictionary, top_key)
-# print inner
-# string = Room.to_string(inner)
-# print string
-# my_room = Room.from_string(string)
-# print my_room
+#print "Choose the type of room that you want."
+#top_dictionary = {'Room1': Room, 'Room2': Room, 'Room3': Room}
+#top_key = __get_key_from_user(top_dictionary)
+#inner = __construct_inner(top_dictionary, top_key)
+#print inner
+#string = Room.to_string(inner)
+#print string
+#my_room = Room.from_string(string)
+#print my_room
