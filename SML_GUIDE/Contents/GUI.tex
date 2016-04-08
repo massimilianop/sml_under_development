@@ -1,0 +1,123 @@
+
+\tikzstyle{startstop} = [rectangle, rounded corners, minimum width=3cm, minimum height=1cm,text centered, draw=black, fill=red!30,text width=3cm]
+
+%\tikzstyle{io} = [trapezium, trapezium left angle=70, trapezium right angle=110, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=blue!30]
+\tikzstyle{io} = [trapezium, trapezium left angle=70, trapezium right angle=110, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=blue!30,text width=3cm]
+
+%\tikzstyle{process} = [rectangle, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=orange!30]
+\tikzstyle{process} = [rectangle, minimum width=3cm, minimum height=1cm, text centered, text width=7cm, draw=black, fill=orange!30]
+
+\tikzstyle{decision} = [diamond, minimum width=3cm, minimum height=1cm, text centered, draw=black, fill=green!30]
+\tikzstyle{arrow} = [thick,->,>=stealth]
+
+\begin{landscape}
+	%
+	\begin{figure}
+		\begin{tikzpicture}[node distance=2cm,font=\footnotesize]
+			%
+			\node (start) [startstop] {Start \\ Given \textbf{dic}};
+			%
+			\node (in1) [decision, below of=start] {Reset \\ Button};
+			%
+			\node (pro1) [process, below of=in1] {print \textbf{dic}.keys() \\ head\_class\_set = \textbf{F}};
+			%
+			\node (in2) [decision, below of=pro1, yshift=-0.5cm] {Item Clicked};
+			%
+			\node (pro2a) [process, below of=in2, xshift=-5cm,yshift = -2cm] 
+			{	
+				\begin{flushleft}
+					head\_class\_set = \textbf{T} 
+					\\
+					head\_class\_key = \textbf{get\_text()}
+					\\
+					HeadClass = \textbf{dic}(head\_class\_key)
+					\\
+					input\_dic = HeadClass.inner()
+					\\
+					if check\_completeness(input\_dic)
+					\\
+					\quad print  HeadClass.parameters()
+					\\
+					else
+					\\
+					\quad list\_keys = input\_dic.keys()
+				\end{flushleft}
+			};
+			%
+			\node (pro2b) [process, below of=in2, xshift=5cm,yshift = -2cm] 
+			{
+				\begin{flushleft}
+					chosen\_class\_key = \textbf{get\_text()}
+					\\
+					ChosenClass = print\_dic[chosen\_class\_key]
+					\\
+					new\_list\_keys = ChosenClass.inner.keys()
+					\\
+					update\_input\_dic(input\_dic,list\_keys[0],chosen\_class\_key,new\_list\_keys)
+					\\
+					input\_dic = HeadClass.inner()
+					\\
+					if check\_completeness(input\_dic)
+					\\
+					\quad print  HeadClass.parameters()
+					\\
+					else
+					\\
+					\quad first\_key = list\_keys[0]
+					\\
+					\quad list\_keys = list\_keys[1:]
+					\\
+					\quad for i in new\_list\_keys:
+					\\
+					\quad \quad list\_keys.append(0,first\_key+new\_list\_keys[i])
+				\end{flushleft}		
+			};
+			%
+			\node (pro3) [process, text width=9cm, below of=in2, yshift=-6cm] 
+			{
+				\begin{flushleft}
+					print\_dic = HeadClass.dic\_to\_print(input\_dic,list\_keys[0]) 
+					\\
+					print input\_dic.keys()
+				\end{flushleft}
+			};
+			
+			\draw [arrow] (start) -- (in1);
+			\draw [arrow] (in1) -- (pro1);
+			\draw [arrow] (pro1) -- (in2);
+			\draw [arrow] (in2) -- node[anchor=east] {head\_class\_set = \textbf{F}} (pro2a);
+			\draw [arrow] (in2) -- node[anchor=south] {head\_class\_set = \textbf{T}} (pro2b);
+			\draw [arrow] (pro2b) -- (pro3);
+			\draw [arrow] (pro2a) -- (pro3);
+	
+		\end{tikzpicture}
+	\end{figure}
+	%
+\end{landscape}
+
+Example:
+{\small
+\begin{flushleft}
+	\textbf{dic} = \{'Room1':Room1Class,'Room1':Room2Class,'Room3':Room3Class\}
+	\\
+	\# chosen head class (via user input)
+	\\
+	Room1Class.inner = \{'bed':bed\_dic,'lamp':lamp\_dic\}
+	\\
+	\# (incomplete)
+	\\
+	input\_dic = \{'bed':[],'Lamp':[]\}
+	\\
+	\# (incomplete)
+	\\
+	input\_dic = \{'bed':['Bed1':\{'pillow':[],'cushion':[]\}],'Lamp':['Lamp1':\{\}]\}	
+	\\
+	\# (complete) 
+	\\
+	input\_dic = \{'bed':['Bed1':\{'pillow':['Pillow1':\{\}],'cushion':['Cushion1':\{\}]\}],'Lamp':['Lamp1':\{\}]\}
+	\\
+	\# show parameters list
+	\\
+	Room1Class.to\_string(input\_dic)
+\end{flushleft}
+}
