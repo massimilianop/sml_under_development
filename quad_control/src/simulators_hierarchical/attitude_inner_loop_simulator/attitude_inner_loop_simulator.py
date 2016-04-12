@@ -4,13 +4,10 @@ with no attitude inner loop.
 #TODO describe this better
 
 
-
 import numpy as np
 import utilities.utility_functions as uts
-# import simulator as sim
-import simulator
+from .. import simulator
 import rospy
-
 
 
 
@@ -73,10 +70,19 @@ class AttitudeInnerLoopSimulator(simulator.Simulator):
         #TODO make sure that this is a rotation matrix
         # for example, convert to euler angles and back
         rotation = np.reshape(state[6:15], (3,3))
-        versor = rotation.dot(uts.E3_VERSOR)
+        unit_vector   = rotation.dot(uts.E3_VERSOR)
         throttle = control[0]
-        omega = np.array(control[1:4])
+
         
+        force_3d, yaw_rate = self.stabilize_mode_command_to_thrust_and_yaw_rate(control)
+
+        throttle = numpy.dot(force_3d,unit_vector)
+
+        # gain of inner loop for attitude control
+        ktt             = self.GAIN_INNER_LOOP
+        unit_vector_des = force_3d/numpy.linalg.norm(force_3d)
+        omega           = ktt*skew(unit_vector).dot(unit_vector_des)
+
         dot_p = np.array(velocity)
         dot_v = throttle/self.mass*versor - uts.GRAVITY*uts.E3_VERSOR
         dot_r = rotation.dot(uts.skew(omega))

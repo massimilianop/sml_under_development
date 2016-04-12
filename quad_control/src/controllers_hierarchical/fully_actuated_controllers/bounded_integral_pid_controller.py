@@ -120,15 +120,15 @@ class BoundedIntegralPIDController(controller.Controller):
         return
 
 
-#Test
-dic_class_key = 'DefaultDIC'
-#print DicClass
+# #Test
+# dic_class_key = 'DefaultDIC'
+# #print DicClass
 
-inner = {'double_integrator_controller': dic_class_key}
-string = BoundedIntegralPIDController.to_string(inner)
-print string
-con = BoundedIntegralPIDController.from_string(string)
-print con
+# inner = {'double_integrator_controller': dic_class_key}
+# string = BoundedIntegralPIDController.to_string(inner)
+# print string
+# con = BoundedIntegralPIDController.from_string(string)
+# print con
 # inner_objs = BoundedIntegralPIDController.contained_objects()
 # print inner_objs
 

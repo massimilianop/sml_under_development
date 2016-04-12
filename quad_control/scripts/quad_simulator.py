@@ -311,6 +311,8 @@ class SimulatorNode():
             # create a message of type quad_state with current state
             state = self.write_state()
             # publish current state
+            # rospy.logwarn(state)
+            # rospy.logwarn('aaaaaaaaaaaaaaaaaaaaaaaaa')
             pub.publish(state)
 
             # marker.pose.position.x = 0.1 + numpy.cos(2*3.14/5*rospy.get_time());
