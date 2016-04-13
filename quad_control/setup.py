@@ -13,7 +13,9 @@ setup_args = generate_distutils_setup(
         'systems_functions',
         'quadrotor_tracking_controllers_hierarchical',
         'controllers_hierarchical',
-        'TrajectoryPlanner'
+        'TrajectoryPlanner',
+        'mission',
+        'ConverterBetweenStandards'
         ],
     package_dir={'': 'src'},
 )
