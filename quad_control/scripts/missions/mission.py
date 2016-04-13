@@ -1,4 +1,4 @@
-import jsonable as js
+from utilities import jsonable as js
 
 # The children import needed dictionaries
 
@@ -6,8 +6,9 @@ import jsonable as js
 # from controllers_hierarchical import controllers_dictionary as cd
 # from TrajectoryPlanner import trajectories_dictionary as td 
 
-# If the children need to subscribe to some topic, they import
-# rospy and the needed message types.
+# If the children need to subscribe to some topic,
+# or to publish to some topic,
+# then they import rospy and the needed message types.
 
 # For example
 # import rospy as rp
