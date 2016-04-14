@@ -61,6 +61,7 @@
     <rqt_gui plugin="${prefix}/saver_mavros.xml"/>
     <rqt_gui plugin="${prefix}/TrajectorySelection.xml"/>
     <rqt_gui plugin="${prefix}/ChooseController.xml"/>
+    <rqt_gui plugin="${prefix}/choose_mission.xml"/>
     <rqt_gui plugin="${prefix}/ChooseSimulator.xml"/>
     <!-- Other tools can request additional information be placed here -->
 

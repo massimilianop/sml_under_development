@@ -33,7 +33,7 @@ class FireflyTrajectoryTracking(mission.Mission):
         return "Firefly, from RotorS, to track a desired trajectory"
     
     
-    def __init__(self, params):
+    def __init__(self):
         # Copy the parameters into self variables
         # Subscribe to the necessary topics, if any
 
@@ -67,9 +67,8 @@ class FireflyTrajectoryTracking(mission.Mission):
 
         pass  
 
-    @classmethod
     def initialize_state(self):
-        # state of quad: position, velocity and attitude 
+        # state of quad: position, velocity and attitude
         # ROLL, PITCH, AND YAW (EULER ANGLES IN DEGREES)
         self.state_quad = numpy.zeros(3+3+3)
         pass
@@ -89,27 +88,22 @@ class FireflyTrajectoryTracking(mission.Mission):
     	euler_rad_dot = numpy.zeros(3)
     	return numpy.concatenate([euler_rad,euler_rad_dot])
 
-    @classmethod
-    def get_reference(cls,time_instant):
-        return self.TrajGenerator.output(time_instant)
+    def get_reference(self,time_instant):
+        self.reference = self.TrajGenerator.output(time_instant)
+        return self.reference
 
-    @classmethod
-    def get_state(cls):
+    def get_state(self):
         return self.state_quad
 
-    @classmethod
-    def get_pv():
+    def get_pv(self):
         return self.state_quad[0:6]
 
-    @classmethod
-    def get_pv_desired():
+    def get_pv_desired(self):
         return self.reference[0:6]
 
-    @classmethod
-    def get_euler_angles():
+    def get_euler_angles(self):
         return self.state_quad[6:9]
 
-    @classmethod
     def real_publish(self,desired_3d_force_quad,yaw_rate):
 		# publish message
 		self.pub_motor_speeds.publish(self.RotorSObject.rotor_s_message(desired_3d_force_quad,yaw_rate))

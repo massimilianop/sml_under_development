@@ -3,8 +3,9 @@
 
 import numpy as np
 
+from utilities import jsonable as js
 
-class YawController:
+class YawController(js.Jsonable):
 
     
     @classmethod
@@ -12,14 +13,14 @@ class YawController:
         return "Abstract yaw controller"
     
     
-    @classmethod
-    def parameters_to_string(cls, parameters):
-        raise NotImplementedError()
+    # @classmethod
+    # def parameters_to_string(cls, parameters):
+    #     raise NotImplementedError()
         
         
-    @classmethod
-    def string_to_parameters(cls, string):
-        raise NotImplementedError()
+    # @classmethod
+    # def string_to_parameters(cls, string):
+    #     raise NotImplementedError()
 
 
     def __init__(self):

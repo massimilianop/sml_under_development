@@ -340,10 +340,6 @@ class QuadController():
         # construct a default object
         self.mission_object = MissionClass()
 
-        rospy.logwarn('aaaaaaaaaaaaaa')
-        rospy.logwarn(self.mission_object.TrajGenerator.output(0.0))
-        self.mission_object.IrisPlusConverterObject.set_rotation_matrix([0.0,0.0,0.0])
-
         rate = rospy.Rate(self.frequency)
 
         while not rospy.is_shutdown():

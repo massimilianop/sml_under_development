@@ -32,11 +32,17 @@ class Mission(js.Jsonable):
     inner = {
         # For example: controller, reference, etc.
         'controllers_dictionary'     : {},        
-        'yaw_controllers_dictionary' : {},        
-        'trajectories_dictionary'    : {},
-        'yaw_trajectories_dictionary': {},
+        'yaw_controllers_dictionary' : {},
     }
-    
+
+    # inner = {
+    #     # For example: controller, reference, etc.
+    #     'controllers_dictionary'     : {},        
+    #     'yaw_controllers_dictionary' : {},        
+    #     'trajectories_dictionary'    : {},
+    #     'yaw_trajectories_dictionary': {},
+    # }    
+
     # time_instant_t0 = 0.0
 
     @classmethod
@@ -125,7 +131,7 @@ class Mission(js.Jsonable):
     def change_yaw_trajectory(self,key,string):
         """Change yaw reference trajectory"""
         YawTrajectoryClass   = self.inner['yaw_trajectories_dictionary'][key]
-        cls.YawTrajGenerator = YawTrajectoryClass.from_string(string)
+        self.YawTrajGenerator = YawTrajectoryClass.from_string(string)
         pass
 
     def change_controller(self,key,string):
@@ -137,7 +143,7 @@ class Mission(js.Jsonable):
     def change_yaw_controller(self,key,string):
         """Change yaw controller"""
         YawControllerClass      = self.inner['yaw_controllers_dictionary'][key]
-        cls.YawControllerObject = YawControllerClass.from_string(string)
+        self.YawControllerObject = YawControllerClass.from_string(string)
         pass
 
     def reset_initial_time(self,time_instant = None):

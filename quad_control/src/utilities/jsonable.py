@@ -5,6 +5,8 @@ import json
 import inspect
 import numpy as np
 
+import rospy
+
 
 
 # dictionary = {
@@ -107,6 +109,11 @@ class Jsonable:
         spec = inspect.getargspec(cls.__init__)
         args = spec.args
         defs = spec.defaults
+
+        rospy.logwarn(spec)
+        rospy.logwarn(args)
+        rospy.logwarn(defs)
+
         if defs is None:
             defs = []
         arg_dic = dict()
@@ -130,6 +137,7 @@ class Jsonable:
         string = string.replace('{','{\n')
         string = string.replace('}','\n}')
         #string = string.replace('"','')
+        rospy.logwarn(string)
         return string
         
         

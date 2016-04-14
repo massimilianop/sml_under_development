@@ -33,6 +33,8 @@ from TrajectorySelection import TrajectorySelectionPlugin
 
 from ChooseController import ChooseControllerPlugin
 
+from choose_mission import ChooseMissionPlugin
+
 from ChooseSimulator import ChooseSimulatorPlugin
 
 
@@ -96,6 +98,7 @@ class tabbedGUIPlugin(Plugin):
         self.positionPlot        = positionPlotPlugin(context,self.namespace)
         self.TrajectorySelection = TrajectorySelectionPlugin(context,self.namespace)
         self.ChooseController    = ChooseControllerPlugin(context,self.namespace)
+        self.ChooseMission       = ChooseMissionPlugin(context,self.namespace)
         self.ChooseSimulator     = ChooseSimulatorPlugin(context,self.namespace)
 
 
@@ -104,6 +107,7 @@ class tabbedGUIPlugin(Plugin):
         self._widget.tabWidget.addTab(self.positionPlot._widget,'Check Data')
         self._widget.tabWidget.addTab(self.TrajectorySelection._widget,'Select Trajectory')
         self._widget.tabWidget.addTab(self.ChooseController._widget,'Select Controller')
+        self._widget.tabWidget.addTab(self.ChooseMission._widget,'Select Mission')        
         self._widget.tabWidget.addTab(self.ChooseSimulator._widget,'Select Simulator')
 
         self._widget.tabWidget.show()
