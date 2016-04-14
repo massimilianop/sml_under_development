@@ -1,39 +1,81 @@
+#!/usr/bin/env python
 
 # import Misson abstract class
-from .. import Mission
+from .. import mission
 
-from ConverterBetweenStandards.RotorSConverter import RotorSConverter
+# import converter from 3d_force and yaw rate into iris rc standard 
+from ConverterBetweenStandards.IrisPlusConverter import IrisPlusConverter
 
-class FireflyTrajectoryTracking(Mission):
+# publish message quad_cmd that contains commands to simulator
+from quad_control.msg import quad_cmd, quad_state
 
+# import list of available trajectories
+from TrajectoryPlanner import trajectories_dictionary
+
+# import controllers dictionary
+from Yaw_Rate_Controller import yaw_controllers_dictionary
+
+# import controllers dictionary
+from controllers_hierarchical.fully_actuated_controllers import controllers_dictionary
+
+import math
+import numpy
+
+# for subscribing to topics, and publishing
+import rospy
+
+class IrisSimulatorTrajectoryTracking(mission.Mission):
 
     @classmethod
     def description(cls):
-        return "Firefly, from RotorS, to track a desired trajectory"
+        return "Iris, simulated, to track a desired trajectory"
     
     
-    def __init__(self, params):
+    def __init__(self):
         # Copy the parameters into self variables
         # Subscribe to the necessary topics, if any
+
+        mission.Mission.__init__(self)
+    
+        self.inner['controllers_dictionary']     = controllers_dictionary.controllers_dictionary
+        self.inner['trajectories_dictionary']    = trajectories_dictionary.trajectories_dictionary
+        self.inner['yaw_controllers_dictionary'] = yaw_controllers_dictionary.yaw_controllers_dictionary
         
-        # converting our controlller standard into rotors standard
-        self.RotorSObject = RotorSConverter()
+        # converting our controlller standard into iris+ standard
+        self.IrisPlusConverterObject = IrisPlusConverter()
 
-        # subscriber to odometry from RotorS
-        self.sub_odometry = rospy.Subscriber("/firefly/ground_truth/odometry", Odometry, self.get_state_from_rotorS_simulator)
+        # controller needs to have access to STATE: comes from simulator
+        self.SubToSim = rospy.Subscriber("quad_state", quad_state, self.get_state_from_simulator)
 
-        # publisher: command firefly motor speeds 
-        self.pub_motor_speeds = rospy.Publisher('/firefly/command/motor_speed', Actuators, queue_size=10)      
+        # message published by quad_control that simulator will subscribe to 
+        self.pub_cmd = rospy.Publisher('quad_cmd', quad_cmd, queue_size=10)
+        
+        # dy default, desired trajectory is staying still in origin
+        TrajectoryClass    = trajectories_dictionary.trajectories_dictionary['StayAtRest']
+        self.TrajGenerator = TrajectoryClass(point = numpy.array([0.0,0.0,1.0])) 
+        self.reference     = self.TrajGenerator.output(self.time_instant_t0)
+        rospy.logwarn(self.reference)
 
-        self.reset_initial_time()  
+        # controllers selected by default
+        ControllerClass = controllers_dictionary.controllers_dictionary['PIDSimpleBoundedIntegralController']
+        self.ControllerObject = ControllerClass()
+
+        YawControllerClass = yaw_controllers_dictionary.yaw_controllers_dictionary['YawRateControllerTrackReferencePsi']
+        self.YawControllerObject = YawControllerClass()
 
         pass  
+
+
+    def initialize_state(self):
+        # state of quad: position, velocity and attitude 
+        # ROLL, PITCH, AND YAW (EULER ANGLES IN DEGREES)
+        self.state_quad = numpy.zeros(3+3+3) 
+        pass          
         
     def __str__(self):
         return self.description()
         # Add the self variables
-        
-        
+         
     def __del__(self):
         # Unsubscribe from all the subscribed topics
         self.sub_odometry.unregister()
@@ -44,27 +86,54 @@ class FireflyTrajectoryTracking(Mission):
     	euler_rad_dot = numpy.zeros(3)
     	return numpy.concatenate([euler_rad,euler_rad_dot])
 
-    @classmethod
-    def get_reference(cls,time_instant):
-        return self.TrajGenerator.output(time)
+    def get_reference(self,time_instant):
+        self.reference = self.TrajGenerator.output(time_instant)
+        return self.reference
+        # return numpy.zeros(3*5)
 
 
-    @classmethod
-    def get_state(cls):
+    def get_state(self):
         return self.state_quad
 
-    @classmethod
+
+    def get_pv(self):
+        return self.state_quad[0:6]
+
+    def get_pv_desired(self):
+        return self.reference[0:6]
+
+    def get_euler_angles(self):
+        return self.state_quad[6:9]
+
     def real_publish(self,desired_3d_force_quad,yaw_rate):
 
-		# publish message
-		# TOTAL_MASS = 1.66779; Force3D = numpy.array([0.0,0.0,TOTAL_MASS*9.85]); PsiStar = 0.0; self.pub_motor_speeds.publish(self.RotorSObject.rotor_s_message(Force3D,PsiStar))
-		self.pub_motor_speeds.publish(self.RotorSObject.rotor_s_message(desired_3d_force_quad,yaw_rate))
+        euler_rad     = self.state_quad[6:9]*math.pi/180 
 
-    # callback when ROTORS simulator publishes states
-    def get_state_from_rotorS_simulator(self,odometry_rotor_s):
+        self.IrisPlusConverterObject.set_rotation_matrix(euler_rad)
+        iris_plus_rc_input = self.IrisPlusConverterObject.input_conveter(desired_3d_force_quad,yaw_rate)
 
-        # RotorS has attitude inner loop that needs to known attitude of quad 
-        self.RotorSObject.rotor_s_attitude_for_control(odometry_rotor_s)
-        # get state from rotorS simulator
-        self.state_quad = self.RotorSObject.get_quad_state(odometry_rotor_s)       
-        return           
+        # create a message of the type quad_cmd, that the simulator subscribes to 
+        cmd  = quad_cmd()
+        
+        cmd.cmd_1 = iris_plus_rc_input[0]; cmd.cmd_2 = iris_plus_rc_input[1]; cmd.cmd_3 = iris_plus_rc_input[2]; cmd.cmd_4 = iris_plus_rc_input[3];
+
+        cmd.cmd_5 = 1500.0; cmd.cmd_6 = 1500.0; cmd.cmd_7 = 1500.0; cmd.cmd_8 = 1500.0
+        
+        self.pub_cmd.publish(cmd)
+
+        pass
+
+    # callback when simulator publishes states
+    def get_state_from_simulator(self,simulator_message):
+
+        # position
+        p = numpy.array([simulator_message.x,simulator_message.y,simulator_message.z])
+        # velocity
+        v = numpy.array([simulator_message.vx,simulator_message.vy,simulator_message.vz])
+        #v = self.VelocityEstimator.out(p,rospy.get_time())
+        # attitude: euler angles
+        ee = numpy.array([simulator_message.roll,simulator_message.pitch,simulator_message.yaw])
+        # collect all components of state
+        self.state_quad = numpy.concatenate([p,v,ee])  
+
+        pass         

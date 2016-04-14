@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from utilities import jsonable as js
 
 from utilities import utility_functions
@@ -27,24 +29,34 @@ import rospy
 
 class Mission(js.Jsonable):
 
-    
     inner = {
         # For example: controller, reference, etc.
+        'controllers_dictionary'     : {},        
+        'yaw_controllers_dictionary' : {},        
+        'trajectories_dictionary'    : {},
+        'yaw_trajectories_dictionary': {},
     }
     
-    time_instant_t0 = 0.0
-    
-    # for reseting neutral value that makes iris+ stay at desired altitude
-    DesiredZForceMedian = utility_functions.Median_Filter(10)
+    # time_instant_t0 = 0.0
 
     @classmethod
     def description(cls):
         return "Abstract Mission"
     
     
-    def __init__(self, params):
+    def __init__(self):
         # Copy the parameters into self variables
         # Subscribe to the necessary topics, if any
+
+        # initialize initial time
+        self.reset_initial_time()         
+        
+        # initialize state: ultimately defined by child class
+        self.initialize_state()
+
+        # for reseting neutral value that makes iris+ stay at desired altitude
+        self.DesiredZForceMedian = utility_functions.Median_Filter(10)
+              
         pass
         
         
@@ -57,38 +69,86 @@ class Mission(js.Jsonable):
         # Unsubscribe from all the subscribed topics
         pass
 
-    @classmethod   
-    def real_publish(cls,desired_3d_force_quad,yaw_rate):
-        return 
+    def initialize_state(self):
+        raise NotImplementedError()
 
-    @classmethod   
-    def get_quad_ea_rad(cls):
+    def real_publish(self,desired_3d_force_quad,yaw_rate):
+        return NotImplementedError()
+
+    def get_quad_ea_rad(self):
         '''Get euler angles (roll, pitch, yaw) in radians, and get their time derivatives'''
-        return numpy.zeros(3+3)
+        # return numpy.zeros(3+3)
+        NotImplementedError()
 
-    @classmethod   
-    def get_desired_yaw_rad(cls,time_instant):
+    def get_desired_yaw_rad(self,time_instant):
         '''Get desired yaw in radians, and its time derivative'''
-        return numpy.zeros(1+1)    
+        return numpy.zeros(1+1)
+        return NotImplementedError()
 
-    @classmethod
-    def get_reference(cls,time_instant):
+    def get_reference(self,time_instant):
+        """
+        Get reference that must be accepted by controller
+        A reference might not exist
+        """
         return None
 
-    @classmethod
-    def get_state(cls):
-        return None
+    def get_state(self):
+        """
+        Get state that is accepted by controller
+        It is the job of a child class to write a state that is accepted by the controllers that it imports 
+        """
+        return NotImplementedError()
 
-    def reset_initial_time(self,time_instant = 0.0):
+    def get_pv(self):
+        """Get position (m) and velocity (m/s) of quadrotor"""
+        return NotImplementedError()
+
+    def get_pv_desired(self):
+        """Get desired position (m) and velocity (m/s) for the quadrotor"""
+        return NotImplementedError()
+
+    def get_rc_output(self):
+        """Get rc output"""
+        return numpy.zeros(8)    
+
+    def get_euler_angles(self):
+        # TODO: CHECK WHETHER IT SHOULD BE RAD OR NOT
+        """Get euler angles of the quadrotor (rad)""" 
+        return NotImplementedError()
+
+    def change_trajectory(self,key,string):
+        """Change reference trajectory"""
+        TrajectoryClass   = self.inner['trajectories_dictionary'][key]
+        self.TrajGenerator = TrajectoryClass.from_string(string)
+        pass
+
+    def change_yaw_trajectory(self,key,string):
+        """Change yaw reference trajectory"""
+        YawTrajectoryClass   = self.inner['yaw_trajectories_dictionary'][key]
+        cls.YawTrajGenerator = YawTrajectoryClass.from_string(string)
+        pass
+
+    def change_controller(self,key,string):
+        """Change controller"""
+        ControllerClass      = self.inner['controllers_dictionary'][key]
+        self.ControllerObject = ControllerClass.from_string(string)
+        pass
+
+    def change_yaw_controller(self,key,string):
+        """Change yaw controller"""
+        YawControllerClass      = self.inner['yaw_controllers_dictionary'][key]
+        cls.YawControllerObject = YawControllerClass.from_string(string)
+        pass
+
+    def reset_initial_time(self,time_instant = None):
         if time_instant == None:
             self.time_instant_t0 = rospy.get_time()
         else:
             self.time_instant_t0 = time_instant
-        return 
+        pass 
    
     def yaw_rate(self,time_instant):
 
-        # convert to iris + standard
         state_for_yaw_controller = self.get_quad_ea_rad()
         input_for_yaw_controller = self.get_desired_yaw_rad(time_instant)
 
@@ -121,3 +181,4 @@ class Mission(js.Jsonable):
 
         self.real_publish(desired_3d_force_quad,yaw_rate)
 
+        pass

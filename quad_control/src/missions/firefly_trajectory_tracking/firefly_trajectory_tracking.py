@@ -1,11 +1,32 @@
+#!/usr/bin/env python
 
 # import Misson abstract class
-from .. import Mission
+from .. import mission
 
 from ConverterBetweenStandards.RotorSConverter import RotorSConverter
 
-class FireflyTrajectoryTracking(Mission):
+# node will publish motor speeds
+from mav_msgs.msg import Actuators
 
+#node will subscribe to odometry measurements
+from nav_msgs.msg import Odometry
+
+# import list of available trajectories
+from TrajectoryPlanner import trajectories_dictionary
+
+# import controllers dictionary
+from Yaw_Rate_Controller import yaw_controllers_dictionary
+
+# import controllers dictionary
+from controllers_hierarchical.fully_actuated_controllers import controllers_dictionary
+
+import math
+import numpy
+
+# for subscribing to topics, and publishing
+import rospy
+
+class FireflyTrajectoryTracking(mission.Mission):
 
     @classmethod
     def description(cls):
@@ -15,7 +36,13 @@ class FireflyTrajectoryTracking(Mission):
     def __init__(self, params):
         # Copy the parameters into self variables
         # Subscribe to the necessary topics, if any
-        
+
+        mission.Mission.__init__(self)
+    
+        self.inner['controllers_dictionary']     = controllers_dictionary.controllers_dictionary
+        self.inner['trajectories_dictionary']    = trajectories_dictionary.trajectories_dictionary
+        self.inner['yaw_controllers_dictionary'] = yaw_controllers_dictionary.yaw_controllers_dictionary
+
         # converting our controlller standard into rotors standard
         self.RotorSObject = RotorSConverter()
 
@@ -25,9 +52,27 @@ class FireflyTrajectoryTracking(Mission):
         # publisher: command firefly motor speeds 
         self.pub_motor_speeds = rospy.Publisher('/firefly/command/motor_speed', Actuators, queue_size=10)      
 
-        self.reset_initial_time()  
+        # dy default, desired trajectory is staying still in origin
+        TrajectoryClass    = self.inner['trajectories_dictionary']['StayAtRest']
+        self.TrajGenerator = TrajectoryClass()
+        self.reference     = self.TrajGenerator.output(self.time_instant_t0)
+
+        # controllers selected by default
+        ControllerClass       = self.inner['controllers_dictionary']['PIDSimpleBoundedIntegralController']
+        self.ControllerObject = ControllerClass()
+
+        # controllers selected by default
+        YawControllerClass       = self.inner['yaw_controllers_dictionary']['YawRateControllerTrackReferencePsi']
+        self.YawControllerObject = YawControllerClass()
 
         pass  
+
+    @classmethod
+    def initialize_state(self):
+        # state of quad: position, velocity and attitude 
+        # ROLL, PITCH, AND YAW (EULER ANGLES IN DEGREES)
+        self.state_quad = numpy.zeros(3+3+3)
+        pass
         
     def __str__(self):
         return self.description()
@@ -46,25 +91,34 @@ class FireflyTrajectoryTracking(Mission):
 
     @classmethod
     def get_reference(cls,time_instant):
-        return self.TrajGenerator.output(time)
-
+        return self.TrajGenerator.output(time_instant)
 
     @classmethod
     def get_state(cls):
         return self.state_quad
 
     @classmethod
-    def real_publish(self,desired_3d_force_quad,yaw_rate):
+    def get_pv():
+        return self.state_quad[0:6]
 
+    @classmethod
+    def get_pv_desired():
+        return self.reference[0:6]
+
+    @classmethod
+    def get_euler_angles():
+        return self.state_quad[6:9]
+
+    @classmethod
+    def real_publish(self,desired_3d_force_quad,yaw_rate):
 		# publish message
-		# TOTAL_MASS = 1.66779; Force3D = numpy.array([0.0,0.0,TOTAL_MASS*9.85]); PsiStar = 0.0; self.pub_motor_speeds.publish(self.RotorSObject.rotor_s_message(Force3D,PsiStar))
 		self.pub_motor_speeds.publish(self.RotorSObject.rotor_s_message(desired_3d_force_quad,yaw_rate))
 
     # callback when ROTORS simulator publishes states
     def get_state_from_rotorS_simulator(self,odometry_rotor_s):
-
-        # RotorS has attitude inner loop that needs to known attitude of quad 
+        
+        # RotorS has attitude inner loop that needs to known attitude of quad
         self.RotorSObject.rotor_s_attitude_for_control(odometry_rotor_s)
         # get state from rotorS simulator
-        self.state_quad = self.RotorSObject.get_quad_state(odometry_rotor_s)       
-        return           
+        self.state_quad = self.RotorSObject.get_quad_state(odometry_rotor_s)
+        pass

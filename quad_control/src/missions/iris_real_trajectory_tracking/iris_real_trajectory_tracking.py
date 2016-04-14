@@ -1,16 +1,31 @@
+#!/usr/bin/env python
 
 # import Misson abstract class
-from .. import Mission
+from .. import mission
 
+# 
 from mavros_msgs.msg import OverrideRCIn
 # from mavros_msgs.srv import ParamSet,ParamGet,CommandBool,SetMode
 
-# from quadrotor_tracking_controllers_hierarchical import controllers_dictionary
-from controllers_hierarchical.fully_actuated_controllers import controllers_dictionary
-
+# import converter from 3d_force and yaw rate into iris rc standard 
 from ConverterBetweenStandards.IrisPlusConverter import IrisPlusConverter
 
-class FireflyTrajectoryTracking(Mission):
+# import list of available trajectories
+from TrajectoryPlanner import trajectories_dictionary
+
+# import controllers dictionary
+from Yaw_Rate_Controller import yaw_controllers_dictionary
+
+# import controllers dictionary
+from controllers_hierarchical.fully_actuated_controllers import controllers_dictionary
+
+import math
+import numpy
+
+# for subscribing to topics, and publishing
+import rospy
+
+class IrisRealTrajectoryTracking(mission.Mission):
 
 
     @classmethod
@@ -21,6 +36,13 @@ class FireflyTrajectoryTracking(Mission):
     def __init__(self, body_id = 12):
         # Copy the parameters into self variables
         # Subscribe to the necessary topics, if any
+
+        mission.Mission.__init__(self)
+    
+        self.inner['controllers_dictionary']     = controllers_dictionary.controllers_dictionary
+        self.inner['trajectories_dictionary']    = trajectories_dictionary.trajectories_dictionary
+        self.inner['yaw_controllers_dictionary'] = yaw_controllers_dictionary.yaw_controllers_dictionary
+
         
         # converting our controlller standard into iris+ standard
         self.IrisPlusConverterObject = IrisPlusConverter()
@@ -31,11 +53,34 @@ class FireflyTrajectoryTracking(Mission):
         # publisher: command firefly motor speeds    
         self.rc_override = rospy.Publisher('mavros/rc/override', OverrideRCIn, queue_size=100)
 
-        self.reset_initial_time()  
-
         self.body_id = body_id
 
+        # intiialization should be done in another way,
+        # but median will take care of minimizing effects
+        self.VelocityEstimator = Velocity_Filter(3,numpy.zeros(3),0.0)
+
+        # dy default, desired trajectory is staying still in origin
+        TrajectoryClass    = self.inner['trajectories_dictionary']['StayAtRest']
+        self.TrajGenerator = TrajectoryClass()
+        self.reference     = self.TrajGenerator.output(self.time_instant_t0)
+
+        # controllers selected by default
+        ControllerClass       = self.inner['controllers_dictionary']['PIDSimpleBoundedIntegralController']
+        self.ControllerObject = ControllerClass()
+
+        # controllers selected by default
+        YawControllerClass       = self.inner['yaw_controllers_dictionary']['YawRateControllerTrackReferencePsi']
+        self.YawControllerObject = YawControllerClass()     
+
         pass  
+
+    @classmethod
+    def initialize_state(self):
+        # state of quad: position, velocity and attitude 
+        # ROLL, PITCH, AND YAW (EULER ANGLES IN DEGREES)
+        self.state_quad = numpy.zeros(3+3+3) 
+        pass
+
         
     def __str__(self):
         return self.description()
@@ -44,7 +89,6 @@ class FireflyTrajectoryTracking(Mission):
         
     def __del__(self):
         # Unsubscribe from all the subscribed topics
-        self.sub_odometry.unregister()
         pass
 
     def get_quad_ea_rad(self):
@@ -54,8 +98,7 @@ class FireflyTrajectoryTracking(Mission):
 
     @classmethod
     def get_reference(cls,time_instant):
-        return self.TrajGenerator.output(time)
-
+        return self.TrajGenerator.output(time_instant)
 
     @classmethod
     def get_state(cls):
@@ -87,6 +130,18 @@ class FireflyTrajectoryTracking(Mission):
         return self.state_quad
 
     @classmethod
+    def get_pv():
+        return self.state_quad[0:6]
+
+    @classmethod
+    def get_pv_desired():
+        return self.reference[0:6]
+
+    @classmethod
+    def get_euler_angles():
+        return self.state_quad[6:9]
+
+    @classmethod
     def real_publish(self,desired_3d_force_quad,yaw_rate):
 
         self.IrisPlusConverterObject.set_rotation_matrix(euler_rad)
@@ -99,13 +154,4 @@ class FireflyTrajectoryTracking(Mission):
         channels        = numpy.concatenate([iris_plus_rc_input,other_channels])
         channels        = numpy.array(channels,dtype=numpy.uint16)
         rc_cmd.channels = channels
-        rc_override.publish(rc_cmd)
-
-    # callback when ROTORS simulator publishes states
-    def get_state_from_rotorS_simulator(self,odometry_rotor_s):
-
-        # RotorS has attitude inner loop that needs to known attitude of quad 
-        self.RotorSObject.rotor_s_attitude_for_control(odometry_rotor_s)
-        # get state from rotorS simulator
-        self.state_quad = self.RotorSObject.get_quad_state(odometry_rotor_s)       
-        return           
+        self.rc_override.publish(rc_cmd)     

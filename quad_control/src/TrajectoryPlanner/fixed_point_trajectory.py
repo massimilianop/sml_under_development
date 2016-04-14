@@ -15,7 +15,7 @@ class FixedPointTrajectory(tj.Trajectory):
     def description(cls):
         return "Fixed Point"
         
-    def __init__(self, point=np.array([0.0, 0.0, 0.0])):
+    def __init__(self, point=np.array([0.0, 1.0, 1.0])):
         tj.Trajectory.__init__(self, point, np.zeros(3))
         
     def __str__(self):

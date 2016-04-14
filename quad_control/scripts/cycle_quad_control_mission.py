@@ -1,28 +1,10 @@
 #!/usr/bin/env python
 # this line is just used to define the type of document
 
-import mavros
-
-from mavros_msgs.msg import OverrideRCIn
-# from mavros_msgs.srv import ParamSet,ParamGet,CommandBool,SetMode
-
-# node will publish motor speeds
-from mav_msgs.msg import Actuators
-
-#node will subscribe to odometry measurements
-from nav_msgs.msg import Odometry
-
 import rospy
 
 # controller node publishes message of this type so that GUI can plot stuff
 from quad_control.msg import quad_state_and_cmd
-
-# node will need to get state from qualysis, other sensor, or simulator
-# it subscribes to a message of this tupe
-from quad_control.msg import quad_state
-
-# node will publish message quad_cmd that contains commands to simulator
-from quad_control.msg import quad_cmd
 
 # node will publish controller state if requested
 from quad_control.msg import Controller_State
@@ -44,33 +26,14 @@ from rospkg import RosPack
 import numpy
 from numpy import *
 
-from utilities.utility_functions import GetRotFromEulerAnglesDeg,Velocity_Filter,Median_Filter
+import missions.missions_database
 
-# import list of available trajectories
-from TrajectoryPlanner import trajectories_dictionary
-from Yaw_Rate_Controller import yaw_controllers_dictionary
-
-# from quadrotor_tracking_controllers_hierarchical import controllers_dictionary
-from controllers_hierarchical.fully_actuated_controllers import controllers_dictionary
-
-from ConverterBetweenStandards.IrisPlusConverter import IrisPlusConverter
-
-import math
-
-class quad_controller():
+class QuadController():
 
     def __init__(self):
 
         # frequency of controlling action!!
         self.frequency = 35.0
-
-        # state of quad: position, velocity and attitude 
-        # ROLL, PITCH, AND YAW (EULER ANGLES IN DEGREES)
-        self.state_quad = numpy.zeros(3+3+3)
-
-        # dy default, desired trajectory is staying still in origin
-        TrajectoryClass    = trajectories_dictionary.trajectories_dictionary['StayAtRest']
-        self.TrajGenerator = TrajectoryClass()
 
         # initialize counter for publishing to GUI
         # we only publish when self.PublishToGUI =1
@@ -80,84 +43,12 @@ class quad_controller():
         # we reset counter when self.PublishToGUI >= PublishToGUIBound
         self.PublishToGUIBound = int(self.frequency/frequency_PubToGui)
 
-        # intiialization should be done in another way,
-        # but median will take care of minimizing effects
-        self.VelocityEstimator = Velocity_Filter(3,numpy.zeros(3),0.0)
-
-        # controllers selected by default
-        ControllerClass = controllers_dictionary.controllers_dictionary['PIDSimpleBoundedIntegralController']
-        self.ControllerObject = ControllerClass()
-
-        YawControllerClass = yaw_controllers_dictionary.yaw_controllers_dictionary['YawRateControllerTrackReferencePsi']
-        self.YawControllerObject = YawControllerClass()
-
-        # for reseting neutral value that makes iris+ stay at desired altitude
-        self.DesiredZForceMedian = Median_Filter(10)
-
-
         # for saving data
         # determine ROS workspace directory
         rp = RosPack()
         # determine ROS workspace directory where data is saved
         package_path = rp.get_path('quad_control')
         self.package_save_path = package_path+'/experimental_data/data/'
-
-
-    def GET_STATE_(self):
-
-        # if simulator is on, state is updated by subscription
-        # if mocap is on, state comes from mocap
-        if self.flagMOCAP == True:
-
-            self.flag_measurements = 1
-
-            bodies = self.Qs.get_body(self.body_id)
-
-            if bodies != 'off':  
-
-                self.flag_measurements = 1
-
-                # position
-                x=bodies["x"]; y=bodies["y"]; z=bodies["z"]   
-                p = numpy.array([x,y,z])
-
-                # velocity
-                #v = numpy.array([data.vx,data.vy,data.vz])
-                v = self.VelocityEstimator.out(p,rospy.get_time())
-
-                # attitude: euler angles THESE COME IN DEGREES
-                roll = bodies["roll"]; pitch=-bodies["pitch"]; yaw  = bodies["yaw"]
-                ee = numpy.array([roll,pitch,yaw])
-
-                # collect all components of state
-                self.state_quad = numpy.concatenate([p,v,ee])  
-            else:
-                # do nothing, keep previous state
-                self.flag_measurements = 2
-        else:
-            # simulator on
-            self.flag_measurements = 0
-
-    # callback when simulator publishes states
-    def get_state_from_simulator(self, data):
-        # position
-        p = numpy.array([data.x,data.y,data.z])
-        # velocity
-        v = numpy.array([data.vx,data.vy,data.vz])
-        #v = self.VelocityEstimator.out(p,rospy.get_time())
-        # attitude: euler angles
-        ee = numpy.array([data.roll,data.pitch,data.yaw])
-        # collect all components of state
-        self.state_quad = numpy.concatenate([p,v,ee])  
-
-
-
-    # for obtaining current desired state
-    def traj_des(self):
-        # time for trajectory generation
-        time_TrajDes = rospy.get_time() - self.time_TrajDes_t0
-        return self.TrajGenerator.output(time_TrajDes)
-
 
     # callback for when "saving data" is requested
     def _handle_save_data(self,req):
@@ -239,9 +130,7 @@ class quad_controller():
         ControllerClass = controllers_dictionary.controllers_dictionary[req.controller_name]
         
         self.ControllerObject = ControllerClass.from_string(req.parameters)
-
         #rospy.logwarn(self.ControllerObject.__class__.__name__)
-        rospy.logwarn('444444444444')
 
         # return message to Gui, to let it know resquest has been fulfilled
         return SrvControllerChangeByStrResponse(received = True)
@@ -252,164 +141,106 @@ class quad_controller():
  
         # trajectory_class_name = req.trajectory
         # update class for TrajectoryGenerator
-        TrajectoryClass = trajectories_dictionary.trajectories_dictionary[req.trajectory]
-        
-        string = req.parameters
-        
-        #offset   = numpy.array(req.offset)
-        #rotation = numpy.array(req.rotation)
-
-        self.TrajGenerator = TrajectoryClass.from_string(string)
-
-        # we need to update initial time for trajectory generation
-        self.time_TrajDes_t0 = rospy.get_time()
+        self.mission_object.change_trajectory(req.trajectory,req.parameters)
 
         # return message to Gui, to let it know resquest has been fulfilled
         return SrvTrajectoryDesiredResponse(True)
 
-    # # function to stop simulator
-    # def stop_simulator(self):
-    #     try: 
-    #         rospy.wait_for_service('StartSimulator',1.0)
-
-    #         try:
-    #             AskForStart = rospy.ServiceProxy('StartSimulator', StartSim)
-
-    #             reply = AskForStart(False)
-    #             if reply.Started == True:
-    #                 return True
-    #             else:
-    #                 return False
-    #         except:
-    #             return False
-
-    #     except:
-    #         return False
-
     #callback for turning ON/OFF Mocap and turning OFF/ON the subscription to the simulator
     def handle_Mocap(self,req):
+        pass
+        # # if mocap is turned on
+        # if self.flagMOCAP_On == True:
+
+        #     # request to turn OFF Mocap, and turn on subscription to Simulator messages
+        #     if req.On == False:
+
+        #         # in case Qs is not defined yet
+        #         try: 
+        #             # close mocap connection
+        #             # self.Qs._stop_measurement()
+        #             del self.Qs
+
+        #             self.flagMOCAP_On = False
+
+        #             # set flag to OFF
+        #             self.flagMOCAP = False
+
+        #             # subscribe again to simultor messages
+        #             self.SubToSim = rospy.Subscriber("quad_state", quad_state, self.get_state_from_simulator) 
+
+        #             # service has been provided
+        #             return Mocap_IdResponse(True,True)
+        #         except:
+        #             # service was NOT provided
+        #             return Mocap_IdResponse(True,False) 
+
+        #     # if we are requested to change the body Id
+        #     if req.change_id == True:
+
+        #         # see list of available bodies
+        #         bodies = self.Qs.get_updated_bodies()
+
+        #         # check if body_id available
+        #         body_indice = -1
+
+        #         # Get the corresponding id of the body
+        #         if isinstance(bodies,list):
+        #             for i in range(0,len(bodies)):
+        #                 rospy.logwarn(bodies[i]['id'])
+        #                 if(bodies[i]['id']==req.id):
+        #                     body_indice=i
+
+        #         # save body id
+        #         self.body_id = req.id                        
 
 
+        #         if body_indice == -1:
 
-        # if mocap is turned on
-        if self.flagMOCAP_On == True:
+        #             # body does not exist
+        #             self.flagMOCAP = False
 
-            # request to turn OFF Mocap, and turn on subscription to Simulator messages
-            if req.On == False:
-
-                # in case Qs is not defined yet
-                try: 
-                    # close mocap connection
-                    # self.Qs._stop_measurement()
-                    del self.Qs
-
-                    self.flagMOCAP_On = False
-
-                    # set flag to OFF
-                    self.flagMOCAP = False
-
-                    # subscribe again to simultor messages
-                    self.SubToSim = rospy.Subscriber("quad_state", quad_state, self.get_state_from_simulator) 
-
-                    # service has been provided
-                    return Mocap_IdResponse(True,True)
-                except:
-                    # service was NOT provided
-                    return Mocap_IdResponse(True,False) 
-
-            # if we are requested to change the body Id
-            if req.change_id == True:
-
-                # see list of available bodies
-                bodies = self.Qs.get_updated_bodies()
-
-                # check if body_id available
-                body_indice = -1
-
-                # Get the corresponding id of the body
-                if isinstance(bodies,list):
-                    for i in range(0,len(bodies)):
-                        rospy.logwarn(bodies[i]['id'])
-                        if(bodies[i]['id']==req.id):
-                            body_indice=i
-
-                # save body id
-                self.body_id = req.id                        
-
-
-                if body_indice == -1:
-
-                    # body does not exist
-                    self.flagMOCAP = False
-
-                    # body does not exist, but service was provided
-                    return Mocap_IdResponse(False,True)
-                else:
-                    # body exists
+        #             # body does not exist, but service was provided
+        #             return Mocap_IdResponse(False,True)
+        #         else:
+        #             # body exists
                     
-                    # set flag to on
-                    self.flagMOCAP = True
+        #             # set flag to on
+        #             self.flagMOCAP = True
 
-                    # body EXISTS, and service was provided
-                    return Mocap_IdResponse(True,True)
+        #             # body EXISTS, and service was provided
+        #             return Mocap_IdResponse(True,True)
 
+        # else:
+        #     # if Mocap is turned off, and we are requested to turn it on
+        #     if req.On == True:
+        #         # establish connection to qualisys
+        #         self.Qs = mocap_source.Mocap(info=0)
 
-                # # stop simulator
-                # stop = self.stop_simulator()
+        #         # stop subscription to data from simulator
+        #         # unsubscribe to topic
+        #         self.SubToSim.unregister()
 
-                # # if simulator stopped
-                # if stop == True:
+        #         self.flagMOCAP_On = True
 
-                #     if body_indice == -1:
-
-                #         # body does not exist
-                #         self.flagMOCAP = False
-
-                #         # body does not exist, but service was provided
-                #         return Mocap_IdResponse(False,True)
-                #     else:
-                #         # body exists
-                        
-                #         # set flag to on
-                #         self.flagMOCAP = True
-
-                #         # body EXISTS, and service was provided
-                #         return Mocap_IdResponse(True,True)
-                # else:
-                #     self.flagMOCAP = False
-                #     # service was NOT provided
-                #     return Mocap_IdResponse(False,False)
-
-
-        else:
-            # if Mocap is turned off, and we are requested to turn it on
-            if req.On == True:
-                # establish connection to qualisys
-                self.Qs = mocap_source.Mocap(info=0)
-
-                # stop subscription to data from simulator
-                # unsubscribe to topic
-                self.SubToSim.unregister()
-
-                self.flagMOCAP_On = True
-
-                # service was provided
-                return Mocap_IdResponse(False,True)
+        #         # service was provided
+        #         return Mocap_IdResponse(False,True)
 
     # return list of bodies detected by mocap or numbers 1 to 99 if not available
     def handle_available_bodies(self, dummy):
-        if self.flagMOCAP_On:
-            try: # sometimes mocap causes unpredictable errors
-                bodies = self.Qs.find_available_bodies(False)
-                if len(bodies) > 0:
-                    return {"bodies": bodies[0]}
-            except:
-                pass
+        pass
+        # if self.flagMOCAP_On:
+        #     try: # sometimes mocap causes unpredictable errors
+        #         bodies = self.Qs.find_available_bodies(False)
+        #         if len(bodies) > 0:
+        #             return {"bodies": bodies[0]}
+        #     except:
+        #         pass
 
-        return {"bodies": range(0,100)}
+        # return {"bodies": range(0,100)}
 
 
-    def PublishToGui(self,states_d,Input_to_Quad):
+    def PublishToGui(self):
 
         # WE ONLY PUBLIS TO TO GUI AT A CERTAIN FREQEUNCY
         # WHICH IS NOT NECESSARILY THE FREQUENCY OF THE NODE
@@ -426,15 +257,23 @@ class quad_controller():
             # get current time
             st_cmd.time  = rospy.get_time()
 
-            # state of quad comes from QUALISYS, or other sensor
-            st_cmd.x     = self.state_quad[0]; st_cmd.y     = self.state_quad[1]; st_cmd.z     = self.state_quad[2]
-            st_cmd.vx    = self.state_quad[3]; st_cmd.vy    = self.state_quad[4]; st_cmd.vz    = self.state_quad[5]
-            st_cmd.roll  = self.state_quad[6]; st_cmd.pitch = self.state_quad[7]; st_cmd.yaw   = self.state_quad[8]
-            
-            st_cmd.xd    = states_d[0]; st_cmd.yd    = states_d[1]; st_cmd.zd    = states_d[2]
-            st_cmd.vxd   = states_d[3]; st_cmd.vyd   = states_d[4]; st_cmd.vzd   = states_d[5]
+            position_velocity = self.mission_object.get_pv()
 
-            st_cmd.cmd_1 = Input_to_Quad[0]; st_cmd.cmd_2 = Input_to_Quad[1]; st_cmd.cmd_3 = Input_to_Quad[2]; st_cmd.cmd_4 = Input_to_Quad[3]
+            # state of quad comes from QUALISYS, or other sensor
+            st_cmd.x     = position_velocity[0]; st_cmd.y     = position_velocity[1]; st_cmd.z     = position_velocity[2]
+            st_cmd.vx    = position_velocity[3]; st_cmd.vy    = position_velocity[4]; st_cmd.vz    = position_velocity[5]
+
+            euler_angle  = self.mission_object.get_euler_angles()
+
+            st_cmd.roll  = euler_angle[0]; st_cmd.pitch = euler_angle[1]; st_cmd.yaw   = euler_angle[2]
+            
+            position_velocity_desired = self.mission_object.get_pv_desired()
+
+            st_cmd.xd    = position_velocity_desired[0]; st_cmd.yd    = position_velocity_desired[1]; st_cmd.zd    = position_velocity_desired[2]
+            st_cmd.vxd   = position_velocity_desired[3]; st_cmd.vyd   = position_velocity_desired[4]; st_cmd.vzd   = position_velocity_desired[5]
+
+            rc_input_to_quad = self.mission_object.get_rc_output()
+            st_cmd.cmd_1 = rc_input_to_quad[0]; st_cmd.cmd_2 = rc_input_to_quad[1]; st_cmd.cmd_3 = rc_input_to_quad[2]; st_cmd.cmd_4 = rc_input_to_quad[3]
 
             st_cmd.cmd_5 = 1500.0; st_cmd.cmd_6 = 1500.0; st_cmd.cmd_7 = 1500.0; st_cmd.cmd_8 = 1500.0
 
@@ -447,17 +286,6 @@ class quad_controller():
                 msg.time  = rospy.get_time()
                 msg.d_est = self.ControllerObject.d_est
                 self.pub_ctr_st.publish(msg) 
-        
-    def PublishToQuad(self,Input_to_Quad):
-
-        # create a message of the type quad_cmd, that the simulator subscribes to 
-        cmd  = quad_cmd()
-
-        cmd.cmd_1 = Input_to_Quad[0]; cmd.cmd_2 = Input_to_Quad[1]; cmd.cmd_3 = Input_to_Quad[2]; cmd.cmd_4 = Input_to_Quad[3];
-        
-        cmd.cmd_5 = 1500.0; cmd.cmd_6 = 1500.0; cmd.cmd_7 = 1500.0; cmd.cmd_8 = 1500.0
-        
-        self.pub_cmd.publish(cmd)
 
     def control_compute(self):
 
@@ -466,18 +294,11 @@ class quad_controller():
 
         # message published by quad_control to GUI 
         self.pub = rospy.Publisher('quad_state_and_cmd', quad_state_and_cmd, queue_size=10)
-        
-        # message published by quad_control that simulator will subscribe to 
-        self.pub_cmd = rospy.Publisher('quad_cmd', quad_cmd, queue_size=10)
 
         # for publishing state of the controller
         self.pub_ctr_st = rospy.Publisher('ctr_state', Controller_State, queue_size=10)
         # initialize flag for publishing controller state at false
         self.flagPublish_ctr_st = False
-
-        # controller needs to have access to STATE of the system
-        # this can come from QUALISYS, a sensor, or the simulator
-        self.SubToSim = rospy.Subscriber("quad_state", quad_state, self.get_state_from_simulator) 
 
         #-----------------------------------------------------------------------#
         # TO SAVE DATA FLAG
@@ -491,21 +312,12 @@ class quad_controller():
 
 
         #-----------------------------------------------------------------------#
-        # SERVICE FOR SELECTING DESIRED TRAJECTORY
-        # by default, STAYING STILL IN ORIGIN IS DESIRED TRAJECTORY
-        # self.flagTrajDes = 0
-        # Service is created, so that data is saved when GUI requests
+        # service for selecting desired trajectory
+        # by default, staying still in origin is desired trajectory
         TrajDes_service = rospy.Service('ServiceTrajectoryDesired', SrvTrajectoryDesired, self._handle_service_trajectory_des)
 
-        # initialize initial time for trajectory generation
-        self.time_TrajDes_t0 = rospy.get_time()
 
         #-----------------------------------------------------------------------#
-        # flag for MOCAP is initialized as FALSE
-        # flag for wheter Mocap is being used or not
-        self.flagMOCAP    = False
-        # Flag for whether Mocap is ON or OFF
-        self.flagMOCAP_On = False
         # Service is created, so that Mocap is turned ON or OFF whenever we want
         Save_MOCAP_service = rospy.Service('Mocap_Set_Id', Mocap_Id, self.handle_Mocap)
 
@@ -517,83 +329,41 @@ class quad_controller():
         rospy.Service('ServiceChangeController', SrvControllerChangeByStr, self._handle_service_change_controller)
         # rospy.Service('ServiceChangeController', SrvControllerChange, self._handle_service_change_controller)
 
-
         #-----------------------------------------------------------------------#
         # Service: change neutral value that guarantees that a quad remains at a desired altitude
         rospy.Service('IrisPlusResetNeutral', IrisPlusResetNeutral, self._handle_iris_plus_reset_neutral)
         rospy.Service('IrisPlusSetNeutral', IrisPlusSetNeutral, self._handle_iris_plus_set_neutral)
-
-        #-----------------------------------------------------------------------#
-        # Service for publishing state of controller 
-        # we use same type of service as above
-        #Contller_St = rospy.Service('Controller_State_GUI', Controller_Srv, self.handle_Controller_State_Srv)
-
         #-----------------------------------------------------------------------#
 
-        #-----------------------------------------------------------------------#
-        
-        # rc_override = rospy.Publisher('mavros/rc/override',OverrideRCIn,queue_size=10)
-        rc_override = rospy.Publisher('mavros/rc/override', OverrideRCIn, queue_size=100)
+        # Default Mission Class
+        MissionClass = missions.missions_database.database['Default']        
+        # construct a default object
+        self.mission_object = MissionClass()
+
+        rospy.logwarn('aaaaaaaaaaaaaa')
+        rospy.logwarn(self.mission_object.TrajGenerator.output(0.0))
+        self.mission_object.IrisPlusConverterObject.set_rotation_matrix([0.0,0.0,0.0])
 
         rate = rospy.Rate(self.frequency)
 
-        t0 = rospy.get_time() 
-
         while not rospy.is_shutdown():
 
-            time = rospy.get_time()
-
-            # get state: if MOCAP is ON we ask MOCAP; if MOCAP in OFF, we are subscribed to Simulator topic
-            self.GET_STATE_()
-
-            #print(self.state_quad[0:3])
-            # print self.state_quad[6:9]
-
-            # states for desired trajectory
-            states_d = self.traj_des()
-
-            # compute input to send to QUAD
-            # rospy.logwarn(self.ControllerObject.__class__.__name__)
-            # rospy.logwarn(self.state_quad[0:3])
-            # rospy.logwarn('bbbbbbbbbbbbbbbbbbbbbb')
-            # rospy.logwarn(states_d[0:3])
-            # rospy.logwarn('ccccccccccccccccccccccccccc')
-            desired_3d_force_quad = self.ControllerObject.output(time,self.state_quad,states_d)
-            # rospy.logwarn('dddddddddddddd')
-            # rospy.logwarn(desired_3d_force_quad)
-            self.DesiredZForceMedian.update_data(desired_3d_force_quad[2])
-
-
-            euler_rad     = self.state_quad[6:9]*math.pi/180
-            euler_rad_dot = numpy.zeros(3)
-
-            # convert to iris + standard
-            state_for_yaw_controller = numpy.concatenate([euler_rad,euler_rad_dot])
-            input_for_yaw_controller = numpy.array([0.0,0.0])
-            yaw_rate = self.YawControllerObject.output(state_for_yaw_controller,input_for_yaw_controller)
-            
-            self.IrisPlusConverterObject.set_rotation_matrix(euler_rad)
-            iris_plus_rc_input = self.IrisPlusConverterObject.input_conveter(desired_3d_force_quad,yaw_rate)
-
-
-            # Publish commands to Quad
-            self.PublishToQuad(iris_plus_rc_input)
+            self.mission_object.publish()
 
             # publish to GUI (it also contains publish state of Control to GUI)
-            self.PublishToGui(states_d,iris_plus_rc_input)
-
+            self.PublishToGui()
 
             if self.SaveDataFlag == True:
                 # if we want to save data
                 # numpy.savetxt(self.file_handle, [concatenate([[rospy.get_time()],[self.flag_measurements], self.state_quad, states_d[0:9], Input_to_Quad,self.ControllerObject.d_est])],delimiter=' ')
                 numpy.savetxt(self.file_handle, [concatenate([[rospy.get_time()],[self.flag_measurements], self.state_quad, states_d[0:9], desired_3d_force_quad])],delimiter=' ')
             # go to sleep
-            rate.sleep() 
+            rate.sleep()
 
 
 if __name__ == '__main__':
-    A_Controller = quad_controller()
+    AQuadController = QuadController()
     try:
-        A_Controller.control_compute()
+        AQuadController.control_compute()
     except rospy.ROSInterruptException:
         pass
