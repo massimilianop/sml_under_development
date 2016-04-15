@@ -43,10 +43,13 @@ from src.TrajectoryPlanner import trajectories_dictionary
 class TrajectorySelectionPlugin(Plugin):
 
 
-    def __init__(self, context,namespace = None):
+    def __init__(self, context,namespace = None, trajectories_dictionary = {}):
 
         # it is either "" or the input given at creation of plugin
         self.namespace = self._parse_args(context.argv())
+
+        # DO NOT COPY DICTIONARY!!!
+        self.trajectories_dictionary = trajectories_dictionary
 
 
         super(TrajectorySelectionPlugin, self).__init__(context)
@@ -87,11 +90,14 @@ class TrajectorySelectionPlugin(Plugin):
 
         # ---------------------------------------------- #
 
+        # # create list of available trajectory classes based on dictionary 
+        # count = 0
+        # for key in trajectories_dictionary.trajectories_dictionary.keys():
+        #     self._widget.ListTrajectoriesWidget.insertItem(count,key)
+        #     count += 1 
+
         # create list of available trajectory classes based on dictionary 
-        count = 0
-        for key in trajectories_dictionary.trajectories_dictionary.keys():
-            self._widget.ListTrajectoriesWidget.insertItem(count,key)
-            count += 1 
+        self.__print_list_of_trajectories()
 
         # if item in list is selected, print corresponding message
         self._widget.ListTrajectoriesWidget.itemClicked.connect(self.__print_trajectory_message)
@@ -99,6 +105,15 @@ class TrajectorySelectionPlugin(Plugin):
         # button to request service for setting new trajectory, with new parameters
         self._widget.SetTrajectory.clicked.connect(self.__get_new_trajectory_parameters)
 
+        self._widget.refreshTrajectoriesList.clicked.connect(self.__print_list_of_trajectories)
+
+    def __print_list_of_trajectories(self):
+        # create list of available trajectory classes based on dictionary
+        rospy.logwarn(self.trajectories_dictionary) 
+        count = 0
+        for key in self.trajectories_dictionary.keys():
+            self._widget.ListTrajectoriesWidget.insertItem(count,key)
+            count += 1
 
     def __print_trajectory_message(self):
         """Print message with parameters associated to chosen trajectory class"""
@@ -106,7 +121,7 @@ class TrajectorySelectionPlugin(Plugin):
         # get selected class name on list of classes
         selected_class_name = self._widget.ListTrajectoriesWidget.currentItem().text()
         # get class from dictionary of classes
-        selected_class      = trajectories_dictionary.trajectories_dictionary[selected_class_name]
+        selected_class      = self.trajectories_dictionary[selected_class_name]
         # get message for chosen class
         string              = selected_class.to_string()
         # print message on GUI
@@ -125,7 +140,7 @@ class TrajectorySelectionPlugin(Plugin):
         # get selected class name on list of classes
         selected_class_name = self._widget.ListTrajectoriesWidget.currentItem().text()
         # get class from dictionary of classes
-        selected_class      = trajectories_dictionary.trajectories_dictionary[selected_class_name]
+        selected_class      = self.trajectories_dictionary[selected_class_name]
         # get string that user modified with new parameters
         string              = self._widget.TrajectoryMessageInput.toPlainText()
         # get new parameters from string

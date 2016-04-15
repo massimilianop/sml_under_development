@@ -29,3 +29,36 @@ rosservice call TrajDes_GUI '{trajectory: "StayAtRest" , offset: [0.0,0.0,0.0], 
 ```
 rosservice call SrvControllerChangeByStr '{controller_name: "a", parameters: "b"}'
 ```
+
+5. SrvCreateJsonableObjectByStr: service for creating jsonable object
+```
+rosservice call ServiceChangeMission '{jsonable_name: "IrisSimulatorTrajectoryTracking", string_parameters: "{
+"trajectory"	: ["DescribeCircle", 
+{
+"radius"	: 1.0, 
+"rotation"	: [0.0, 0.0, 0.0], 
+"speed"	: 0.1, 
+"offset"	: [0.0, 0.0, 1.0]
+}], 
+"controller"	: ["PIDSimpleBoundedIntegralController", 
+{
+"quad_mass"	: 1.6677, 
+"bound_integral_xy"	: 0.0, 
+"derivative_gain_z"	: 1.0, 
+"derivative_gain_xy"	: 1.0, 
+"proportional_gain_z"	: 1.0, 
+"integral_gain_z"	: 0.5, 
+"integral_gain_xy"	: 0.0, 
+"proportional_gain_xy"	: 1.0, 
+"bound_integral_z"	: 0.0
+}], 
+"yaw_controller"	: ["TrackingYawController", 
+{
+"gain"	: 1.0
+}]
+}"}'
+```
+
+```
+rosservice call ServiceChangeMission '{jsonable_name: 'IrisSimulatorTrajectoryTracking', string_parameters: '{"trajectory"	: ["DescribeCircle", {"radius"	: 1.0, "rotation"	: [0.0, 0.0, 0.0], "speed"	: 0.1, "offset"	: [0.0, 0.0, 1.0]}], "controller"	: ["PIDSimpleBoundedIntegralController", {"quad_mass"	: 1.6677, "bound_integral_xy"	: 0.0, "derivative_gain_z"	: 1.0, "derivative_gain_xy"	: 1.0, "proportional_gain_z"	: 1.0, "integral_gain_z"	: 0.5, "integral_gain_xy"	: 0.0, "proportional_gain_xy"	: 1.0, "bound_integral_z"	: 0.0}], "yaw_controller"	: ["TrackingYawController", {"gain"	: 1.0}]}'}'
+```

@@ -66,6 +66,7 @@ add_service_files(
   Mocap_Id.srv
   SrvControllerChange.srv
   SrvControllerChangeByStr.srv
+  SrvCreateJsonableObjectByStr.srv
   Simulator_Srv.srv
   MocapBodies.srv
   PlannerStart.srv

@@ -18,26 +18,26 @@ class TrackingYawController(yc.YawController):
     #     self.arg = arg
 
 
-    @classmethod
-    def description(cls):
-        return "Tracking yaw controller"
+    # @classmethod
+    # def description(cls):
+    #     return "Tracking yaw controller"
     
     
-    @classmethod
-    def parameters_to_string(cls, gain=1.0):
-        dic = {'gain':gain}
-        string = json.dumps(dic)
-        return string
+    # @classmethod
+    # def parameters_to_string(cls, gain=1.0):
+    #     dic = {'gain':gain}
+    #     string = json.dumps(dic)
+    #     return string
         
         
-    @classmethod
-    def string_to_parameters(cls, string):
-        dic = json.loads(string)
-        gain = dic['gain']
-        return gain
+    # @classmethod
+    # def string_to_parameters(cls, string):
+    #     dic = json.loads(string)
+    #     gain = dic['gain']
+    #     return gain
 
 
-    def __init__(self, gain):
+    def __init__(self, gain = 1.0):
         self.__gain = gain
     
     
