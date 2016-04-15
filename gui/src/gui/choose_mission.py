@@ -25,13 +25,17 @@ from src.missions import missions_database
 
 from src.utilities import jsonable
 
+import copy
+
+from choose_jsonable import ChooseJsonablePlugin
+
 class ChooseMissionPlugin(Plugin):
 
     def __init__(self, context,namespace = None):
 
         # it is either "" or the input given at creation of plugin
         self.namespace = self._parse_args(context.argv())
-
+        self.context   = context
 
         super(ChooseMissionPlugin, self).__init__(context)
         # Give QObjects reasonable names
@@ -97,7 +101,7 @@ class ChooseMissionPlugin(Plugin):
             ClassSelected           = missions_database.database[key_class_name_selected]
 
             # message to be printed
-            string = ClassSelected.description() 
+            string = ClassSelected.description()
 
             # print message on GUI
             self._widget.ItemClickedMessage.setPlainText(string)
@@ -115,8 +119,8 @@ class ChooseMissionPlugin(Plugin):
 
 
     def __reset_controllers_widget(self):
-        """ Clear widget with controllers list and print it again """
-        
+        """ Clear widget with missions list and print it again """
+
         # clear items from widget
         self._widget.ListControllersWidget.clear()
 
@@ -126,7 +130,55 @@ class ChooseMissionPlugin(Plugin):
             self._widget.ListControllersWidget.addItem(key)
 
         self.__head_class_set = False
-        
+        self.dic_to_print     = {}
+
+        self.trajectories_dictionary = {'asasasas':'antonio'}
+
+        self.__remove_tabs()
+
+    def __remove_tabs(self):
+        rospy.logwarn(self._widget.tabWidget.count())
+        for index in range(self._widget.tabWidget.count()):
+            if index != 0:
+                rospy.logwarn(index)
+                self._widget.tabWidget.removeTab(index)
+
+    def __add_tab(self):
+
+        if 'controller' in self.__HeadClass.inner.keys():
+            self.__add_tab_controller()
+        if 'trajectory' in self.__HeadClass.inner.keys():  
+            self.__add_tab_refence()
+        if 'yaw_controller' in self.__HeadClass.inner.keys():
+            self.__add_tab_yaw_controller()
+
+    def __add_tab_refence(self):
+        self.choose_reference  = ChooseJsonablePlugin(self.context,\
+            self.namespace,\
+            name_tab = "Reference",
+            dictionary_of_options = self.__HeadClass.inner['trajectory'],\
+            service_name = 'ServiceTrajectoryDesired',\
+            service_type = 'SrvTrajectoryDesired')
+        self._widget.tabWidget.addTab(self.choose_reference._widget,'Reference')
+
+    def __add_tab_controller(self):
+        self.choose_reference  = ChooseJsonablePlugin(self.context,\
+            self.namespace,\
+            name_tab = "ControllerI",
+            dictionary_of_options = self.__HeadClass.inner['controller'],\
+            service_name = 'ServiceTrajectoryDesired',\
+            service_type = 'SrvTrajectoryDesired')
+        self._widget.tabWidget.addTab(self.choose_reference._widget,'Controller')
+
+    def __add_tab_yaw_controller(self):
+        self.choose_reference  = ChooseJsonablePlugin(self.context,\
+            self.namespace,\
+            name_tab = "YawController",
+            dictionary_of_options = self.__HeadClass.inner['yaw_controller'],\
+            service_name = 'ServiceTrajectoryDesired',\
+            service_type = 'SrvTrajectoryDesired')
+        self._widget.tabWidget.addTab(self.choose_reference._widget,'YawController')
+
     def __controller_item_clicked(self):
 
         if self.__head_class_set == False:
@@ -134,6 +186,8 @@ class ChooseMissionPlugin(Plugin):
             self.__head_class_set = True
             self.__head_class_key = self._widget.ListControllersWidget.currentItem().text()
             self.__HeadClass      = missions_database.database[self.__head_class_key]
+
+            self.__add_tab()
 
             head_class_input_dic = {}
             for key in self.__HeadClass.inner.keys():

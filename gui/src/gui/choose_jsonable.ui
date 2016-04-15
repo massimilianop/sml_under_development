@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>805</width>
+    <height>794</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true"/>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <widget class="QGroupBox" name="groupBox_8">
+     <property name="title">
+      <string>Setting</string>
+     </property>
+     <widget class="QRadioButton" name="Failure">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>70</y>
+        <width>81</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Failure</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="Success">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>70</y>
+        <width>91</width>
+        <height>22</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Success</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="SetJsonableButton">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>30</y>
+        <width>221</width>
+        <height>27</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Set</string>
+      </property>
+     </widget>
+     <widget class="QListWidget" name="ListJsonableWidget">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>130</y>
+        <width>771</width>
+        <height>141</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QPlainTextEdit" name="JsonableMessageInput">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>300</y>
+        <width>771</width>
+        <height>211</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="labelJsonableParameters">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>280</y>
+        <width>161</width>
+        <height>17</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Parameters</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="labelJsonableAvailable">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>110</y>
+        <width>161</width>
+        <height>17</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Available</string>
+      </property>
+     </widget>
+     <widget class="QPlainTextEdit" name="JsonableDescription">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>557</y>
+        <width>761</width>
+        <height>201</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLabel" name="labelJsonableParameters_2">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>530</y>
+        <width>161</width>
+        <height>17</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Description</string>
+      </property>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
