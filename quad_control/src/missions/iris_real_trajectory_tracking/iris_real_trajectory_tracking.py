@@ -11,7 +11,7 @@ from mavros_msgs.msg import OverrideRCIn
 from ConverterBetweenStandards.IrisPlusConverter import IrisPlusConverter
 
 # import list of available trajectories
-from TrajectoryPlanner import trajectories_dictionary
+from trajectories import trajectories_dictionary
 
 # import controllers dictionary
 from Yaw_Rate_Controller import yaw_controllers_dictionary
@@ -74,7 +74,7 @@ class IrisRealTrajectoryTracking(mission.Mission):
 
         pass  
 
-    @classmethod
+
     def initialize_state(self):
         # state of quad: position, velocity and attitude 
         # ROLL, PITCH, AND YAW (EULER ANGLES IN DEGREES)
@@ -96,11 +96,11 @@ class IrisRealTrajectoryTracking(mission.Mission):
     	euler_rad_dot = numpy.zeros(3)
     	return numpy.concatenate([euler_rad,euler_rad_dot])
 
-    @classmethod
+
     def get_reference(cls,time_instant):
         return self.TrajGenerator.output(time_instant)
 
-    @classmethod
+
     def get_state(cls):
 
         bodies = self.Qs.get_body(self.body_id)
@@ -129,19 +129,19 @@ class IrisRealTrajectoryTracking(mission.Mission):
 
         return self.state_quad
 
-    @classmethod
+
     def get_pv():
         return self.state_quad[0:6]
 
-    @classmethod
+
     def get_pv_desired():
         return self.reference[0:6]
 
-    @classmethod
+
     def get_euler_angles():
         return self.state_quad[6:9]
 
-    @classmethod
+
     def real_publish(self,desired_3d_force_quad,yaw_rate):
 
         self.IrisPlusConverterObject.set_rotation_matrix(euler_rad)

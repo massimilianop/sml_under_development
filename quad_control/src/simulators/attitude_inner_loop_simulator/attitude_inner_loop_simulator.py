@@ -1,5 +1,5 @@
 """This module implements the simulator of the quad
-with no attitude inner loop.
+with attitude inner loop.
 """
 #TODO describe this better
 
@@ -8,7 +8,7 @@ import numpy as np
 import utilities.utility_functions as uts
 from .. import simulator
 import rospy
-
+import numpy as np
 
 
 class AttitudeInnerLoopSimulator(simulator.Simulator):
@@ -37,7 +37,8 @@ class AttitudeInnerLoopSimulator(simulator.Simulator):
             initial_control=None,
             mass=1.442,
             neutral_throttle=1484,
-            acro_rpp=4.5
+            acro_rpp=4.5,
+            gain_inner_loop = 1.0
             ):
             
         simulator.Simulator.__init__(self, initial_time, initial_state,
@@ -46,6 +47,7 @@ class AttitudeInnerLoopSimulator(simulator.Simulator):
         self.neutral_throttle = neutral_throttle
         self.acro_rpp = acro_rpp
         self.throttle_gain = mass*uts.GRAVITY/neutral_throttle
+        self.gain_inner_loop = gain_inner_loop
         
         
     def get_position(self):
@@ -70,18 +72,27 @@ class AttitudeInnerLoopSimulator(simulator.Simulator):
         #TODO make sure that this is a rotation matrix
         # for example, convert to euler angles and back
         rotation = np.reshape(state[6:15], (3,3))
+        # Not sure about this... check with Pedro
+        current_psi = uts.GetEulerAnglesDeg(rotation)[2]
         unit_vector   = rotation.dot(uts.E3_VERSOR)
         throttle = control[0]
 
-        
-        force_3d, yaw_rate = self.stabilize_mode_command_to_thrust_and_yaw_rate(control)
+        force_3d, yaw_rate = simulator.stabilize_mode_command_to_thrust_and_yaw_rate(
+            control,
+            current_psi,
+            self.MASS,
+            self.THROTTLE_NEUTRAL,
+            self.MAX_PSI_SPEED_RAD,
+            self.MAX_ANGLE_RAD
+            )
 
-        throttle = numpy.dot(force_3d,unit_vector)
+        throttle = np.dot(force_3d,unit_vector)
 
         # gain of inner loop for attitude control
-        ktt             = self.GAIN_INNER_LOOP
-        unit_vector_des = force_3d/numpy.linalg.norm(force_3d)
-        omega           = ktt*skew(unit_vector).dot(unit_vector_des)
+        ktt             = self.gain_inner_loop
+        unit_vector_des = force_3d/np.linalg.norm(force_3d)
+        versor          = rotation.dot(uts.E3_VERSOR)
+        omega           = ktt*uts.skew(unit_vector).dot(unit_vector_des)
 
         dot_p = np.array(velocity)
         dot_v = throttle/self.mass*versor - uts.GRAVITY*uts.E3_VERSOR

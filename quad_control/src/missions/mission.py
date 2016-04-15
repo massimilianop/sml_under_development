@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
 from utilities import jsonable as js
-
 from utilities import utility_functions
 
 import numpy
 
 # for getting time
 import rospy
+
 
 # The children import needed dictionaries
 
@@ -25,6 +25,7 @@ import rospy
 
 # If the mocap is needed, the module mocap must be imported
 # import mocap 
+
 
 
 class Mission(js.Jsonable):
@@ -45,7 +46,8 @@ class Mission(js.Jsonable):
 
     # time_instant_t0 = 0.0
 
-    @classmethod
+
+
     def description(cls):
         return "Abstract Mission"
     
@@ -75,21 +77,26 @@ class Mission(js.Jsonable):
         # Unsubscribe from all the subscribed topics
         pass
 
+
     def initialize_state(self):
         raise NotImplementedError()
 
+
     def real_publish(self,desired_3d_force_quad,yaw_rate):
         return NotImplementedError()
+
 
     def get_quad_ea_rad(self):
         '''Get euler angles (roll, pitch, yaw) in radians, and get their time derivatives'''
         # return numpy.zeros(3+3)
         NotImplementedError()
 
+
     def get_desired_yaw_rad(self,time_instant):
         '''Get desired yaw in radians, and its time derivative'''
         return numpy.zeros(1+1)
-        return NotImplementedError()
+        #return NotImplementedError()
+
 
     def get_reference(self,time_instant):
         """
@@ -98,6 +105,7 @@ class Mission(js.Jsonable):
         """
         return None
 
+
     def get_state(self):
         """
         Get state that is accepted by controller
@@ -105,53 +113,58 @@ class Mission(js.Jsonable):
         """
         return NotImplementedError()
 
+
     def get_pv(self):
         """Get position (m) and velocity (m/s) of quadrotor"""
         return NotImplementedError()
+
 
     def get_pv_desired(self):
         """Get desired position (m) and velocity (m/s) for the quadrotor"""
         return NotImplementedError()
 
+
     def get_rc_output(self):
         """Get rc output"""
         return numpy.zeros(8)    
+
 
     def get_euler_angles(self):
         # TODO: CHECK WHETHER IT SHOULD BE RAD OR NOT
         """Get euler angles of the quadrotor (rad)""" 
         return NotImplementedError()
 
+
     def change_trajectory(self,key,string):
         """Change reference trajectory"""
         TrajectoryClass   = self.inner['trajectories_dictionary'][key]
         self.TrajGenerator = TrajectoryClass.from_string(string)
-        pass
+
 
     def change_yaw_trajectory(self,key,string):
         """Change yaw reference trajectory"""
         YawTrajectoryClass   = self.inner['yaw_trajectories_dictionary'][key]
         self.YawTrajGenerator = YawTrajectoryClass.from_string(string)
-        pass
+
 
     def change_controller(self,key,string):
         """Change controller"""
         ControllerClass      = self.inner['controllers_dictionary'][key]
         self.ControllerObject = ControllerClass.from_string(string)
-        pass
+
 
     def change_yaw_controller(self,key,string):
         """Change yaw controller"""
         YawControllerClass      = self.inner['yaw_controllers_dictionary'][key]
         self.YawControllerObject = YawControllerClass.from_string(string)
-        pass
+
 
     def reset_initial_time(self,time_instant = None):
         if time_instant == None:
             self.time_instant_t0 = rospy.get_time()
         else:
             self.time_instant_t0 = time_instant
-        pass 
+
    
     def yaw_rate(self,time_instant):
 
@@ -161,6 +174,7 @@ class Mission(js.Jsonable):
         yaw_rate = self.YawControllerObject.output(state_for_yaw_controller,input_for_yaw_controller) 
 
         return yaw_rate
+
 
     def compute_desired_3d_force(self,time_instant):
 
@@ -175,6 +189,7 @@ class Mission(js.Jsonable):
 
         return desired_3d_force_quad
 
+
     def publish(self):
 
         time_instant = rospy.get_time() - self.time_instant_t0
@@ -186,5 +201,3 @@ class Mission(js.Jsonable):
         yaw_rate = self.yaw_rate(time_instant)
 
         self.real_publish(desired_3d_force_quad,yaw_rate)
-
-        pass

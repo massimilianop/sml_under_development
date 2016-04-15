@@ -10,7 +10,7 @@ from ConverterBetweenStandards.IrisPlusConverter import IrisPlusConverter
 from quad_control.msg import quad_cmd, quad_state
 
 # import list of available trajectories
-from TrajectoryPlanner import trajectories_dictionary
+from trajectories import trajectories_dictionary
 
 # import controllers dictionary
 from Yaw_Rate_Controller import yaw_controllers_dictionary
@@ -26,6 +26,8 @@ import numpy
 # for subscribing to topics, and publishing
 import rospy
 
+
+
 class IrisSimulatorTrajectoryTracking(mission.Mission):
 
     inner = {}
@@ -34,9 +36,11 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
     inner['trajectory']     = trajectories_dictionary.trajectories_dictionary
     inner['yaw_controller'] = yaw_controllers_dictionary.yaw_controllers_dictionary    
 
+
     @classmethod
     def description(cls):
         return "Iris, simulated, to track a desired trajectory"
+
     
     def __init__(self,
             controller     = controllers_dictionary.controllers_dictionary['PIDSimpleBoundedIntegralController'](),
@@ -73,21 +77,23 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
         # state of quad: position, velocity and attitude 
         # ROLL, PITCH, AND YAW (EULER ANGLES IN DEGREES)
         self.state_quad = numpy.zeros(3+3+3) 
-        pass          
+        
         
     def __str__(self):
         return self.description()
         # Add the self variables
+        
          
     def __del__(self):
         # Unsubscribe from all the subscribed topics
         self.sub_odometry.unregister()
-        pass
+
 
     def get_quad_ea_rad(self):
     	euler_rad     = self.state_quad[6:9]*math.pi/180
     	euler_rad_dot = numpy.zeros(3)
     	return numpy.concatenate([euler_rad,euler_rad_dot])
+
 
     def get_reference(self,time_instant):
         self.reference = self.TrajGenerator.output(time_instant)
@@ -102,11 +108,14 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
     def get_pv(self):
         return self.state_quad[0:6]
 
+
     def get_pv_desired(self):
         return self.reference[0:6]
 
+
     def get_euler_angles(self):
         return self.state_quad[6:9]
+
 
     def real_publish(self,desired_3d_force_quad,yaw_rate):
 
@@ -118,13 +127,18 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
         # create a message of the type quad_cmd, that the simulator subscribes to 
         cmd  = quad_cmd()
         
-        cmd.cmd_1 = iris_plus_rc_input[0]; cmd.cmd_2 = iris_plus_rc_input[1]; cmd.cmd_3 = iris_plus_rc_input[2]; cmd.cmd_4 = iris_plus_rc_input[3];
+        cmd.cmd_1 = iris_plus_rc_input[0]
+        cmd.cmd_2 = iris_plus_rc_input[1]
+        cmd.cmd_3 = iris_plus_rc_input[2]
+        cmd.cmd_4 = iris_plus_rc_input[3]
 
-        cmd.cmd_5 = 1500.0; cmd.cmd_6 = 1500.0; cmd.cmd_7 = 1500.0; cmd.cmd_8 = 1500.0
+        cmd.cmd_5 = 1500.0
+        cmd.cmd_6 = 1500.0
+        cmd.cmd_7 = 1500.0
+        cmd.cmd_8 = 1500.0
         
         self.pub_cmd.publish(cmd)
 
-        pass
 
     # callback when simulator publishes states
     def get_state_from_simulator(self,simulator_message):
@@ -139,4 +153,4 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
         # collect all components of state
         self.state_quad = numpy.concatenate([p,v,ee])  
 
-        pass         
+
