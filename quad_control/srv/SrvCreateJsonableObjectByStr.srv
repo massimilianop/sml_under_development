@@ -1,0 +1,4 @@
+string jsonable_name
+string string_parameters
+---
+bool received

@@ -37,7 +37,7 @@ class TrackingYawController(yc.YawController):
     #     return gain
 
 
-    def __init__(self, gain):
+    def __init__(self, gain = 1.0):
         self.__gain = gain
     
     

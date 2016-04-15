@@ -110,10 +110,6 @@ class Jsonable:
         args = spec.args
         defs = spec.defaults
 
-        rospy.logwarn(spec)
-        rospy.logwarn(args)
-        rospy.logwarn(defs)
-
         if defs is None:
             defs = []
         arg_dic = dict()
@@ -131,13 +127,14 @@ class Jsonable:
             arg_dic[arg] = val
         # string = json.dumps(arg_dic)
         # string = json.dumps(arg_dic, indent=4, separators=(', ', ':\n\t'))
-        string = json.dumps(arg_dic, separators=(', \n', '\t:\t'))
+        string = json.dumps(arg_dic, separators=(', \n', '\t: '))
         string = string.replace('"[','[')
         string = string.replace(']"',']')
         string = string.replace('{','{\n')
         string = string.replace('}','\n}')
+        string = string.replace(', \n0',', 0')
+        string = string.replace(', \n1',', 1')
         #string = string.replace('"','')
-        rospy.logwarn(string)
         return string
         
         

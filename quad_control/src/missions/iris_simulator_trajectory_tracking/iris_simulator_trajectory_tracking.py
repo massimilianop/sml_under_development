@@ -30,18 +30,19 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
 
     inner = {}
 
-    inner['controllers_dictionary']     = controllers_dictionary.controllers_dictionary
-    inner['trajectories_dictionary']    = trajectories_dictionary.trajectories_dictionary
-    inner['yaw_controllers_dictionary'] = yaw_controllers_dictionary.yaw_controllers_dictionary    
+    inner['controller']     = controllers_dictionary.controllers_dictionary
+    inner['trajectory']     = trajectories_dictionary.trajectories_dictionary
+    inner['yaw_controller'] = yaw_controllers_dictionary.yaw_controllers_dictionary    
 
     @classmethod
     def description(cls):
         return "Iris, simulated, to track a desired trajectory"
     
-    def __init__(self,controller = controllers_dictionary.controllers_dictionary['PIDSimpleBoundedIntegralController'],
-        trajectory = trajectories_dictionary.trajectories_dictionary['StayAtRest'],
-        yaw_controller = yaw_controllers_dictionary.yaw_controllers_dictionary['']
-        ):
+    def __init__(self,
+            controller     = controllers_dictionary.controllers_dictionary['PIDSimpleBoundedIntegralController'](),
+            trajectory     = trajectories_dictionary.trajectories_dictionary['StayAtRest'](),
+            yaw_controller = yaw_controllers_dictionary.yaw_controllers_dictionary['TrackingYawController']()
+            ):
         # Copy the parameters into self variables
         # Subscribe to the necessary topics, if any
 
@@ -59,25 +60,11 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
         # dy default, desired trajectory is staying still in origin
         self.TrajGenerator = trajectory
         self.reference     = self.TrajGenerator.output(self.time_instant_t0)
-        rospy.logwarn(self.reference)
 
         # controllers selected by default
         self.ControllerObject = controller
 
         self.YawControllerObject = yaw_controller
-
-        # # dy default, desired trajectory is staying still in origin
-        # TrajectoryClass    = trajectories_dictionary.trajectories_dictionary['StayAtRest']
-        # self.TrajGenerator = TrajectoryClass(point = numpy.array([0.0,0.0,1.0])) 
-        # self.reference     = self.TrajGenerator.output(self.time_instant_t0)
-        # rospy.logwarn(self.reference)
-
-        # # controllers selected by default
-        # ControllerClass = 
-        # self.ControllerObject = ControllerClass()
-
-        # YawControllerClass = yaw_controllers_dictionary.yaw_controllers_dictionary['YawRateControllerTrackReferencePsi']
-        # self.YawControllerObject = YawControllerClass()
 
         pass  
 

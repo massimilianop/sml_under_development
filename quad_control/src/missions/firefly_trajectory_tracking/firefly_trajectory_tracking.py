@@ -15,7 +15,7 @@ from nav_msgs.msg import Odometry
 from TrajectoryPlanner import trajectories_dictionary
 
 # import controllers dictionary
-from Yaw_Rate_Controller import yaw_controllers_dictionary
+from yaw_controllers import yaw_controllers_dictionary
 
 # import controllers dictionary
 from controllers_hierarchical.fully_actuated_controllers import controllers_dictionary
@@ -28,20 +28,35 @@ import rospy
 
 class FireflyTrajectoryTracking(mission.Mission):
 
+    inner = {}
+
+    inner['controller']     = controllers_dictionary.controllers_dictionary
+    inner['trajectory']     = trajectories_dictionary.trajectories_dictionary
+    inner['yaw_controller'] = yaw_controllers_dictionary.yaw_controllers_dictionary   
+
     @classmethod
     def description(cls):
-        return "Firefly, from RotorS, to track a desired trajectory"
+        string = """
+        Firefly, from RotorS, to track a desired trajectory
+        This mission depends on:
+        . a trajectory tracking controller
+        . a reference trajectory to be tracked
+        . a yaw controller
+        """
+        
+        return string
     
     
-    def __init__(self):
+    def __init__(self,
+            controller     = controllers_dictionary.controllers_dictionary['PIDSimpleBoundedIntegralController'](),
+            trajectory     = trajectories_dictionary.trajectories_dictionary['StayAtRest'](),
+            yaw_controller = yaw_controllers_dictionary.yaw_controllers_dictionary['TrackingYawController']()
+            ):
         # Copy the parameters into self variables
         # Subscribe to the necessary topics, if any
 
+        # initialize time instant, and  state
         mission.Mission.__init__(self)
-    
-        self.inner['controllers_dictionary']     = controllers_dictionary.controllers_dictionary
-        self.inner['trajectories_dictionary']    = trajectories_dictionary.trajectories_dictionary
-        self.inner['yaw_controllers_dictionary'] = yaw_controllers_dictionary.yaw_controllers_dictionary
 
         # converting our controlller standard into rotors standard
         self.RotorSObject = RotorSConverter()
@@ -53,17 +68,14 @@ class FireflyTrajectoryTracking(mission.Mission):
         self.pub_motor_speeds = rospy.Publisher('/firefly/command/motor_speed', Actuators, queue_size=10)      
 
         # dy default, desired trajectory is staying still in origin
-        TrajectoryClass    = self.inner['trajectories_dictionary']['StayAtRest']
-        self.TrajGenerator = TrajectoryClass()
+        self.TrajGenerator = trajectory
         self.reference     = self.TrajGenerator.output(self.time_instant_t0)
 
         # controllers selected by default
-        ControllerClass       = self.inner['controllers_dictionary']['PIDSimpleBoundedIntegralController']
-        self.ControllerObject = ControllerClass()
+        self.ControllerObject = controller
 
         # controllers selected by default
-        YawControllerClass       = self.inner['yaw_controllers_dictionary']['YawRateControllerTrackReferencePsi']
-        self.YawControllerObject = YawControllerClass()
+        self.YawControllerObject = yaw_controller
 
         pass  
 

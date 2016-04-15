@@ -29,7 +29,7 @@ class BoundedIntegralPIDController(controller.Controller):
         
 
     def __init__(self,\
-            double_integrator_controller = database_dic.database_dic["DefaultDIC"] ,\
+            double_integrator_controller = database_dic.database_dic["DefaultDIC"]() ,\
             integral_gain_xy     = 0.0        ,\
             bound_integral_xy    = 0.0        ,\
             integral_gain_z      = 0.5        ,\

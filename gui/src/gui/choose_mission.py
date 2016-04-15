@@ -7,8 +7,8 @@ from python_qt_binding import loadUi
 from python_qt_binding.QtGui import QWidget
 from PyQt4.QtCore import QObject, pyqtSignal
 
-# import services defined in quad_control; service being used: SrvControllerChangeByStr
-from quad_control.srv import SrvControllerChangeByStr
+# import services defined in quad_control; service being used: SrvCreateJsonableObjectByStr
+from quad_control.srv import SrvCreateJsonableObjectByStr
 
 import argparse
 
@@ -81,12 +81,38 @@ class ChooseMissionPlugin(Plugin):
         self._widget.SetControllerButton.clicked.connect(self.__get_new_controller_parameters)
 
         # if item in list is selected, print corresponding message
-        self._widget.ListControllersWidget.itemClicked.connect(self.__controller_item_clicked)
+        self._widget.ListControllersWidget.itemDoubleClicked.connect(self.__controller_item_clicked)
+        self._widget.ListControllersWidget.itemClicked.connect(self.__print_controller_item_clicked)
 
         self.__reset_controllers_widget()
 
         # button for resetting list of available controllers
         self._widget.ResetControllersList.clicked.connect(self.__reset_controllers_widget)
+
+    def __print_controller_item_clicked(self):
+
+        if self.__head_class_set == False:
+            
+            key_class_name_selected = self._widget.ListControllersWidget.currentItem().text()
+            ClassSelected           = missions_database.database[key_class_name_selected]
+
+            # message to be printed
+            string = ClassSelected.description() 
+
+            # print message on GUI
+            self._widget.ItemClickedMessage.setPlainText(string)
+        else:
+            key_class_name_selected = self._widget.ListControllersWidget.currentItem().text()
+            ClassSelected           = self.dic_to_print[key_class_name_selected]
+
+            # message to be printed
+            string = ClassSelected.description() 
+
+            # print message on GUI
+            self._widget.ItemClickedMessage.setPlainText(string)
+
+        pass            
+
 
     def __reset_controllers_widget(self):
         """ Clear widget with controllers list and print it again """
@@ -135,7 +161,7 @@ class ChooseMissionPlugin(Plugin):
             input_dictionary  = self.__head_class_input_dic
             list_keys         = list_of_keys_appended.split(':')
             
-            rospy.logwarn(self.__head_class_input_dic)
+            #rospy.logwarn(self.__head_class_input_dic)
             jsonable.update_input_dictionary(input_dictionary,list_keys,chosen_class,nested_dictionary)
             self.__head_class_input_dic = input_dictionary
 
@@ -157,7 +183,7 @@ class ChooseMissionPlugin(Plugin):
         list_of_keys      = list_of_keys.split(':')
         self.dic_to_print = self.__HeadClass.get_dic_recursive(input_dictionary,list_of_keys)
 
-        rospy.logwarn(self.dic_to_print)
+        #rospy.logwarn(self.dic_to_print)
 
         # clear items from widget
         self._widget.ListControllersWidget.clear()
@@ -186,18 +212,16 @@ class ChooseMissionPlugin(Plugin):
         # get new parameters from string
         parameters          = string
 
-        rospy.logwarn(parameters)
+        # rospy.logwarn(parameters)
 
         # request service
         try: 
             # time out of one second for waiting for service
-            rospy.wait_for_service("/"+self.namespace+'ServiceChangeController',2.0)
+            rospy.wait_for_service("/"+self.namespace+'ServiceChangeMission',2.0)
             
             try:
-                # RequestingController = rospy.ServiceProxy("/"+self.namespace+'ServiceChangeController', SrvControllerChange)
-                RequestingController = rospy.ServiceProxy("/"+self.namespace+'ServiceChangeController', SrvControllerChangeByStr)
-
-                reply = RequestingController(controller_name = self.__head_class_key, parameters = parameters)
+                RequestingMission = rospy.ServiceProxy("/"+self.namespace+'ServiceChangeMission', SrvCreateJsonableObjectByStr)
+                reply = RequestingMission(jsonable_name = self.__head_class_key, string_parameters = parameters)
 
                 if reply.received == True:
                     # if controller receives message
@@ -205,14 +229,16 @@ class ChooseMissionPlugin(Plugin):
                     self._widget.Failure.setChecked(False) 
 
 
-            except rospy.ServiceException, e:
-                rospy.logwarn('Proxy for service that sets controller FAILED')
+            except rospy.ServiceException as exc:
+                rospy.logwarn("Service did not process request: " + str(exc))
+                rospy.logwarn('Proxy for service that sets mission FAILED')
                 self._widget.Success.setChecked(False) 
                 self._widget.Failure.setChecked(True) 
                 # print "Service call failed: %s"%e
             
-        except:
-            rospy.logwarn('Timeout for service that sets controller')
+        except rospy.ServiceException as exc:
+            rospy.logwarn("Service did not process request: " + str(exc))
+            rospy.logwarn('Timeout for service that sets mission')
             self._widget.Success.setChecked(False) 
             self._widget.Failure.setChecked(True) 
             # print "Service not available ..."        

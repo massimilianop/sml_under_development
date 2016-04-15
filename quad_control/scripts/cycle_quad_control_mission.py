@@ -125,15 +125,23 @@ class QuadController():
     # callback for when changing controller is requested
     def _handle_service_change_controller(self,req):
 
-        # controller_class_name = req.controller_name
-        # chosen class taken from dictionary
-        ControllerClass = controllers_dictionary.controllers_dictionary[req.controller_name]
-        
-        self.ControllerObject = ControllerClass.from_string(req.parameters)
-        #rospy.logwarn(self.ControllerObject.__class__.__name__)
+        self.mission_object.change_controller(req.controller_name,req.parameters)
 
         # return message to Gui, to let it know resquest has been fulfilled
         return SrvControllerChangeByStrResponse(received = True)
+
+    # callback for when changing mission is requested
+    def _handle_service_change_mission(self,req):
+
+        # class_name = req.jsonable_name
+        # chosen class taken from dictionary
+        MissionClass = missions.missions_database.database[req.jsonable_name]
+        
+        self.mission_object = MissionClass.from_string(req.string_parameters)
+        #rospy.logwarn(self.mission_object.__class__.__name__)
+
+        # return message to Gui, to let it know resquest has been fulfilled
+        return SrvCreateJsonableObjectByStrResponse(received = True)        
 
 
     # callback for when changing desired trajectory is requested
@@ -328,6 +336,8 @@ class QuadController():
         # Service is created, so that user can change controller on GUI
         rospy.Service('ServiceChangeController', SrvControllerChangeByStr, self._handle_service_change_controller)
         # rospy.Service('ServiceChangeController', SrvControllerChange, self._handle_service_change_controller)
+
+        rospy.Service('ServiceChangeMission', SrvCreateJsonableObjectByStr, self._handle_service_change_mission)
 
         #-----------------------------------------------------------------------#
         # Service: change neutral value that guarantees that a quad remains at a desired altitude
