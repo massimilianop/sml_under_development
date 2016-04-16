@@ -11,11 +11,10 @@ setup_args = generate_distutils_setup(
         'simulators',
         'yaw_controllers',
         'systems_functions',
-        'quadrotor_tracking_controllers_hierarchical',
-        'controllers_hierarchical',
+        'controllers',
         'trajectories',
         'missions',
-        'ConverterBetweenStandards'
+        'converter_between_standards'
         ],
     package_dir={'': 'src'},
 )

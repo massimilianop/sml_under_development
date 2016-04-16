@@ -1,3 +1,7 @@
+<strong> http://doc.qt.io/qt-5/richtext-html-subset.html </strong>
+
+
+
 GUI package
 ===========
 

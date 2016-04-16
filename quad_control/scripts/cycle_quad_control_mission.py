@@ -17,9 +17,6 @@ from quad_control.msg import Controller_State
 # StartSim stop simulator
 from quad_control.srv import *
 
-# when Mocap is used this is necessary
-import mocap_source
-
 # to work with directories relative to ROS packages
 from rospkg import RosPack
 
@@ -124,11 +121,27 @@ class QuadController():
 
     # callback for when changing controller is requested
     def _handle_service_change_controller(self,req):
-
-        self.mission_object.change_controller(req.controller_name,req.parameters)
-
+        self.mission_object.change_controller(req.jsonable_name,req.string_parameters)
         # return message to Gui, to let it know resquest has been fulfilled
-        return SrvControllerChangeByStrResponse(received = True)
+        return SrvCreateJsonableObjectByStrResponse(received = True)
+
+    # callback for when changing controller is requested
+    def _handle_service_change_reference(self,req):
+        self.mission_object.change_reference(req.jsonable_name,req.string_parameters)
+        # return message to Gui, to let it know resquest has been fulfilled
+        return SrvCreateJsonableObjectByStrResponse(received = True)
+
+    # callback for when changing controller is requested
+    def _handle_service_change_yaw_controller(self,req):
+        self.mission_object.change_yaw_controller(req.jsonable_name,req.string_parameters)
+        # return message to Gui, to let it know resquest has been fulfilled
+        return SrvCreateJsonableObjectByStrResponse(received = True)
+
+    # callback for when changing controller is requested
+    def _handle_service_change_yaw_reference(self,req):
+        self.mission_object.change_yaw_reference(req.jsonable_name,req.string_parameters)
+        # return message to Gui, to let it know resquest has been fulfilled
+        return SrvCreateJsonableObjectByStrResponse(received = True)      
 
     # callback for when changing mission is requested
     def _handle_service_change_mission(self,req):
@@ -333,9 +346,11 @@ class QuadController():
         mocap_available_bodies = rospy.Service('MocapBodies', MocapBodies, self.handle_available_bodies)
 
         #-----------------------------------------------------------------------#
-        # Service is created, so that user can change controller on GUI
-        rospy.Service('ServiceChangeController', SrvControllerChangeByStr, self._handle_service_change_controller)
-        # rospy.Service('ServiceChangeController', SrvControllerChange, self._handle_service_change_controller)
+        # Services are created, so that user can change controller, reference, yaw_controller and yaw reference on GUI
+        rospy.Service('ServiceChangeController'   , SrvCreateJsonableObjectByStr, self._handle_service_change_controller)
+        rospy.Service('ServiceChangeReference'    , SrvCreateJsonableObjectByStr, self._handle_service_change_reference)
+        rospy.Service('ServiceChangeYawController', SrvCreateJsonableObjectByStr, self._handle_service_change_yaw_controller)
+        rospy.Service('ServiceChangeYawReference' , SrvCreateJsonableObjectByStr, self._handle_service_change_yaw_reference)
 
         rospy.Service('ServiceChangeMission', SrvCreateJsonableObjectByStr, self._handle_service_change_mission)
 

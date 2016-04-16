@@ -1,5 +1,5 @@
 <library path="src">
-  <class name="Choose Mission for Quadrotor" type="gui.ChooseMission.ChooseMissionPlugin" base_class_type="rqt_gui_py::Plugin">
+  <class name="Choose Mission for Quadrotor" type="gui.choose_mission.ChooseMissionPlugin" base_class_type="rqt_gui_py::Plugin">
     <description>
       Tab where user can select mission, and modify its parameters
     </description>

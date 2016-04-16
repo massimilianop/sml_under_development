@@ -1,6 +1,9 @@
 import os
 import rospy
+
 import QtGui
+# from PyQt4 import QtGui
+
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtGui import QWidget
@@ -14,39 +17,17 @@ from PyQt4.QtCore import QObject, pyqtSignal
 #import utils
 import subprocess
 
-#import trajectory_generator
-#from trajectory import Trajectory
-#from trajectory_generato import TrajectoryGenerator
-#from trajectory_node import TrajectoryNode
-#from mocap.msg import QuadPositionDerived
-#from controller.msg import Permission
-#from straight_line_class import StraightLineGen
-#from pointInput import pointInputPlugin
-#from RCDisplay import RCDisplayPlugin
-from saver import saverPlugin
-
-from saver_mavros import saver_mavrosPlugin
-
 from positionPlot import positionPlotPlugin
-
-from TrajectorySelection import TrajectorySelectionPlugin
-
-from ChooseController import ChooseControllerPlugin
 
 from choose_mission import ChooseMissionPlugin
 
-from ChooseSimulator import ChooseSimulatorPlugin
-
-
+from choose_system import ChooseSystemPlugin
 
 import argparse
 
 
 class tabbedGUIPlugin(Plugin):
 
-    
-
-    
     def __init__(self, context,namespace = None):
 
         # it is either "" or the input given at creation of plugin
@@ -92,28 +73,13 @@ class tabbedGUIPlugin(Plugin):
         
         # # Adding all the tabs
 
+        self.ChooseMission   = ChooseMissionPlugin(context,self.namespace)
+        self.ChooseSystem    = ChooseSystemPlugin(context,self.namespace)
+        self.positionPlot    = positionPlotPlugin(context,self.namespace)
 
-        self.saver_mavros        = saver_mavrosPlugin(context,self.namespace)
-        # self.saver               = saverPlugin(context,self.namespace)
-        self.positionPlot        = positionPlotPlugin(context,self.namespace)
-        
-        self.ChooseController    = ChooseControllerPlugin(context,self.namespace)
-        self.ChooseMission       = ChooseMissionPlugin(context,self.namespace)
-        
-        trajectories_dictionary  = self.ChooseMission.trajectories_dictionary
-        self.TrajectorySelection = TrajectorySelectionPlugin(context,self.namespace,trajectories_dictionary)
-
-        self.ChooseSimulator     = ChooseSimulatorPlugin(context,self.namespace)
-
-
-        self._widget.tabWidget.addTab(self.saver_mavros._widget,'Data recorder')
-        # self._widget.tabWidget.addTab(self.saver._widget,'Data recorder')
-        self._widget.tabWidget.addTab(self.positionPlot._widget,'Check Data')
-        self._widget.tabWidget.addTab(self.ChooseMission._widget,'Select Mission')
-        self._widget.tabWidget.addTab(self.TrajectorySelection._widget,'Select Trajectory')
-        self._widget.tabWidget.addTab(self.ChooseController._widget,'Select Controller')
-
-        self._widget.tabWidget.addTab(self.ChooseSimulator._widget,'Select Simulator')
+        self._widget.tabWidget.addTab(self.ChooseMission._widget  ,'Select Mission')
+        self._widget.tabWidget.addTab(self.ChooseSystem._widget   ,'Select System')
+        self._widget.tabWidget.addTab(self.positionPlot._widget   ,'Check Data')
 
         self._widget.tabWidget.show()
 

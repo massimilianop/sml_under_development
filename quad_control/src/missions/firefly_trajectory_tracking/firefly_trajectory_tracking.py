@@ -3,7 +3,7 @@
 # import Misson abstract class
 from .. import mission
 
-from ConverterBetweenStandards.RotorSConverter import RotorSConverter
+from converter_between_standards.rotorS_converter import RotorSConverter
 
 # node will publish motor speeds
 from mav_msgs.msg import Actuators
@@ -12,13 +12,13 @@ from mav_msgs.msg import Actuators
 from nav_msgs.msg import Odometry
 
 # import list of available trajectories
-from trajectories import trajectories_dictionary
+from trajectories import trajectories_database
+
+# import yaw controllers dictionary
+from yaw_rate_controllers import yaw_controllers_database
 
 # import controllers dictionary
-from yaw_controllers import yaw_controllers_dictionary
-
-# import controllers dictionary
-from controllers_hierarchical.fully_actuated_controllers import controllers_dictionary
+from controllers.fa_trajectory_tracking_controllers import fa_trajectory_tracking_controllers_database
 
 import math
 import numpy
@@ -32,9 +32,9 @@ class FireflyTrajectoryTracking(mission.Mission):
 
     inner = {}
 
-    inner['controller']     = controllers_dictionary.controllers_dictionary
-    inner['trajectory']     = trajectories_dictionary.trajectories_dictionary
-    inner['yaw_controller'] = yaw_controllers_dictionary.yaw_controllers_dictionary   
+    inner['controller']     = fa_trajectory_tracking_controllers_database.database
+    inner['reference']      = trajectories_database.database
+    inner['yaw_controller'] = yaw_controllers_database.database
 
 
     @classmethod
@@ -51,9 +51,9 @@ class FireflyTrajectoryTracking(mission.Mission):
     
     
     def __init__(self,
-            controller     = controllers_dictionary.controllers_dictionary['PIDSimpleBoundedIntegralController'](),
-            trajectory     = trajectories_dictionary.trajectories_dictionary['StayAtRest'](),
-            yaw_controller = yaw_controllers_dictionary.yaw_controllers_dictionary['TrackingYawController']()
+            controller     = fa_trajectory_tracking_controllers_database.database["Default"](),
+            reference      = trajectories_database.database["Default"](),
+            yaw_controller = yaw_controllers_database.database["Default"]()
             ):
         # Copy the parameters into self variables
         # Subscribe to the necessary topics, if any
@@ -79,7 +79,7 @@ class FireflyTrajectoryTracking(mission.Mission):
             )      
 
         # dy default, desired trajectory is staying still in origin
-        self.TrajGenerator = trajectory
+        self.TrajGenerator = reference
         self.reference     = self.TrajGenerator.output(self.time_instant_t0)
 
         # controllers selected by default
