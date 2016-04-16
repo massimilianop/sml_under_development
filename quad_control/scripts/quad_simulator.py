@@ -37,7 +37,7 @@ from numpy import sin as s
 # from utility_functions import GetEulerAnglesDeg
 from utilities.utility_functions import GetEulerAnglesDeg
 
-import simulators_hierarchical.simulators_dictionary as shsd
+import simulators.simulators_dictionary as shsd
 
 
 from visualization_msgs.msg import Marker
@@ -90,7 +90,7 @@ class SimulatorNode():
 
         # by default, we get the class [0] which is staying still
         # SimClass = simdic["no_attitude_inner_loop"]
-        SimClass = simdic["attitude_inner_loop"]
+        SimClass = simdic["Default"]
         # sim is an instant/object of class Sim_class
         #sim       = Sim_class()
         # f is the dynamics, which is defined ALWAYS AS THE OUTPUT FUNCTION

@@ -40,8 +40,12 @@ class DoubleIntegratorSimulator(simulator.Simulator):
             acro_rpp         = 4.5
             ):
             
-        simulator.Simulator.__init__(self, initial_time, initial_state,
-            initial_control)
+        simulator.Simulator.__init__(self,
+            initial_time,
+            initial_state,
+            initial_control
+            )
+            
         self.mass = mass
         self.neutral_throttle = neutral_throttle
         self.acro_rpp = acro_rpp
@@ -58,9 +62,17 @@ class DoubleIntegratorSimulator(simulator.Simulator):
         
     def set_control(self, command):
         current_psi        = 0.0 
-        force_3d, yaw_rate = self.stabilize_mode_command_to_thrust_and_yaw_rate(command,current_psi)
+        force_3d, yaw_rate = simulator.stabilize_mode_command_to_thrust_and_yaw_rate(
+            command,
+            current_psi,
+            self.MASS,
+            self.THROTTLE_NEUTRAL,
+            self.MAX_PSI_SPEED_RAD,
+            self.MAX_ANGLE_RAD
+            )
         self.control[0:3]  = force_3d
         self.control[3]    = yaw_rate
+        
         
     # def vector_field(self, time, state, control1, control2, control3, control4):
     def vector_field(self, time, state, control):        

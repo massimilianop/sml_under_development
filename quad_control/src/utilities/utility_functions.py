@@ -118,9 +118,9 @@ def GetEulerAnglesDeg(R):
     return GetEulerAngles(R)*180.0/math.pi
 
 
-
 def GetRotFromEulerAngles(ee_rad):
     return Rz(ee_rad[2]).dot(Ry(ee_rad[1]).dot(Rx(ee_rad[0])))
+
 
 def GetRotFromEulerAnglesDeg(ee_deg):
     return GetRotFromEulerAngles(ee_deg*math.pi/180.0)

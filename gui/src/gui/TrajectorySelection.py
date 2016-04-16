@@ -37,7 +37,7 @@ rospack = rospkg.RosPack()
 import sys
 sys.path.insert(0, rospack.get_path('quad_control'))
 rospy.logwarn(sys.path)
-from src.TrajectoryPlanner import trajectories_dictionary
+from src.trajectories import trajectories_dictionary
 
 
 class TrajectorySelectionPlugin(Plugin):

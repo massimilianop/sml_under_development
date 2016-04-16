@@ -8,13 +8,13 @@ from catkin_pkg.python_setup import generate_distutils_setup
 setup_args = generate_distutils_setup(
     packages=[
         'utilities',
-        'simulators_hierarchical',
+        'simulators',
         'yaw_controllers',
         'systems_functions',
         'quadrotor_tracking_controllers_hierarchical',
         'controllers_hierarchical',
-        'TrajectoryPlanner',
-        'mission',
+        'trajectories',
+        'missions',
         'ConverterBetweenStandards'
         ],
     package_dir={'': 'src'},

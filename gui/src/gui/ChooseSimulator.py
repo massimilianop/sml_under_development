@@ -37,7 +37,7 @@ rospack = rospkg.RosPack()
 import sys
 sys.path.insert(0, rospack.get_path('quad_control'))
 # no need to get quad_control path, since it is package; import controllers dictionary
-from src.simulators_hierarchical import simulators_dictionary
+from src.simulators import simulators_dictionary
 
 
 class ChooseSimulatorPlugin(Plugin):
