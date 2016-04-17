@@ -25,8 +25,6 @@ from src.missions import missions_database
 
 from src.utilities import jsonable
 
-import copy
-
 from choose_jsonable import ChooseJsonablePlugin
 
 class ChooseMissionPlugin(Plugin):
@@ -93,6 +91,36 @@ class ChooseMissionPlugin(Plugin):
         # button for resetting list of available controllers
         self._widget.ResetControllersList.clicked.connect(self.__reset_controllers_widget)
 
+
+        self.choose_reference  = ChooseJsonablePlugin(context,\
+            self.namespace,\
+            name_tab = "Reference",
+            dictionary_of_options = {},\
+            service_name = 'ServiceChangeReference',\
+            ServiceClass = SrvCreateJsonableObjectByStr)
+
+        self.choose_yaw_reference  = ChooseJsonablePlugin(context,\
+            self.namespace,\
+            name_tab = "YawReference",
+            dictionary_of_options = {},\
+            service_name = 'ServiceChangeYawReference',\
+            ServiceClass = SrvCreateJsonableObjectByStr)        
+
+        self.choose_yaw_controller  = ChooseJsonablePlugin(context,\
+            self.namespace,\
+            name_tab = "YawController",
+            dictionary_of_options = {},\
+            service_name = 'ServiceChangeYawController',\
+            ServiceClass = SrvCreateJsonableObjectByStr)
+
+        self.choose_controller  = ChooseJsonablePlugin(context,\
+            self.namespace,\
+            name_tab = "Controller",
+            dictionary_of_options = {},\
+            service_name = 'ServiceChangeController',\
+            ServiceClass = SrvCreateJsonableObjectByStr)
+
+
     def __print_controller_item_clicked(self):
 
         if self.__head_class_set == False:
@@ -104,7 +132,7 @@ class ChooseMissionPlugin(Plugin):
             string = ClassSelected.description()
 
             # print message on GUI
-            self._widget.ItemClickedMessage.setPlainText(string)
+            self._widget.ItemClickedMessage.setText(string)
         else:
             key_class_name_selected = self._widget.ListControllersWidget.currentItem().text()
             ClassSelected           = self.dic_to_print[key_class_name_selected]
@@ -113,7 +141,7 @@ class ChooseMissionPlugin(Plugin):
             string = ClassSelected.description() 
 
             # print message on GUI
-            self._widget.ItemClickedMessage.setPlainText(string)
+            self._widget.ItemClickedMessage.setText(string)
 
         pass            
 
@@ -129,55 +157,38 @@ class ChooseMissionPlugin(Plugin):
             # print all elements in dictionary
             self._widget.ListControllersWidget.addItem(key)
 
-        self.__head_class_set = False
-        self.dic_to_print     = {}
-
-        self.trajectories_dictionary = {'asasasas':'antonio'}
+        self.__head_class_set       = False
+        self.dic_to_print           = {}
+        self.__head_class_completed = False
 
         self.__remove_tabs()
 
     def __remove_tabs(self):
-        rospy.logwarn(self._widget.tabWidget.count())
-        for index in range(self._widget.tabWidget.count()):
-            if index != 0:
-                rospy.logwarn(index)
-                self._widget.tabWidget.removeTab(index)
+
+        for index in range(self._widget.tabWidget.count()-1):
+            # every time I remove a tab, I get a new tabWidget
+            # with one less tab; hence, I remove tab with index 1  
+            # until I get tabWidget, with just one tab
+            self._widget.tabWidget.removeTab(1)
 
     def __add_tab(self):
 
         if 'controller' in self.__HeadClass.inner.keys():
-            self.__add_tab_controller()
-        if 'trajectory' in self.__HeadClass.inner.keys():  
-            self.__add_tab_refence()
+            self.choose_controller.change_dictionary_of_options(self.__HeadClass.inner['controller'])
+            self._widget.tabWidget.addTab(self.choose_controller._widget,'Controller')
+
+        if 'reference' in self.__HeadClass.inner.keys():  
+            self.choose_reference.change_dictionary_of_options(self.__HeadClass.inner['reference'])
+            self._widget.tabWidget.addTab(self.choose_reference._widget,'Reference')
+
         if 'yaw_controller' in self.__HeadClass.inner.keys():
-            self.__add_tab_yaw_controller()
+            self.choose_yaw_controller.change_dictionary_of_options(self.__HeadClass.inner['yaw_controller'])
+            self._widget.tabWidget.addTab(self.choose_yaw_controller._widget,'YawController')
 
-    def __add_tab_refence(self):
-        self.choose_reference  = ChooseJsonablePlugin(self.context,\
-            self.namespace,\
-            name_tab = "Reference",
-            dictionary_of_options = self.__HeadClass.inner['trajectory'],\
-            service_name = 'ServiceTrajectoryDesired',\
-            service_type = 'SrvTrajectoryDesired')
-        self._widget.tabWidget.addTab(self.choose_reference._widget,'Reference')
+        if 'yaw_reference' in self.__HeadClass.inner.keys():
+            self.choose_yaw_reference.change_dictionary_of_options(self.__HeadClass.inner['yaw_reference'])
+            self._widget.tabWidget.addTab(self.choose_yaw_reference._widget,'YawReference')            
 
-    def __add_tab_controller(self):
-        self.choose_reference  = ChooseJsonablePlugin(self.context,\
-            self.namespace,\
-            name_tab = "ControllerI",
-            dictionary_of_options = self.__HeadClass.inner['controller'],\
-            service_name = 'ServiceTrajectoryDesired',\
-            service_type = 'SrvTrajectoryDesired')
-        self._widget.tabWidget.addTab(self.choose_reference._widget,'Controller')
-
-    def __add_tab_yaw_controller(self):
-        self.choose_reference  = ChooseJsonablePlugin(self.context,\
-            self.namespace,\
-            name_tab = "YawController",
-            dictionary_of_options = self.__HeadClass.inner['yaw_controller'],\
-            service_name = 'ServiceTrajectoryDesired',\
-            service_type = 'SrvTrajectoryDesired')
-        self._widget.tabWidget.addTab(self.choose_reference._widget,'YawController')
 
     def __controller_item_clicked(self):
 
@@ -186,8 +197,6 @@ class ChooseMissionPlugin(Plugin):
             self.__head_class_set = True
             self.__head_class_key = self._widget.ListControllersWidget.currentItem().text()
             self.__HeadClass      = missions_database.database[self.__head_class_key]
-
-            self.__add_tab()
 
             head_class_input_dic = {}
             for key in self.__HeadClass.inner.keys():
@@ -248,57 +257,68 @@ class ChooseMissionPlugin(Plugin):
     def __print_controller_message(self):
         """Print message with parameters associated to chosen controller class"""
 
-        rospy.logwarn(self.__head_class_input_dic)
+        self.__head_class_completed = True
+
+        # rospy.logwarn(self.__head_class_input_dic)
 
         string = self.__HeadClass.to_string(self.__head_class_input_dic)
         # print message on GUI
         self._widget.ControllerMessageInput.setPlainText(string)
 
-        self.__reset_controllers_widget()
+        # clear items from widget
+        self._widget.ListControllersWidget.clear()
+
+        # print message on GUI
+        self._widget.ItemClickedMessage.setText('Selected Mission: '+self.__HeadClass.description())
+
+        self.__add_tab()
 
         return 
 
     def __get_new_controller_parameters(self):
         """Request service for new controller with parameters chosen by user"""
+        if self.__head_class_completed == True:
+            # get string that user modified with new parameters
+            string              = self._widget.ControllerMessageInput.toPlainText()
+            # get new parameters from string
+            parameters          = string
 
-        # get string that user modified with new parameters
-        string              = self._widget.ControllerMessageInput.toPlainText()
-        # get new parameters from string
-        parameters          = string
+            # rospy.logwarn(parameters)
 
-        # rospy.logwarn(parameters)
+            # request service
+            try: 
+                # time out of one second for waiting for service
+                rospy.wait_for_service("/"+self.namespace+'ServiceChangeMission',2.0)
+                
+                try:
+                    RequestingMission = rospy.ServiceProxy("/"+self.namespace+'ServiceChangeMission', SrvCreateJsonableObjectByStr)
+                    reply = RequestingMission(jsonable_name = self.__head_class_key, string_parameters = parameters)
 
-        # request service
-        try: 
-            # time out of one second for waiting for service
-            rospy.wait_for_service("/"+self.namespace+'ServiceChangeMission',2.0)
-            
-            try:
-                RequestingMission = rospy.ServiceProxy("/"+self.namespace+'ServiceChangeMission', SrvCreateJsonableObjectByStr)
-                reply = RequestingMission(jsonable_name = self.__head_class_key, string_parameters = parameters)
-
-                if reply.received == True:
-                    # if controller receives message
-                    self._widget.Success.setChecked(True) 
-                    self._widget.Failure.setChecked(False) 
+                    if reply.received == True:
+                        # if controller receives message
+                        self._widget.Success.setChecked(True) 
+                        self._widget.Failure.setChecked(False) 
 
 
+                except rospy.ServiceException as exc:
+                    rospy.logwarn("Service did not process request: " + str(exc))
+                    rospy.logwarn('Proxy for service that sets mission FAILED')
+                    self._widget.Success.setChecked(False) 
+                    self._widget.Failure.setChecked(True) 
+                    # print "Service call failed: %s"%e
+                
             except rospy.ServiceException as exc:
                 rospy.logwarn("Service did not process request: " + str(exc))
-                rospy.logwarn('Proxy for service that sets mission FAILED')
+                rospy.logwarn('Timeout for service that sets mission')
                 self._widget.Success.setChecked(False) 
                 self._widget.Failure.setChecked(True) 
-                # print "Service call failed: %s"%e
-            
-        except rospy.ServiceException as exc:
-            rospy.logwarn("Service did not process request: " + str(exc))
-            rospy.logwarn('Timeout for service that sets mission')
-            self._widget.Success.setChecked(False) 
-            self._widget.Failure.setChecked(True) 
-            # print "Service not available ..."        
-            pass                 
+                # print "Service not available ..."        
+                pass
+        else:
+            # print message on GUI
+            self._widget.ItemClickedMessage.setText('<b>Service cannot be completed: finish choosing</b>')    
 
-        return
+        pass
 
 
     def reset_iris_neutral_value(self):

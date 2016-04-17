@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>823</width>
-    <height>931</height>
+    <width>822</width>
+    <height>846</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -110,19 +110,14 @@
         <string>Set Iris Neutral Value</string>
        </property>
       </widget>
-      <zorder>ResetIrisNeutralValue</zorder>
-      <zorder>ThrottleNeutralValue</zorder>
-      <zorder>label_8</zorder>
-      <zorder>SetIrisNeutralValue</zorder>
-      <zorder>groupBox_8</zorder>
      </widget>
      <widget class="QGroupBox" name="groupBox">
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>0</y>
+        <y>110</y>
         <width>811</width>
-        <height>801</height>
+        <height>721</height>
        </rect>
       </property>
       <property name="title">
@@ -134,7 +129,7 @@
          <x>10</x>
          <y>20</y>
          <width>781</width>
-         <height>781</height>
+         <height>691</height>
         </rect>
        </property>
        <property name="currentIndex">
@@ -142,7 +137,7 @@
        </property>
        <widget class="QWidget" name="tab_3">
         <attribute name="title">
-         <string>Tab 1</string>
+         <string>Mission</string>
         </attribute>
         <widget class="QGroupBox" name="groupBox_8">
          <property name="geometry">
@@ -254,16 +249,6 @@
            <string>Reset Controllers List</string>
           </property>
          </widget>
-         <widget class="QPlainTextEdit" name="ItemClickedMessage">
-          <property name="geometry">
-           <rect>
-            <x>0</x>
-            <y>490</y>
-            <width>771</width>
-            <height>141</height>
-           </rect>
-          </property>
-         </widget>
          <widget class="QLabel" name="label_3">
           <property name="geometry">
            <rect>
@@ -277,11 +262,19 @@
            <string>Message</string>
           </property>
          </widget>
+         <widget class="QTextEdit" name="ItemClickedMessage">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>490</y>
+            <width>771</width>
+            <height>131</height>
+           </rect>
+          </property>
+         </widget>
         </widget>
        </widget>
       </widget>
-      <zorder>groupBox_8</zorder>
-      <zorder>tabWidget</zorder>
      </widget>
     </widget>
    </item>

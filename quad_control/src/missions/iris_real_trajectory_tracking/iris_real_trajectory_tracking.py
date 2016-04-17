@@ -8,16 +8,16 @@ from mavros_msgs.msg import OverrideRCIn
 # from mavros_msgs.srv import ParamSet,ParamGet,CommandBool,SetMode
 
 # import converter from 3d_force and yaw rate into iris rc standard 
-from ConverterBetweenStandards.IrisPlusConverter import IrisPlusConverter
+from converter_between_standards.iris_plus_converter import IrisPlusConverter
 
 # import list of available trajectories
-from trajectories import trajectories_dictionary
+from trajectories import trajectories_database
+
+# import yaw controllers dictionary
+from yaw_rate_controllers import yaw_controllers_database
 
 # import controllers dictionary
-from Yaw_Rate_Controller import yaw_controllers_dictionary
-
-# import controllers dictionary
-from controllers_hierarchical.fully_actuated_controllers import controllers_dictionary
+from controllers.fa_trajectory_tracking_controllers import fa_trajectory_tracking_controllers_database
 
 import math
 import numpy
@@ -27,20 +27,31 @@ import rospy
 
 class IrisRealTrajectoryTracking(mission.Mission):
 
+    inner = {}
+
+    inner['controller']     = fa_trajectory_tracking_controllers_database.database
+    inner['reference']      = trajectories_database.database
+    inner['yaw_controller'] = yaw_controllers_database.database
+
 
     @classmethod
     def description(cls):
         return "Firefly, from RotorS, to track a desired trajectory"
     
     
-    def __init__(self, body_id = 12):
+    def __init__(self,
+            body_id = 12,
+            controller     = fa_trajectory_tracking_controllers_database.database["Default"](),
+            reference      = trajectories_database.database["Default"](),
+            yaw_controller = yaw_controllers_database.database["Default"]()
+            ):
         # Copy the parameters into self variables
         # Subscribe to the necessary topics, if any
 
         mission.Mission.__init__(self)
     
         self.inner['controllers_dictionary']     = controllers_dictionary.controllers_dictionary
-        self.inner['trajectories_dictionary']    = trajectories_dictionary.trajectories_dictionary
+        self.inner['trajectories_database']    = trajectories_database.trajectories_database
         self.inner['yaw_controllers_dictionary'] = yaw_controllers_dictionary.yaw_controllers_dictionary
 
         
@@ -60,7 +71,7 @@ class IrisRealTrajectoryTracking(mission.Mission):
         self.VelocityEstimator = Velocity_Filter(3,numpy.zeros(3),0.0)
 
         # dy default, desired trajectory is staying still in origin
-        TrajectoryClass    = self.inner['trajectories_dictionary']['StayAtRest']
+        TrajectoryClass    = self.inner['trajectories_database']['StayAtRest']
         self.TrajGenerator = TrajectoryClass()
         self.reference     = self.TrajGenerator.output(self.time_instant_t0)
 

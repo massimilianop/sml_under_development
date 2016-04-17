@@ -8,19 +8,23 @@ import numpy as np
 from utilities import utility_functions as uts
 from utilities import jsonable as js
 
+import rospy
 
 
 class Trajectory(js.Jsonable):
 
-
     @classmethod
     def description(cls):
         #raise NotImplementedError()
-        return "Abstract Trajectory"
+        return "<b>Abstract Trajectory</b> with 3D offset in (m) and rotation as [roll,pitch,yaw] in (deg)"
 
 
     def __init__(self, offset=np.zeros(3), rotation=np.zeros(3)):
         
+        offset[0] = rospy.get_param("trajectry_offset_x",offset[0])
+        offset[1] = rospy.get_param("trajectry_offset_y",offset[1])
+        offset[2] = rospy.get_param("trajectry_offset_z",offset[2])
+
         self.__offset = np.array(offset)
         self.__rotation = np.array(rotation)
         self.__rotation_matrix = uts.GetRotFromEulerAnglesDeg(self.__rotation)
@@ -72,10 +76,9 @@ class Trajectory(js.Jsonable):
         
     def output(self, time):
         return self.__add_offset_and_rotation(*self.desired_trajectory(time))
-        
-        
-        
-"""Test"""
+
+
+# """Test"""
 #string = Trajectory.to_string()
 #print string
 #tr = Trajectory.from_string(string)

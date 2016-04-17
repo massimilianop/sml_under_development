@@ -32,17 +32,11 @@ class Mission(js.Jsonable):
 
     inner = {
         # For example: controller, reference, etc.
-        'controllers_dictionary'     : {},        
-        'yaw_controllers_dictionary' : {},
-    }
-
-    # inner = {
-    #     # For example: controller, reference, etc.
-    #     'controllers_dictionary'     : {},        
-    #     'yaw_controllers_dictionary' : {},        
-    #     'trajectories_dictionary'    : {},
-    #     'yaw_trajectories_dictionary': {},
-    # }    
+        'controller'     : {},        
+        'yaw_controller' : {},
+        'reference'      : {},
+        'yaw_reference'  : {},
+    } 
 
     # time_instant_t0 = 0.0
 
@@ -135,28 +129,32 @@ class Mission(js.Jsonable):
         return NotImplementedError()
 
 
-    def change_trajectory(self,key,string):
+    def change_reference(self,key,string):
         """Change reference trajectory"""
-        TrajectoryClass   = self.inner['trajectories_dictionary'][key]
-        self.TrajGenerator = TrajectoryClass.from_string(string)
+        if key in self.inner['reference'].keys():
+            TrajectoryClass   = self.inner['reference'][key]
+            self.TrajGenerator = TrajectoryClass.from_string(string)
 
 
-    def change_yaw_trajectory(self,key,string):
+    def change_yaw_reference(self,key,string):
         """Change yaw reference trajectory"""
-        YawTrajectoryClass   = self.inner['yaw_trajectories_dictionary'][key]
-        self.YawTrajGenerator = YawTrajectoryClass.from_string(string)
+        if key in self.inner['yaw_reference'].keys():
+            YawTrajectoryClass   = self.inner['yaw_reference'][key]
+            self.YawTrajGenerator = YawTrajectoryClass.from_string(string)
 
 
     def change_controller(self,key,string):
         """Change controller"""
-        ControllerClass      = self.inner['controllers_dictionary'][key]
-        self.ControllerObject = ControllerClass.from_string(string)
+        if key in self.inner['controller'].keys():
+            ControllerClass      = self.inner['controller'][key]
+            self.ControllerObject = ControllerClass.from_string(string)
 
 
     def change_yaw_controller(self,key,string):
         """Change yaw controller"""
-        YawControllerClass      = self.inner['yaw_controllers_dictionary'][key]
-        self.YawControllerObject = YawControllerClass.from_string(string)
+        if key in self.inner['yaw_controller'].keys():
+            YawControllerClass      = self.inner['yaw_controller'][key]
+            self.YawControllerObject = YawControllerClass.from_string(string)
 
 
     def reset_initial_time(self,time_instant = None):

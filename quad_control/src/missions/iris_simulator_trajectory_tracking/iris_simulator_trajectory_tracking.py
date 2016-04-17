@@ -4,21 +4,19 @@
 from .. import mission
 
 # import converter from 3d_force and yaw rate into iris rc standard 
-from ConverterBetweenStandards.IrisPlusConverter import IrisPlusConverter
+from converter_between_standards.iris_plus_converter import IrisPlusConverter
 
 # publish message quad_cmd that contains commands to simulator
 from quad_control.msg import quad_cmd, quad_state
 
 # import list of available trajectories
-from trajectories import trajectories_dictionary
+from trajectories import trajectories_database
+
+# import yaw controllers dictionary
+from yaw_rate_controllers import yaw_controllers_database
 
 # import controllers dictionary
-from Yaw_Rate_Controller import yaw_controllers_dictionary
-from yaw_controllers import yaw_controllers_dictionary
-
-
-# import controllers dictionary
-from controllers_hierarchical.fully_actuated_controllers import controllers_dictionary
+from controllers.fa_trajectory_tracking_controllers import fa_trajectory_tracking_controllers_database
 
 import math
 import numpy
@@ -32,9 +30,9 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
 
     inner = {}
 
-    inner['controller']     = controllers_dictionary.controllers_dictionary
-    inner['trajectory']     = trajectories_dictionary.trajectories_dictionary
-    inner['yaw_controller'] = yaw_controllers_dictionary.yaw_controllers_dictionary    
+    inner['controller']     = fa_trajectory_tracking_controllers_database.database
+    inner['reference']      = trajectories_database.database
+    inner['yaw_controller'] = yaw_controllers_database.database
 
 
     @classmethod
@@ -43,9 +41,9 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
 
     
     def __init__(self,
-            controller     = controllers_dictionary.controllers_dictionary['PIDSimpleBoundedIntegralController'](),
-            trajectory     = trajectories_dictionary.trajectories_dictionary['StayAtRest'](),
-            yaw_controller = yaw_controllers_dictionary.yaw_controllers_dictionary['TrackingYawController']()
+            controller     = fa_trajectory_tracking_controllers_database.database["Default"](),
+            reference      = trajectories_database.database["Default"](),
+            yaw_controller = yaw_controllers_database.database["Default"]()
             ):
         # Copy the parameters into self variables
         # Subscribe to the necessary topics, if any
@@ -61,8 +59,8 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
         # message published by quad_control that simulator will subscribe to 
         self.pub_cmd = rospy.Publisher('quad_cmd', quad_cmd, queue_size=10)
         
-        # dy default, desired trajectory is staying still in origin
-        self.TrajGenerator = trajectory
+        # dy default, desired reference is staying still in origin
+        self.TrajGenerator = reference
         self.reference     = self.TrajGenerator.output(self.time_instant_t0)
 
         # controllers selected by default

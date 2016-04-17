@@ -163,13 +163,12 @@ class SimulatorNode():
 
     # callback used for changing simulator
     def __handle_simulator_change_service(self,req):
-
-        SimulatorClass = simdic[req.controller_name]
+        SimulatorClass = simdic[req.jsonable_name]
         
-        self.sim = SimulatorClass.from_string(req.parameters)
+        self.sim = SimulatorClass.from_string(req.string_parameters)
 
         # return message: resquest has been fulfilled
-        return SrvControllerChangeByStrResponse(received = True)
+        return SrvCreateJsonableObjectByStrResponse(received = True)
 
 
     def write_state(self):
@@ -238,7 +237,7 @@ class SimulatorNode():
         #-----------------------------------------------------------------------#
         #-----------------------------------------------------------------------#
         # Service is created, so that user can change simulator on GUI
-        Chg_Simulator = rospy.Service('ServiceChangeSimulator', SrvControllerChangeByStr, self.__handle_simulator_change_service)
+        Chg_Simulator = rospy.Service('ServiceChangeSimulator', SrvCreateJsonableObjectByStr, self.__handle_simulator_change_service)
 
 
         # solve differential equations at frequency

@@ -20,12 +20,11 @@ rospack = rospkg.RosPack()
 import sys
 sys.path.insert(0, rospack.get_path('quad_control'))
 # no need to get quad_control path, since it is package; import controllers dictionary
-from src.controllers_hierarchical.fully_actuated_controllers import controllers_dictionary
 from src.utilities import jsonable
 
 class ChooseJsonablePlugin(Plugin):
 
-    def __init__(self, context,namespace = None, name_tab = "", dictionary_of_options = {}, service_name = "", service_type = ""):
+    def __init__(self, context,namespace = None, name_tab = "", dictionary_of_options = {}, service_name = "", ServiceClass = None):
 
         # it is either "" or the input given at creation of plugin
         self.namespace = self._parse_args(context.argv())
@@ -35,7 +34,7 @@ class ChooseJsonablePlugin(Plugin):
 
         self.name_tab     = name_tab
         self.service_name = service_name
-        self.service_type = service_type
+        self.ServiceClass = ServiceClass
 
         super(ChooseJsonablePlugin, self).__init__(context)
         # Give QObjects reasonable names
@@ -83,11 +82,20 @@ class ChooseJsonablePlugin(Plugin):
         self._widget.ListJsonableWidget.itemDoubleClicked.connect(self.__jsonable_item_clicked)
 
         # if item in list is clicked once, print corresponding message
-        self._widget.ListJsonableWidget.itemClicked.connect(self.__print_jsonable_message)
+        self._widget.ListJsonableWidget.itemClicked.connect(self.__print_jsonable_description)
         
         # button to request service for setting new jsonable object
         self._widget.SetJsonableButton.clicked.connect(self.__service_jsonable_object)
 
+
+        # button for resetting list of available jsonable objects
+        self._widget.ResetListJsonable.clicked.connect(self.__reset_jsonable_widget)
+
+        self.__reset_jsonable_widget()
+
+    # PUBLIC FUNCTION:
+    def change_dictionary_of_options(self,dictionary_of_options):
+        self.dictionary_of_options = dictionary_of_options
         self.__reset_jsonable_widget()
 
     def __reset_jsonable_widget(self):
@@ -101,8 +109,9 @@ class ChooseJsonablePlugin(Plugin):
             # print all elements in dictionary
             self._widget.ListJsonableWidget.addItem(key)
 
-        self.__head_class_set = False
-        self.dic_to_print     = {}
+        self.__head_class_set       = False
+        self.__head_class_completed = False
+        self.dic_to_print           = {}
 
     def __print_list(self):
         # clearwindow
@@ -111,7 +120,7 @@ class ChooseJsonablePlugin(Plugin):
         for key in self.dictionary_of_options.keys():
             self._widget.ListJsonableWidget.addItem(key)
 
-    def __print_jsonable_message():
+    def __print_jsonable_description(self):
 
         if self.__head_class_set == False:
             
@@ -140,7 +149,7 @@ class ChooseJsonablePlugin(Plugin):
         if self.__head_class_set == False:
 
             self.__head_class_set = True
-            self.__head_class_key = self._widget.JsonableDescription.currentItem().text()
+            self.__head_class_key = self._widget.ListJsonableWidget.currentItem().text()
             self.__HeadClass      = self.dictionary_of_options[self.__head_class_key]
             
             head_class_input_dic = {}
@@ -155,7 +164,7 @@ class ChooseJsonablePlugin(Plugin):
                 self.print_new_list()
 
         else:
-            chosen_class = self._widget.JsonableDescription.currentItem().text()
+            chosen_class = self._widget.ListJsonableWidget.currentItem().text()
             ChosenClass  = self.dic_to_print[chosen_class]
             # chosen_class_list_of_keys = ChosenClass.inner.keys()
 
@@ -191,60 +200,75 @@ class ChooseJsonablePlugin(Plugin):
         self.dic_to_print = self.__HeadClass.get_dic_recursive(input_dictionary,list_of_keys)
 
         # clear items from widget
-        self._widget.JsonableDescription.clear()
+        self._widget.ListJsonableWidget.clear()
         for key in self.dic_to_print.keys():
             # add item
-            self._widget.JsonableDescription.addItem(key)
+            self._widget.ListJsonableWidget.addItem(key)
 
     def __print_jsonable_message(self):
         """Print message with parameters associated to chosen controller class"""
+
+        # Service for creating jsonable object is now possible
+        self.__head_class_completed = True
 
         string = self.__HeadClass.to_string(self.__head_class_input_dic)
         # print message on GUI
         self._widget.JsonableMessageInput.setPlainText(string)
 
-        self.__reset_jsonable_widget()
+        # self.__reset_jsonable_widget()
+
+        # clear items from widget
+        self._widget.ListJsonableWidget.clear()
+
+        # print message on GUI
+        self._widget.JsonableDescription.setPlainText('Selected ' + self.name_tab + ' : ' + self.__HeadClass.description())        
 
         return 
 
     def __service_jsonable_object(self):
         """Request service for new jsonable object with parameters chosen by user"""
 
-        # get string that user modified with new parameters
-        string              = self._widget.JsonableMessageInput.toPlainText()
-        # get new parameters from string
-        parameters          = string
+        if self.__head_class_completed == True:
+            # get string that user modified with new parameters
+            string              = self._widget.JsonableMessageInput.toPlainText()
+            # get new parameters from string
+            parameters          = string
 
-        # request service
-        try: 
-            # time out of one second for waiting for service
-            rospy.wait_for_service("/"+self.namespace+self.service_name,2.0)
-            
-            try:
-                Requesting = rospy.ServiceProxy("/"+self.namespace+self.service_name, self.service_type)
+            # request service
+            try: 
+                # time out of one second for waiting for service
+                rospy.wait_for_service("/"+self.namespace+self.service_name,2.0)
+                
+                try:
+                    Requesting = rospy.ServiceProxy("/"+self.namespace+self.service_name, self.ServiceClass)
 
-                reply = Requesting(jsonable_name = self.__head_class_key, string_parameters = parameters)
+                    reply = Requesting(jsonable_name = self.__head_class_key, string_parameters = parameters)
 
-                if reply.received == True:
-                    # if controller receives message
-                    self._widget.Success.setChecked(True) 
-                    self._widget.Failure.setChecked(False) 
+                    if reply.received == True:
+                        # if controller receives message
+                        self._widget.Success.setChecked(True) 
+                        self._widget.Failure.setChecked(False) 
 
 
-            except rospy.ServiceException, e:
-                rospy.logwarn('Proxy for service that sets controller FAILED')
+                except rospy.ServiceException as exc:
+                    rospy.logwarn("Service did not process request: " + str(exc))
+                    rospy.logwarn('Proxy for service that sets controller FAILED')
+                    self._widget.Success.setChecked(False) 
+                    self._widget.Failure.setChecked(True) 
+                    # print "Service call failed: %s"%e
+                
+            except rospy.ServiceException as exc:
+                rospy.logwarn("Service did not process request: " + str(exc))
+                rospy.logwarn('Timeout for service that sets controller')
                 self._widget.Success.setChecked(False) 
                 self._widget.Failure.setChecked(True) 
-                # print "Service call failed: %s"%e
-            
-        except:
-            rospy.logwarn('Timeout for service that sets controller')
-            self._widget.Success.setChecked(False) 
-            self._widget.Failure.setChecked(True) 
-            # print "Service not available ..."        
-            pass                 
+                # print "Service not available ..."        
+                pass
+        else:
+            # print message on GUI
+            self._widget.JsonableDescription.setText('<b>Service cannot be completed: finish choosing </b>')                         
 
-        return          
+        pass       
 
     def _parse_args(self, argv):
 

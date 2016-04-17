@@ -1,6 +1,22 @@
 <launch>
 
-        <param name="MissionDefault" value="FireflyTrajectoryTracking"/>
+        <!-- Default Mission -->
+        <param name="MissionDefault" type="str" value="FireflyTrajectoryTracking"/>
+
+        <!-- Default Yaw Controller -->
+        <param name="YawControllerDefault" type="str" value="SimpleTrackingYawController"/>
+
+        <!-- Default Trajectory -->
+        <param name="TrajectoryDefault" type="str" value="StayAtRest"/>
+        <param name="trajectry_offset_x" type="double" value="0.0"/>
+        <param name="trajectry_offset_y" type="double" value="0.0"/>
+        <param name="trajectry_offset_z" type="double" value="0.0"/>
+
+
+        <!-- Default Yaw Controller -->
+        <param name="ControllerDefault" type="str" value="SimplePIDController"/>
+        <param name="DIControllerDefault" type="str" value="ComponentWise3DDIC"/>
+
 
         <!-- Controller Node -->
         <node pkg="quad_control" name="controller_Iris1" type="cycle_quad_control_mission.py"/>
