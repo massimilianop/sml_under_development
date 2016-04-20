@@ -44,18 +44,18 @@ class Mission(js.Jsonable):
 
     """Labels for the columns of a file that stores data from this mission."""
     file_labels = [
-        'time'
-        'position_x'
-        'position_y'
-        'position_z'
-        'roll'
-        'pitch'
-        'yaw'
-        'velocity_x'
-        'velocity_y'
-        'velocity_z'
-        'control_x'
-        'control_y'
+        'time',
+        'position_x',
+        'position_y',
+        'position_z',
+        'roll',
+        'pitch',
+        'yaw',
+        'velocity_x',
+        'velocity_y',
+        'velocity_z',
+        'control_x',
+        'control_y',
         'control_z'
     ]
 
