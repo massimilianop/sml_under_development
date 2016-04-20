@@ -153,6 +153,45 @@ class Jsonable:
         return cls(**arg_dic)
         
         
+    
+    def get_parameters(self):
+        """Child classes redefine this
+        and return a dictionary of their parameters,
+        for example: proportional_gain, derivative_gain
+        """
+        params = {}
+        #params['param_name'] = param_value
+        #...
+        return params
+        
+        
+    def get_parameters_recursive(self):
+        params = {}
+        for name, obj in self.get_inner_jsonables.items():
+            params[name] = obj.parameters_to_string_recursive()
+        params.update(self.get_parameters())
+        return params
+        
+    
+    #TODO make this based on the inner,
+    #so that the child classes do not have to redefine it.
+    def get_inner_jsonables(self):
+        """Child classes redefine this
+        and return the inner jsonable objects
+        """
+        inner = {}
+        #inner[object_name] = object
+        #...
+        return inner
+        
+        
+    def parameters_to_string(self):
+        dic = self.get_parameters_recursive()
+        string = json.dumps(dic)
+        return string
+        
+             
+     
         
 
 
@@ -163,31 +202,31 @@ class Jsonable:
 
 # Comment out all that follows for actual use of this module.
 
-class Pillow(Jsonable):
-    
-    def __init__(self, is_soft=True):
-        pass
-        
-        
+#class Pillow(Jsonable):
+#    
+#    def __init__(self, is_soft=True):
+#        pass
+#        
+#        
 
-class Bed(Jsonable):
+#class Bed(Jsonable):
 
-    inner = {
-        'pillow': {'Pillow1': Pillow, 'Pillow2': Pillow},
-        'cushion': {'Cushion1': Pillow, 'Cushion2': Pillow}
-        }
-    
-    def __init__(self, length=2.0, pillow=Pillow()):
-        pass
+#    inner = {
+#        'pillow': {'Pillow1': Pillow, 'Pillow2': Pillow},
+#        'cushion': {'Cushion1': Pillow, 'Cushion2': Pillow}
+#        }
+#    
+#    def __init__(self, length=2.0, pillow=Pillow()):
+#        pass
 
 
 
-class Room(Jsonable):
+#class Room(Jsonable):
 
-    inner = {'bed': {'Bed1': Bed, 'Bed2': Bed}}
-    
-    def __init__(self, area=18.0, bed=Bed()):
-        pass
+#    inner = {'bed': {'Bed1': Bed, 'Bed2': Bed}}
+#    
+#    def __init__(self, area=18.0, bed=Bed()):
+#        pass
 
 
 

@@ -8,6 +8,8 @@ import numpy
 # for getting time
 import rospy
 
+#plots
+import matplotlib.pyplot as plt
 
 # The children import needed dictionaries
 
@@ -40,6 +42,94 @@ class Mission(js.Jsonable):
 
     # time_instant_t0 = 0.0
 
+    """Labels for the columns of a file that stores data from this mission."""
+    file_labels = [
+        'time',
+        'position_x',
+        'position_y',
+        'position_z',
+        'roll',
+        'pitch',
+        'yaw',
+        'velocity_x',
+        'velocity_y',
+        'velocity_z',
+        'control_x',
+        'control_y',
+        'control_z'
+    ]
+
+
+    @classmethod
+    def plot_from_string(cls, string):
+        
+        times = []
+        positions_x = []
+        positions_y = []
+        positions_z = []
+        rolls = []
+        pithces = []
+        yaws = []
+        velocities_x = []
+        velocities_y = []
+        velocities_z = []
+        controls_x = []
+        controls_y = []
+        controls_z = []
+        yaw_rates = []
+        
+        for line in string.split('\n'):
+            numbers = line.split(' ')
+            times.append(float(numbers[0]))
+            positions_x.append(float(numbers[1]))
+            positions_y.append(float(numbers[2]))
+            positions_z.append(float(numbers[3]))
+            rolls.append(float(numbers[4]))
+            pitches.append(float(numbers[5]))
+            yaws.append(float(numbers[6]))
+            velocities_x.append(float(numbers[7]))
+            velocities_y.append(float(numbers[8]))
+            velocities_z.append(float(numbers[9]))
+            controls_x.append(float(numbers[10]))
+            controls_y.append(float(numbers[11]))
+            controls_z.append(float(numbers[12]))
+            yaw_rates.append(float(numbers[13]))
+        
+        plt.figure()
+        plt.plot(times, positions_x, label=r'$x$')
+        plt.plot(times, positions_y, label=r'$y$')
+        plt.plot(times, positions_z, label=r'$z$')
+        plt.title('Positions')
+        plt.legend(pos='best')
+        plt.grid()
+        plt.draw()
+        
+        plt.figure()
+        plt.plot(times, rolls, label=r'$\phi$')
+        plt.plot(times, pitches, label=r'$\theta$')
+        plt.plot(times, yaws, label=r'$\psi$')
+        plt.title('Attitudes')
+        plt.legend(pos='best')
+        plt.grid()
+        plt.draw()
+        
+        plt.figure()
+        plt.plot(times, velocities_x, label=r'$x$')
+        plt.plot(times, velocities_y, label=r'$y$')
+        plt.plot(times, velcocities_z, label=r'$z$')
+        plt.title('Velocities')
+        plt.legend(pos='best')
+        plt.grid()
+        plt.draw()
+        
+        plt.figure()
+        plt.plot(times, controls_x, label=r'$x$')
+        plt.plot(times, controls_y, label=r'$y$')
+        plt.plot(times, controls_z, label=r'$z$')
+        plt.title('Controls')
+        plt.legend(pos='best')
+        plt.grid()
+        plt.draw()
 
 
     def description(cls):
@@ -81,7 +171,8 @@ class Mission(js.Jsonable):
 
 
     def get_quad_ea_rad(self):
-        '''Get euler angles (roll, pitch, yaw) in radians, and get their time derivatives'''
+        '''Get euler angles (roll, pitch, yaw) in radians,
+        and get their time derivatives'''
         # return numpy.zeros(3+3)
         NotImplementedError()
 
@@ -102,10 +193,23 @@ class Mission(js.Jsonable):
 
     def get_state(self):
         """
-        Get state that is accepted by controller
-        It is the job of a child class to write a state that is accepted by the controllers that it imports 
+        Get state that is accepted by controller.
+        It is the job of a child class to write a state
+        that is accepted by the controllers that it imports. 
         """
         return NotImplementedError()
+
+
+    def get_state_string(self):
+        """In the main cycle, call this function to get a line that can be
+        written on a file:
+        filehandle.write(mission.get_state_string())
+        """
+        lst = list(self.get_state())
+        string = ""
+        for element in lst:
+            string.append(str(element)+" ")
+        return string 
 
 
     def get_pv(self):
@@ -125,7 +229,7 @@ class Mission(js.Jsonable):
 
     def get_euler_angles(self):
         # TODO: CHECK WHETHER IT SHOULD BE RAD OR NOT
-        """Get euler angles of the quadrotor (rad)""" 
+        """Get euler angles of the quadrotor (rad)"""
         return NotImplementedError()
 
 
@@ -169,7 +273,8 @@ class Mission(js.Jsonable):
         state_for_yaw_controller = self.get_quad_ea_rad()
         input_for_yaw_controller = self.get_desired_yaw_rad(time_instant)
 
-        yaw_rate = self.YawControllerObject.output(state_for_yaw_controller,input_for_yaw_controller) 
+        yaw_rate = self.YawControllerObject.output(state_for_yaw_controller,
+            input_for_yaw_controller) 
 
         return yaw_rate
 
@@ -183,7 +288,8 @@ class Mission(js.Jsonable):
         state = self.get_state()
 
         # compute input to send to QUAD
-        desired_3d_force_quad = self.ControllerObject.output(time_instant,state,reference)
+        desired_3d_force_quad = self.ControllerObject.output(time_instant,
+            state, reference)
 
         return desired_3d_force_quad
 
