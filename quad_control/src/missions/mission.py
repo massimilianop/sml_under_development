@@ -42,12 +42,21 @@ class Mission(js.Jsonable):
 
     # time_instant_t0 = 0.0
 
-
+    """Labels for the columns of a file that stores data from this mission."""
     file_labels = [
         'time'
-        'position'
-        'velocity'
-        'control'
+        'position_x'
+        'position_y'
+        'position_z'
+        'roll'
+        'pitch'
+        'yaw'
+        'velocity_x'
+        'velocity_y'
+        'velocity_z'
+        'control_x'
+        'control_y'
+        'control_z'
     ]
 
 
@@ -192,6 +201,10 @@ class Mission(js.Jsonable):
 
 
     def get_state_string(self):
+        """In the main cycle, call this function to get a line that can be
+        written on a file:
+        filehandle.write(mission.get_state_string())
+        """
         lst = list(self.get_state())
         string = ""
         for element in lst:
