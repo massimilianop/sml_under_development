@@ -1,0 +1,96 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module src.yaw_rate_controllers.yaw_controller</title>
+<meta charset="utf-8">
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="src.html"><font color="#ffffff">src</font></a>.<a href="src.yaw_rate_controllers.html"><font color="#ffffff">yaw_rate_controllers</font></a>.yaw_controller</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/pedrootao/SML_CODE/src/quad_control/src/yaw_rate_controllers/yaw_controller.py">/home/pedrootao/SML_CODE/src/quad_control/src/yaw_rate_controllers/yaw_controller.py</a></font></td></tr></table>
+    <p><tt>#&nbsp;this&nbsp;line&nbsp;is&nbsp;just&nbsp;used&nbsp;to&nbsp;define&nbsp;the&nbsp;type&nbsp;of&nbsp;document</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="utilities.jsonable.html">utilities.jsonable</a><br>
+</td><td width="25%" valign=top><a href="numpy.html">numpy</a><br>
+</td><td width="25%" valign=top></td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="utilities.jsonable.html#Jsonable">utilities.jsonable.Jsonable</a>
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="src.yaw_rate_controllers.yaw_controller.html#YawController">YawController</a>
+</font></dt></dl>
+</dd>
+</dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="YawController">class <strong>YawController</strong></a>(<a href="utilities.jsonable.html#Jsonable">utilities.jsonable.Jsonable</a>)</font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="YawController-__init__"><strong>__init__</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="YawController-__str__"><strong>__str__</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="YawController-output"><strong>output</strong></a>(self, state, reference)</dt></dl>
+
+<hr>
+Class methods defined here:<br>
+<dl><dt><a name="YawController-description"><strong>description</strong></a>(cls)<font color="#909090"><font face="helvetica, arial"> from __builtin__.classobj</font></font></dt></dl>
+
+<hr>
+Methods inherited from <a href="utilities.jsonable.html#Jsonable">utilities.jsonable.Jsonable</a>:<br>
+<dl><dt><a name="YawController-get_inner_jsonables"><strong>get_inner_jsonables</strong></a>(self)</dt><dd><tt>Child&nbsp;classes&nbsp;redefine&nbsp;this<br>
+and&nbsp;return&nbsp;the&nbsp;inner&nbsp;jsonable&nbsp;objects</tt></dd></dl>
+
+<dl><dt><a name="YawController-get_parameters"><strong>get_parameters</strong></a>(self)</dt><dd><tt>Child&nbsp;classes&nbsp;redefine&nbsp;this<br>
+and&nbsp;return&nbsp;a&nbsp;dictionary&nbsp;of&nbsp;their&nbsp;parameters,<br>
+for&nbsp;example:&nbsp;proportional_gain,&nbsp;derivative_gain</tt></dd></dl>
+
+<dl><dt><a name="YawController-get_parameters_recursive"><strong>get_parameters_recursive</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="YawController-parameters_to_string"><strong>parameters_to_string</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="YawController-parametric_description"><strong>parametric_description</strong></a>(self, name)</dt></dl>
+
+<hr>
+Class methods inherited from <a href="utilities.jsonable.html#Jsonable">utilities.jsonable.Jsonable</a>:<br>
+<dl><dt><a name="YawController-contained_objects"><strong>contained_objects</strong></a>(cls)<font color="#909090"><font face="helvetica, arial"> from __builtin__.classobj</font></font></dt></dl>
+
+<dl><dt><a name="YawController-from_string"><strong>from_string</strong></a>(cls, string<font color="#909090">=''</font>)<font color="#909090"><font face="helvetica, arial"> from __builtin__.classobj</font></font></dt><dd><tt>Returns&nbsp;an&nbsp;object&nbsp;of&nbsp;this&nbsp;class&nbsp;constructed&nbsp;from&nbsp;the&nbsp;json&nbsp;string<br>
+`string`.</tt></dd></dl>
+
+<dl><dt><a name="YawController-get_dic_recursive"><strong>get_dic_recursive</strong></a>(cls, dictionary, list_of_keys)<font color="#909090"><font face="helvetica, arial"> from __builtin__.classobj</font></font></dt></dl>
+
+<dl><dt><a name="YawController-inverse_parametric_description"><strong>inverse_parametric_description</strong></a>(cls, string)<font color="#909090"><font face="helvetica, arial"> from __builtin__.classobj</font></font></dt><dd><tt>from&nbsp;a&nbsp;string&nbsp;withouth&nbsp;the&nbsp;unique&nbsp;string,&nbsp;get&nbsp;name</tt></dd></dl>
+
+<dl><dt><a name="YawController-to_string"><strong>to_string</strong></a>(cls, inner<font color="#909090">={}</font>)<font color="#909090"><font face="helvetica, arial"> from __builtin__.classobj</font></font></dt><dd><tt>Returns&nbsp;a&nbsp;string<br>
+that&nbsp;can&nbsp;be&nbsp;used&nbsp;to&nbsp;construct&nbsp;an&nbsp;object&nbsp;of&nbsp;this&nbsp;class.<br>
+In&nbsp;the&nbsp;`inner`&nbsp;dictionary,&nbsp;each&nbsp;key&nbsp;is&nbsp;one&nbsp;of&nbsp;the&nbsp;arguments&nbsp;of&nbsp;the<br>
+constructor&nbsp;that&nbsp;are&nbsp;<a href="utilities.jsonable.html#Jsonable">Jsonable</a>&nbsp;objects.&nbsp;(Therefore&nbsp;inner&nbsp;has&nbsp;the&nbsp;same&nbsp;keys<br>
+as&nbsp;cls.inner.)&nbsp;The&nbsp;corresponding&nbsp;value&nbsp;is&nbsp;a&nbsp;<br>
+the&nbsp;chosen&nbsp;class&nbsp;name&nbsp;for&nbsp;that&nbsp;object.</tt></dd></dl>
+
+<hr>
+Data and other attributes inherited from <a href="utilities.jsonable.html#Jsonable">utilities.jsonable.Jsonable</a>:<br>
+<dl><dt><strong>UNIQUE_STRING</strong> = '##########'</dl>
+
+<dl><dt><strong>inner</strong> = {}</dl>
+
+</td></tr></table></td></tr></table>
+</body></html>

@@ -1,0 +1,109 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module src.controllers.fa_trajectory_tracking_controllers.simple_pid_controller.simple_pid_controller</title>
+<meta charset="utf-8">
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="src.html"><font color="#ffffff">src</font></a>.<a href="src.controllers.html"><font color="#ffffff">controllers</font></a>.<a href="src.controllers.fa_trajectory_tracking_controllers.html"><font color="#ffffff">fa_trajectory_tracking_controllers</font></a>.<a href="src.controllers.fa_trajectory_tracking_controllers.simple_pid_controller.html"><font color="#ffffff">simple_pid_controller</font></a>.simple_pid_controller</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/pedrootao/SML_CODE/src/quad_control/src/controllers/fa_trajectory_tracking_controllers/simple_pid_controller/simple_pid_controller.py">/home/pedrootao/SML_CODE/src/quad_control/src/controllers/fa_trajectory_tracking_controllers/simple_pid_controller/simple_pid_controller.py</a></font></td></tr></table>
+    <p><tt>This&nbsp;is&nbsp;a&nbsp;dynamic&nbsp;controller,&nbsp;not&nbsp;a&nbsp;static&nbsp;controller</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="controllers.controller.html">controllers.controller</a><br>
+</td><td width="25%" valign=top><a href="numpy.html">numpy</a><br>
+</td><td width="25%" valign=top><a href="utilities.utility_functions.html">utilities.utility_functions</a><br>
+</td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="controllers.controller.html#Controller">controllers.controller.Controller</a>(<a href="utilities.jsonable.html#Jsonable">utilities.jsonable.Jsonable</a>)
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="src.controllers.fa_trajectory_tracking_controllers.simple_pid_controller.simple_pid_controller.html#SimplePIDController">SimplePIDController</a>
+</font></dt></dl>
+</dd>
+</dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="SimplePIDController">class <strong>SimplePIDController</strong></a>(<a href="controllers.controller.html#Controller">controllers.controller.Controller</a>)</font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl><dt>Method resolution order:</dt>
+<dd><a href="src.controllers.fa_trajectory_tracking_controllers.simple_pid_controller.simple_pid_controller.html#SimplePIDController">SimplePIDController</a></dd>
+<dd><a href="controllers.controller.html#Controller">controllers.controller.Controller</a></dd>
+<dd><a href="utilities.jsonable.html#Jsonable">utilities.jsonable.Jsonable</a></dd>
+</dl>
+<hr>
+Methods defined here:<br>
+<dl><dt><a name="SimplePIDController-__init__"><strong>__init__</strong></a>(self, proportional_gain_xy<font color="#909090">=1.0</font>, derivative_gain_xy<font color="#909090">=1.0</font>, integral_gain_xy<font color="#909090">=0.0</font>, bound_integral_xy<font color="#909090">=0.0</font>, proportional_gain_z<font color="#909090">=1.0</font>, derivative_gain_z<font color="#909090">=1.0</font>, integral_gain_z<font color="#909090">=0.5</font>, bound_integral_z<font color="#909090">=0.0</font>, quad_mass<font color="#909090">=1.6677</font>)</dt></dl>
+
+<dl><dt><a name="SimplePIDController-__str__"><strong>__str__</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="SimplePIDController-input_and_gradient_of_lyapunov"><strong>input_and_gradient_of_lyapunov</strong></a>(self, ep, ev)</dt></dl>
+
+<dl><dt><a name="SimplePIDController-output"><strong>output</strong></a>(self, delta_t, state, reference)</dt></dl>
+
+<dl><dt><a name="SimplePIDController-reset_estimate_xy"><strong>reset_estimate_xy</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="SimplePIDController-reset_estimate_z"><strong>reset_estimate_z</strong></a>(self)</dt></dl>
+
+<hr>
+Class methods defined here:<br>
+<dl><dt><a name="SimplePIDController-contained_objects"><strong>contained_objects</strong></a>(cls)<font color="#909090"><font face="helvetica, arial"> from __builtin__.classobj</font></font></dt></dl>
+
+<dl><dt><a name="SimplePIDController-description"><strong>description</strong></a>(cls)<font color="#909090"><font face="helvetica, arial"> from __builtin__.classobj</font></font></dt></dl>
+
+<hr>
+Methods inherited from <a href="utilities.jsonable.html#Jsonable">utilities.jsonable.Jsonable</a>:<br>
+<dl><dt><a name="SimplePIDController-get_inner_jsonables"><strong>get_inner_jsonables</strong></a>(self)</dt><dd><tt>Child&nbsp;classes&nbsp;redefine&nbsp;this<br>
+and&nbsp;return&nbsp;the&nbsp;inner&nbsp;jsonable&nbsp;objects</tt></dd></dl>
+
+<dl><dt><a name="SimplePIDController-get_parameters"><strong>get_parameters</strong></a>(self)</dt><dd><tt>Child&nbsp;classes&nbsp;redefine&nbsp;this<br>
+and&nbsp;return&nbsp;a&nbsp;dictionary&nbsp;of&nbsp;their&nbsp;parameters,<br>
+for&nbsp;example:&nbsp;proportional_gain,&nbsp;derivative_gain</tt></dd></dl>
+
+<dl><dt><a name="SimplePIDController-get_parameters_recursive"><strong>get_parameters_recursive</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="SimplePIDController-parameters_to_string"><strong>parameters_to_string</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="SimplePIDController-parametric_description"><strong>parametric_description</strong></a>(self, name)</dt></dl>
+
+<hr>
+Class methods inherited from <a href="utilities.jsonable.html#Jsonable">utilities.jsonable.Jsonable</a>:<br>
+<dl><dt><a name="SimplePIDController-from_string"><strong>from_string</strong></a>(cls, string<font color="#909090">=''</font>)<font color="#909090"><font face="helvetica, arial"> from __builtin__.classobj</font></font></dt><dd><tt>Returns&nbsp;an&nbsp;object&nbsp;of&nbsp;this&nbsp;class&nbsp;constructed&nbsp;from&nbsp;the&nbsp;json&nbsp;string<br>
+`string`.</tt></dd></dl>
+
+<dl><dt><a name="SimplePIDController-get_dic_recursive"><strong>get_dic_recursive</strong></a>(cls, dictionary, list_of_keys)<font color="#909090"><font face="helvetica, arial"> from __builtin__.classobj</font></font></dt></dl>
+
+<dl><dt><a name="SimplePIDController-inverse_parametric_description"><strong>inverse_parametric_description</strong></a>(cls, string)<font color="#909090"><font face="helvetica, arial"> from __builtin__.classobj</font></font></dt><dd><tt>from&nbsp;a&nbsp;string&nbsp;withouth&nbsp;the&nbsp;unique&nbsp;string,&nbsp;get&nbsp;name</tt></dd></dl>
+
+<dl><dt><a name="SimplePIDController-to_string"><strong>to_string</strong></a>(cls, inner<font color="#909090">={}</font>)<font color="#909090"><font face="helvetica, arial"> from __builtin__.classobj</font></font></dt><dd><tt>Returns&nbsp;a&nbsp;string<br>
+that&nbsp;can&nbsp;be&nbsp;used&nbsp;to&nbsp;construct&nbsp;an&nbsp;object&nbsp;of&nbsp;this&nbsp;class.<br>
+In&nbsp;the&nbsp;`inner`&nbsp;dictionary,&nbsp;each&nbsp;key&nbsp;is&nbsp;one&nbsp;of&nbsp;the&nbsp;arguments&nbsp;of&nbsp;the<br>
+constructor&nbsp;that&nbsp;are&nbsp;Jsonable&nbsp;objects.&nbsp;(Therefore&nbsp;inner&nbsp;has&nbsp;the&nbsp;same&nbsp;keys<br>
+as&nbsp;cls.inner.)&nbsp;The&nbsp;corresponding&nbsp;value&nbsp;is&nbsp;a&nbsp;<br>
+the&nbsp;chosen&nbsp;class&nbsp;name&nbsp;for&nbsp;that&nbsp;object.</tt></dd></dl>
+
+<hr>
+Data and other attributes inherited from <a href="utilities.jsonable.html#Jsonable">utilities.jsonable.Jsonable</a>:<br>
+<dl><dt><strong>UNIQUE_STRING</strong> = '##########'</dl>
+
+<dl><dt><strong>inner</strong> = {}</dl>
+
+</td></tr></table></td></tr></table>
+</body></html>
