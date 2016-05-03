@@ -9,7 +9,10 @@ import numpy
 import rospy
 
 #plots
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib import pyplot as plt
 
 # The children import needed dictionaries
 
@@ -63,73 +66,81 @@ class Mission(js.Jsonable):
     @classmethod
     def plot_from_string(cls, string):
         
-        times = []
-        positions_x = []
-        positions_y = []
-        positions_z = []
-        rolls = []
-        pithces = []
-        yaws = []
+        times        = []
+        positions_x  = []
+        positions_y  = []
+        positions_z  = []
+        rolls        = []
+        pitches      = []
+        yaws         = []
         velocities_x = []
         velocities_y = []
         velocities_z = []
-        controls_x = []
-        controls_y = []
-        controls_z = []
-        yaw_rates = []
+        controls_x   = []
+        controls_y   = []
+        controls_z   = []
+        yaw_rates    = []
         
+
         for line in string.split('\n'):
-            numbers = line.split(' ')
-            times.append(float(numbers[0]))
-            positions_x.append(float(numbers[1]))
-            positions_y.append(float(numbers[2]))
-            positions_z.append(float(numbers[3]))
-            rolls.append(float(numbers[4]))
-            pitches.append(float(numbers[5]))
-            yaws.append(float(numbers[6]))
-            velocities_x.append(float(numbers[7]))
-            velocities_y.append(float(numbers[8]))
-            velocities_z.append(float(numbers[9]))
-            controls_x.append(float(numbers[10]))
-            controls_y.append(float(numbers[11]))
-            controls_z.append(float(numbers[12]))
-            yaw_rates.append(float(numbers[13]))
+            # ignore empty lines           
+            if line:
+                numbers = line.split(' ')
+                
+                times.append(       float(numbers[0]))
+                positions_x.append( float(numbers[1]))
+                positions_y.append( float(numbers[2]))
+                positions_z.append( float(numbers[3]))
+                rolls.append(       float(numbers[4]))
+                pitches.append(     float(numbers[5]))
+                yaws.append(        float(numbers[6]))
+                velocities_x.append(float(numbers[7]))
+                velocities_y.append(float(numbers[8]))
+                velocities_z.append(float(numbers[9]))
+                controls_x.append(  float(numbers[10]))
+                controls_y.append(  float(numbers[11]))
+                controls_z.append(  float(numbers[12]))
+                yaw_rates.append(   float(numbers[13]))
         
-        plt.figure()
+        fig1 = plt.figure()
         plt.plot(times, positions_x, label=r'$x$')
         plt.plot(times, positions_y, label=r'$y$')
         plt.plot(times, positions_z, label=r'$z$')
         plt.title('Positions')
-        plt.legend(pos='best')
+        plt.legend(loc='best')
         plt.grid()
-        plt.draw()
+        # plt.draw()
+        # plt.savefig('.txt')
+
         
-        plt.figure()
+        fig2 = plt.figure()
         plt.plot(times, rolls, label=r'$\phi$')
         plt.plot(times, pitches, label=r'$\theta$')
         plt.plot(times, yaws, label=r'$\psi$')
         plt.title('Attitudes')
-        plt.legend(pos='best')
+        plt.legend(loc='best')
         plt.grid()
-        plt.draw()
+        # plt.draw()
         
-        plt.figure()
+        fig3 = plt.figure()
         plt.plot(times, velocities_x, label=r'$x$')
         plt.plot(times, velocities_y, label=r'$y$')
-        plt.plot(times, velcocities_z, label=r'$z$')
+        plt.plot(times, velocities_z, label=r'$z$')
         plt.title('Velocities')
-        plt.legend(pos='best')
+        plt.legend(loc='best')
         plt.grid()
-        plt.draw()
+        # plt.draw()
         
-        plt.figure()
+        fig4 = plt.figure()
         plt.plot(times, controls_x, label=r'$x$')
         plt.plot(times, controls_y, label=r'$y$')
         plt.plot(times, controls_z, label=r'$z$')
         plt.title('Controls')
-        plt.legend(pos='best')
+        plt.legend(loc='best')
         plt.grid()
-        plt.draw()
+        # plt.draw()
+
+        return fig1,fig2,fig3,fig4
 
 
     def description(cls):
@@ -221,10 +232,9 @@ class Mission(js.Jsonable):
         """Get desired position (m) and velocity (m/s) for the quadrotor"""
         return NotImplementedError()
 
-
     def get_rc_output(self):
         """Get rc output"""
-        return numpy.zeros(8)    
+        return numpy.zeros(8)
 
 
     def get_euler_angles(self):
@@ -232,11 +242,41 @@ class Mission(js.Jsonable):
         """Get euler angles of the quadrotor (rad)"""
         return NotImplementedError()
 
+    def get_complete_data(self):
+        """Get all data relevant to the mission
+        from this data, mission should be able to do data post-analysis, 
+        like ploting or computing average errors
+        """        
+        default_array = numpy.concatenate([
+            [rospy.get_time()],
+            self.get_pv(),
+            self.get_pv_desired(),
+            self.get_euler_angles(),
+            self.desired_3d_force_quad])
+        
+        # default_array = numpy.concatenate([default_array,self.get_complementary_data()])      
+
+        return default_array
+
+    def get_complementary_data(self):
+        """Get complementary data that is not included 
+        in get_complete_data() already
+        """
+        # by default return empty array
+        # return numpy.array([])
+        return NotImplementedError()
+
+    def get_labels_complementary_data(self):
+        """Get labels of the complementary data as defined in get_complementary_data()
+        """
+        # by default return empty list of labels
+        # return []
+        return NotImplementedError()
 
     def change_reference(self,key,string):
         """Change reference trajectory"""
         if key in self.inner['reference'].keys():
-            TrajectoryClass   = self.inner['reference'][key]
+            TrajectoryClass    = self.inner['reference'][key]
             self.TrajGenerator = TrajectoryClass.from_string(string)
 
 
@@ -299,7 +339,9 @@ class Mission(js.Jsonable):
         time_instant = rospy.get_time() - self.time_instant_t0
 
         desired_3d_force_quad = self.compute_desired_3d_force(time_instant)
-            
+
+        self.desired_3d_force_quad = desired_3d_force_quad
+
         self.DesiredZForceMedian.update_data(desired_3d_force_quad[2])
 
         yaw_rate = self.yaw_rate(time_instant)

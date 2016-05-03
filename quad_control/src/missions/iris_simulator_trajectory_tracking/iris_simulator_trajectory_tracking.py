@@ -111,6 +111,13 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
         return self.reference[0:6]
 
 
+    def get_complementary_data(self):
+        return numpy.array([])
+
+    def get_labels_complementary_data(self):
+        return []
+
+
     def get_euler_angles(self):
         return self.state_quad[6:9]
 

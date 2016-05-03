@@ -70,6 +70,8 @@ class QuadController():
             # if GUI request data to be saved, set flag to true
             self.SaveDataFlag = True
 
+            self._add_header_mission()
+
         else:
             # if GUI request data NOT to be saved, set falg to False
             self.SaveDataFlag = False
@@ -122,29 +124,44 @@ class QuadController():
     # callback for when changing controller is requested
     def _handle_service_change_controller(self,req):
         self.mission_object.change_controller(req.jsonable_name,req.string_parameters)
+        
+        self._add_header_mission()
+
         # return message to Gui, to let it know resquest has been fulfilled
         return SrvCreateJsonableObjectByStrResponse(received = True)
 
     # callback for when changing controller is requested
     def _handle_service_change_reference(self,req):
+
         self.mission_object.change_reference(req.jsonable_name,req.string_parameters)
+        
+        self._add_header_mission()
+
         # return message to Gui, to let it know resquest has been fulfilled
         return SrvCreateJsonableObjectByStrResponse(received = True)
 
     # callback for when changing controller is requested
     def _handle_service_change_yaw_controller(self,req):
         self.mission_object.change_yaw_controller(req.jsonable_name,req.string_parameters)
+        
+        self._add_header_mission()
+        
         # return message to Gui, to let it know resquest has been fulfilled
         return SrvCreateJsonableObjectByStrResponse(received = True)
 
     # callback for when changing controller is requested
     def _handle_service_change_yaw_reference(self,req):
         self.mission_object.change_yaw_reference(req.jsonable_name,req.string_parameters)
+
+        self._add_header_mission()
+
         # return message to Gui, to let it know resquest has been fulfilled
         return SrvCreateJsonableObjectByStrResponse(received = True)      
 
     # callback for when changing mission is requested
     def _handle_service_change_mission(self,req):
+
+        self.mission_name = req.jsonable_name
 
         # class_name = req.jsonable_name
         # chosen class taken from dictionary
@@ -152,6 +169,8 @@ class QuadController():
         
         self.mission_object = MissionClass.from_string(req.string_parameters)
         #rospy.logwarn(self.mission_object.__class__.__name__)
+
+        self._add_header_mission()
 
         # return message to Gui, to let it know resquest has been fulfilled
         return SrvCreateJsonableObjectByStrResponse(received = True)        
@@ -166,6 +185,15 @@ class QuadController():
 
         # return message to Gui, to let it know resquest has been fulfilled
         return SrvTrajectoryDesiredResponse(True)
+
+    def _add_header_mission(self):
+
+        string = self.mission_object.parametric_description(self.mission_name)
+        
+        if self.SaveDataFlag == True:
+            rospy.logwarn(string)
+            # if data is being saved, append mission header
+            numpy.savetxt(self.file_handle, [string], fmt="%s")
 
     #callback for turning ON/OFF Mocap and turning OFF/ON the subscription to the simulator
     def handle_Mocap(self,req):
@@ -360,6 +388,7 @@ class QuadController():
         rospy.Service('IrisPlusSetNeutral', IrisPlusSetNeutral, self._handle_iris_plus_set_neutral)
         #-----------------------------------------------------------------------#
 
+        self.mission_name  = 'Default'
         # Default Mission Class
         MissionClass = missions.missions_database.database['Default']        
         # construct a default object
@@ -376,8 +405,8 @@ class QuadController():
 
             if self.SaveDataFlag == True:
                 # if we want to save data
-                # numpy.savetxt(self.file_handle, [concatenate([[rospy.get_time()],[self.flag_measurements], self.state_quad, states_d[0:9], Input_to_Quad,self.ControllerObject.d_est])],delimiter=' ')
-                numpy.savetxt(self.file_handle, [concatenate([[rospy.get_time()],[self.flag_measurements], self.state_quad, states_d[0:9], desired_3d_force_quad])],delimiter=' ')
+                numpy.savetxt(self.file_handle, [self.mission_object.get_complete_data()], delimiter=' ')
+            
             # go to sleep
             rate.sleep()
 
@@ -388,3 +417,4 @@ if __name__ == '__main__':
         AQuadController.control_compute()
     except rospy.ROSInterruptException:
         pass
+ 

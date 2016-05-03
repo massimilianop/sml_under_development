@@ -1,5 +1,8 @@
 <launch>
 
+        <!-- Controller Node -->
+        <node pkg="quad_control" name="plot_nodeasas" type="plot_experiment.py"/>
+
         <!-- Default Mission -->
         <param name="MissionDefault" type="str" value="FireflyTrajectoryTracking"/>
 
@@ -19,7 +22,7 @@
 
 
         <!-- Controller Node -->
-        <node pkg="quad_control" name="controller_Iris1" type="cycle_quad_control_mission.py"/>
+        <node pkg="quad_control" name="controller_Iris1" type="cycle_quad_control_mission.py"  output="screen"/>
 
         <!-- Controller parameters -->
         <param name="gravity_ctr" value="9.81"/>
