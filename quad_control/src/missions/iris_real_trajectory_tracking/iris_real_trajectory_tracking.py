@@ -68,7 +68,7 @@ class IrisRealTrajectoryTracking(mission.Mission):
 
         # intiialization should be done in another way,
         # but median will take care of minimizing effects
-        self.VelocityEstimator = Velocity_Filter(3,numpy.zeros(3),0.0)
+        self.velocity_estimator = VelocityFilter(3,numpy.zeros(3),0.0)
 
         # dy default, desired trajectory is staying still in origin
         TrajectoryClass    = self.inner['trajectories_database']['StayAtRest']
@@ -126,15 +126,19 @@ class IrisRealTrajectoryTracking(mission.Mission):
 
             # velocity
             #v = numpy.array([data.vx,data.vy,data.vz])
-            v = self.VelocityEstimator.out(p,rospy.get_time())
+            v = self.velocity_estimator.out(p,rospy.get_time())
 
             # attitude: euler angles THESE COME IN DEGREES
-            roll = bodies["roll"]; pitch=-bodies["pitch"]; yaw  = bodies["yaw"]
+            roll = bodies["roll"]
+            pitch=-bodies["pitch"]
+            yaw  = bodies["yaw"]
             ee = numpy.array([roll,pitch,yaw])
 
             # collect all components of state
-            self.state_quad = numpy.concatenate([p,v,ee])  
+            self.state_quad = numpy.concatenate([p,v,ee])
+            
         else:
+        
             # do nothing, keep previous state
             self.flag_measurements = False
 
@@ -153,7 +157,7 @@ class IrisRealTrajectoryTracking(mission.Mission):
         return self.state_quad[6:9]
 
 
-    def real_publish(self,desired_3d_force_quad,yaw_rate):
+    def real_publish(self, desired_3d_force_quad,yaw_rate):
 
         self.IrisPlusConverterObject.set_rotation_matrix(euler_rad)
         iris_plus_rc_input = self.IrisPlusConverterObject.input_conveter(desired_3d_force_quad,yaw_rate)

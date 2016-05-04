@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # import Misson abstract class
-from .. import mission
+from missions import mission
 
 # import converter from 3d_force and yaw rate into iris rc standard 
 from converter_between_standards.iris_plus_converter import IrisPlusConverter
@@ -139,7 +139,7 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
 
 
     # callback when simulator publishes states
-    def get_state_from_simulator(self,simulator_message):
+    def get_state_from_simulator(self, simulator_message):
 
         # position
         p = numpy.array([simulator_message.x,simulator_message.y,simulator_message.z])

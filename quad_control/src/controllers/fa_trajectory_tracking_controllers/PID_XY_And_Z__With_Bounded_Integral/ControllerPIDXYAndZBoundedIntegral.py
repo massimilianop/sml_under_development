@@ -3,36 +3,36 @@
 
 # in case we want to use rospy.logwarn or rospy.logerror
 import rospy
-
-import numpy
-
+import numpy as np
 import collections  
+
+from utilities import utility_functions as uts
 
 from systems_functions.Double_Integrator_Functions.Double_Integrator_Bounded_and_Component_wise.DI_Bounded_1 import DI_controller
 
-#--------------------------------------------------------------------------#
 from numpy import cos as c
 from numpy import sin as s
-import math
+
 
 # this function works for arrays
-def bound(x,maxmax,minmin):
-    return numpy.maximum(minmin,numpy.minimum(maxmax,x))
+#def bound(x,maxmax,minmin):
+#    return numpy.maximum(minmin,numpy.minimum(maxmax,x))
 
-def Rx(tt):    
-    return numpy.array([[1.0,0.0,0.0],[0.0,c(tt),-s(tt)],[0.0,s(tt),c(tt)]])
+#def Rx(tt):    
+#    return numpy.array([[1.0,0.0,0.0],[0.0,c(tt),-s(tt)],[0.0,s(tt),c(tt)]])
 
-def Ry(tt):
-    return numpy.array([[c(tt),0.0,s(tt)],[0.0,1,0.0],[-s(tt),0.0,c(tt)]])
+#def Ry(tt):
+#    return numpy.array([[c(tt),0.0,s(tt)],[0.0,1,0.0],[-s(tt),0.0,c(tt)]])
 
-def Rz(tt):    
-    return numpy.array([[c(tt),-s(tt),0.0],[s(tt),c(tt),0.0],[0.0,0.0,1]])
+#def Rz(tt):    
+#    return numpy.array([[c(tt),-s(tt),0.0],[s(tt),c(tt),0.0],[0.0,0.0,1]])
 
-def GetRotFromEulerAngles(ee_rad):
-    return Rz(ee_rad[2]).dot(Ry(ee_rad[1]).dot(Rx(ee_rad[0])))
+#def GetRotFromEulerAngles(ee_rad):
+#    return Rz(ee_rad[2]).dot(Ry(ee_rad[1]).dot(Rx(ee_rad[0])))
 
-def GetRotFromEulerAnglesDeg(ee_deg):
-    return GetRotFromEulerAngles(ee_deg*math.pi/180.0)
+#def GetRotFromEulerAnglesDeg(ee_deg):
+#    return GetRotFromEulerAngles(ee_deg*math.pi/180.0)
+
 
 #--------------------------------------------------------------------------#
 # This is a dynamic controller, not a static controller
@@ -46,7 +46,7 @@ class ControllerPIDXYAndZBounded():
     # -----------------------------------------------------------------------------#
 
     wn      = 2.0
-    xi      = numpy.sqrt(2)/2.0
+    xi      = np.sqrt(2)/2.0
     kv      = 2.0*xi*wn
     sigma_v = 0.5
     kp      = wn**2
@@ -63,7 +63,7 @@ class ControllerPIDXYAndZBounded():
     # -----------------------------------------------------------------------------#
 
     wn      = 2.0
-    xi      = numpy.sqrt(2)/2.0
+    xi      = np.sqrt(2)/2.0
     kv      = 2.0*xi*wn
     sigma_v = 0.5
     kp      = wn**2
@@ -79,7 +79,7 @@ class ControllerPIDXYAndZBounded():
 
     # -----------------------------------------------------------------------------#
     # estimated disturbance
-    d_est  = numpy.zeros(3)
+    d_est  = np.zeros(3)
     # initial time used for integration of disturbance dynamics
     t_old  = 0.0
     # Maximum of disturbance estimate
@@ -118,7 +118,7 @@ class ControllerPIDXYAndZBounded():
     def output(self,time,states,states_d):
         # convert euler angles from deg to rotation matrix
         ee = states[6:9]
-        R  = GetRotFromEulerAnglesDeg(ee)
+        R  = uts.rot_from_euler_deg(ee)
         R  = numpy.reshape(R,9)
         # collecting states
         states  = numpy.concatenate([states[0:6],R])
@@ -161,7 +161,7 @@ class ControllerPIDXYAndZBounded():
         # element-wise division
         ratio      = self.d_est/self.MAX_DISTURBANCE_ESTIMATE
         # saturate estimate just for safety (element wise multiplication)
-        self.d_est = self.MAX_DISTURBANCE_ESTIMATE*bound(ratio,1,-1)
+        self.d_est = self.MAX_DISTURBANCE_ESTIMATE*np.clip(ratio,1,-1)
         # update old time
         self.t_old = t_new
         # -----------------------------------------------------------------------------#

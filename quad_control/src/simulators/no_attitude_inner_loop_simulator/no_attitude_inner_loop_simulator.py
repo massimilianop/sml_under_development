@@ -7,7 +7,7 @@ with no attitude inner loop.
 
 import numpy as np
 import utilities.utility_functions as uts
-from .. import simulator as sm
+from simulators import simulator as sm
 import rospy
 
 
@@ -44,7 +44,7 @@ class NoAttitudeInnerLoopSimulator(sm.Simulator):
         
         pos = initial_position
         vel = initial_velocity
-        rot = np.reshape(uts.GetRotFromEulerAnglesDeg(np.array(initial_rotation)), 9)
+        rot = np.reshape(uts.rot_from_euler_deg(np.array(initial_rotation)), 9)
         initial_state = np.concatenate([pos, vel, rot])
         sm.Simulator.__init__(self, initial_time, initial_state, initial_control)
         self.mass = mass
@@ -58,7 +58,7 @@ class NoAttitudeInnerLoopSimulator(sm.Simulator):
         
         
     def get_attitude(self):
-        return uts.GetEulerAnglesDeg(np.reshape(self.state[6:15], (3,3)))
+        return uts.euler_deg_from_rot(np.reshape(self.state[6:15], (3,3)))
         
         
     def set_control(self, command):
@@ -94,9 +94,9 @@ class NoAttitudeInnerLoopSimulator(sm.Simulator):
         
 """Test"""
 
-string = NoAttitudeInnerLoopSimulator.to_string()
-print string
-sim = NoAttitudeInnerLoopSimulator.from_string(string)
+#string = NoAttitudeInnerLoopSimulator.to_string()
+#print string
+#sim = NoAttitudeInnerLoopSimulator.from_string(string)
 #print sim
 #print sim.vector_field(0.0, np.ones(15), np.ones(4))
 

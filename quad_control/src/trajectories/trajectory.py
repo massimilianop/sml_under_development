@@ -13,6 +13,7 @@ import rospy
 
 class Trajectory(js.Jsonable):
 
+
     @classmethod
     def description(cls):
         #raise NotImplementedError()

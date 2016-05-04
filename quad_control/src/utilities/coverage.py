@@ -4,6 +4,7 @@ import numpy as np
 
 
 BEST_DISTANCE = 1.0
+TOLERANCE = 0.01
 
 
 def landmark_visibility(x, y):
@@ -17,7 +18,7 @@ def landmark_visibility(x, y):
     
     
 def facet_visibility(x, y, theta):
-    if x <= 0.0 or np.fabs(theta) <= np.pi/2:
+    if x <= 0.0 or np.fabs(theta) <= np.pi/2.0:
         return 0.0
     dist = np.sqrt(x**2+y**2)
     if dist <= BEST_DISTANCE:
@@ -35,9 +36,9 @@ def coordinates_to_transformation_matrix_SO2(px, py, alpha):
         
         
 def transformation_matrix_to_coordinates_SO2(mtx):
-    px = mtx[0][0]
-    py = mtx[0][1]
-    theta = np.atan2(mtx[1][1], mtx[1][0])
+    px = mtx[0][2]
+    py = mtx[1][2]
+    theta = np.arctan2(mtx[1][0], mtx[1][1])
     return px, py, theta
 
 
@@ -85,7 +86,7 @@ class Landmark:
 class Facet(Landmark):
 
     def __init__(self, x, y, theta):
-        Landmark.__init__(self)
+        Landmark.__init__(self, x, y)
         self.theta = theta
         
     def __str__(self):
@@ -94,15 +95,34 @@ class Facet(Landmark):
         return string
         
     def compute_visibility(self, agent):
-        fct_tran_mat = coordinates_to_transformation_matrix_SO2([self.x, self.y, self.theta])
+        fct_tran_mat = coordinates_to_transformation_matrix_SO2(self.x, self.y, self.theta)
         ag_tran_mat = coordinates_to_transformation_matrix_SO2(agent.x, agent.y, agent.alpha)
-        rel_tran_mat = np.linalg.inv(ag_tran_mat).dot(ag_tran_mat)
+        rel_tran_mat = np.linalg.inv(ag_tran_mat).dot(fct_tran_mat)
         x, y, th = transformation_matrix_to_coordinates_SO2(rel_tran_mat)
         return facet_visibility(x, y, th)
         
     
         
-        
+
+def reassign_landmarks(agent1, agent2, lst1, lst2):
+    new_lst1 = []
+    new_lst2 = []
+    for lmk in lst1:
+        vis1 = lmk.compute_visibility(agent1)
+        vis2 = lmk.compute_visibility(agent2)
+        if vis2 > vis1 + TOLERANCE:
+            new_lst2.append(lmk)
+        else:
+            new_lst1.append(lmk)
+    for lmk in lst2:
+        vis1 = lmk.compute_visibility(agent1)
+        vis2 = lmk.compute_visibility(agent2)
+        if vis1 > vis2 + TOLERANCE:
+            new_lst1.append(lmk)
+        else:
+            new_lst1.append(lmk)
+    return new_lst1, new_lst2
+            
         
         
         
@@ -112,8 +132,8 @@ class Facet(Landmark):
         
         
 """Test"""
-#lmk = Landmark(3.0, 5.0)
-#agt = Agent(0.0, 0.0, 0.0)
-#print lmk.compute_visibility(agt)
+fct = Facet(2.0, 3.0, np.pi)
+agt = Agent(0.0, 0.0, 0.0)
+print fct.compute_visibility(agt)
         
         

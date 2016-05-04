@@ -6,7 +6,7 @@ import numpy
 
 from controllers import controller
 
-from utilities import utility_functions
+from utilities import utility_functions as uts
 
 
 class SimplePIDController(controller.Controller):
@@ -102,7 +102,7 @@ class SimplePIDController(controller.Controller):
         t_new = delta_t
         disturbance_estimate = self.disturbance_estimate + d_est_dot*(t_new - self.t_old) 
         # saturate estimate just for safety (element wise bound)
-        self.disturbance_estimate = utility_functions.bound(disturbance_estimate,max_disturbance_estimate,-1.0*max_disturbance_estimate)
+        self.disturbance_estimate = numpy.clip(disturbance_estimate,max_disturbance_estimate,-1.0*max_disturbance_estimate)
         # update old time
         self.t_old = t_new
         # -----------------------------------------------------------------------------#

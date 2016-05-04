@@ -147,7 +147,7 @@ class Mission(js.Jsonable):
         self.initialize_state()
 
         # for reseting neutral value that makes iris+ stay at desired altitude
-        self.DesiredZForceMedian = utility_functions.Median_Filter(10)
+        self.DesiredZForceMedian = utility_functions.MedianFilter(10)
               
         pass
         
@@ -247,10 +247,10 @@ class Mission(js.Jsonable):
             self.YawTrajGenerator = YawTrajectoryClass.from_string(string)
 
 
-    def change_controller(self,key,string):
+    def change_controller(self, key, string):
         """Change controller"""
         if key in self.inner['controller'].keys():
-            ControllerClass      = self.inner['controller'][key]
+            ControllerClass       = self.inner['controller'][key]
             self.ControllerObject = ControllerClass.from_string(string)
 
 
