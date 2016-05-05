@@ -48,8 +48,6 @@
   <run_depend>roscpp</run_depend>
   <run_depend>rospy</run_depend>
   <run_depend>std_msgs</run_depend>
-  <run_depend>rospkg</run_depend>
-  <run_depend>utilities</run_depend>
 
 <!--   
 
