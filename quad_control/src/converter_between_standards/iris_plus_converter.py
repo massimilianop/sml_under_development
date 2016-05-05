@@ -20,10 +20,10 @@ class IrisPlusConverter(object):
     __MASS    = rospy.get_param("mass_quad_ctr",1.442)
 
     # acceleration due to gravity (m/s/s)
-    __GRAVITY = rospy.get_param("gravity_ctr",9.81)  
+    __GRAVITY = rospy.get_param("gravity_ctr",9.81)
 
     # Throttle neutral 
-    __THROTTLE_NEUTRAL = 1430.0
+    __THROTTLE_NEUTRAL = rospy.get_param("throttle_neutral",1450)
 
     # The default of 4.5 commands a 200 deg/sec rate
     # of rotation when the yaw stick is held fully left or right.
@@ -39,13 +39,19 @@ class IrisPlusConverter(object):
     #     super(IrisPlusConverter, self).__init__()
     #     self.arg = arg
 
+    def set_mass(self,mass):
+        self.__MASS = mass
+        pass
+
     def get_k_throttle_neutral(self):
         return self.__THROTTLE_NEUTRAL
 
     def reset_k_trottle_neutral(self,force):
         # if force > m*gravity, decrease neutral value
         # if force < m*gravity, increase neutral value
-        self.__THROTTLE_NEUTRAL = self.__THROTTLE_NEUTRAL*(self.__MASS*self.__GRAVITY)/force
+
+        self.__THROTTLE_NEUTRAL = self.__THROTTLE_NEUTRAL*force/(self.__MASS*self.__GRAVITY)
+
         # for safety better bound this value
         self.__THROTTLE_NEUTRAL = bound(self.__THROTTLE_NEUTRAL,1600,1400)
         rospy.logwarn('new neutral value = ' + str(self.__THROTTLE_NEUTRAL) + ' in [1400,1600]')

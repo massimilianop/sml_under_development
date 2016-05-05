@@ -21,9 +21,9 @@ class Trajectory(js.Jsonable):
 
     def __init__(self, offset=np.zeros(3), rotation=np.zeros(3)):
         
-        offset[0] = rospy.get_param("trajectry_offset_x",offset[0])
-        offset[1] = rospy.get_param("trajectry_offset_y",offset[1])
-        offset[2] = rospy.get_param("trajectry_offset_z",offset[2])
+        #offset[0] = rospy.get_param("trajectry_offset_x",offset[0])
+        #offset[1] = rospy.get_param("trajectry_offset_y",offset[1])
+        #offset[2] = rospy.get_param("trajectry_offset_z",offset[2])
 
         self.__offset = np.array(offset)
         self.__rotation = np.array(rotation)

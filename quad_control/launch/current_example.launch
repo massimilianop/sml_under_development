@@ -1,6 +1,6 @@
 <launch>
         <!-- Controller Node -->
-        <node pkg="quad_control" name="controller_Iris1" type="cycle_quad_control_mavros.py"/>
+        <node pkg="quad_control" name="controller_Iris1" type="cycle_quad_control_mavros.py" output="screen"/>
 
         <!-- Controller parameters -->
         <param name="gravity_ctr" value="9.81"/>
