@@ -40,7 +40,7 @@ class IrisRealTrajectoryTracking(mission.Mission):
     
     
     def __init__(self,
-            body_id = 12,
+            body_id        = 12,
             controller     = fa_trajectory_tracking_controllers_database.database["Default"](),
             reference      = trajectories_database.database["Default"](),
             yaw_controller = yaw_controllers_database.database["Default"]()
@@ -51,7 +51,7 @@ class IrisRealTrajectoryTracking(mission.Mission):
         mission.Mission.__init__(self)
     
         self.inner['controllers_dictionary']     = controllers_dictionary.controllers_dictionary
-        self.inner['trajectories_database']    = trajectories_database.trajectories_database
+        self.inner['trajectories_database']      = trajectories_database.trajectories_database
         self.inner['yaw_controllers_dictionary'] = yaw_controllers_dictionary.yaw_controllers_dictionary
 
         
@@ -83,7 +83,7 @@ class IrisRealTrajectoryTracking(mission.Mission):
         YawControllerClass       = self.inner['yaw_controllers_dictionary']['YawRateControllerTrackReferencePsi']
         self.YawControllerObject = YawControllerClass()     
 
-        pass  
+        pass
 
 
     def initialize_state(self):

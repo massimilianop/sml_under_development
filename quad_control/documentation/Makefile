@@ -4,6 +4,10 @@
 
 open_sw=firefox
 
-documentation:
-	pydoc -w ../
-	$(open_sw) src.html
+# documentation:
+# 	pydoc -w ../
+# 	$(open_sw) src.html
+
+open_html:
+	#$(open_sw) ./html/src.html	
+	firefox -new-window ./html/src.html

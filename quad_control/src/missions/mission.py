@@ -185,7 +185,7 @@ class Mission(js.Jsonable):
         '''Get euler angles (roll, pitch, yaw) in radians,
         and get their time derivatives'''
         # return numpy.zeros(3+3)
-        NotImplementedError()
+        return NotImplementedError()
 
 
     def get_desired_yaw_rad(self,time_instant):

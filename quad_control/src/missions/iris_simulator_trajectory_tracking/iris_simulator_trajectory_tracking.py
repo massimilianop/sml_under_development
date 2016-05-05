@@ -30,6 +30,7 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
 
     inner = {}
 
+    
     inner['controller']     = fa_trajectory_tracking_controllers_database.database
     inner['reference']      = trajectories_database.database
     inner['yaw_controller'] = yaw_controllers_database.database
