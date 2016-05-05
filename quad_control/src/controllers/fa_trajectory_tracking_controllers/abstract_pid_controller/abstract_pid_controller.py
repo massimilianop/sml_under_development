@@ -11,6 +11,8 @@ from controllers import controller
 
 from controllers.double_integrator_controllers import double_integrator_controller_database
 
+import rospy
+
 
 class ThreeDPIDController(controller.Controller):
 
@@ -29,7 +31,7 @@ class ThreeDPIDController(controller.Controller):
             bound_integral_xy    = 0.0        ,\
             integral_gain_z      = 0.5        ,\
             bound_integral_z     = 0.0        ,\
-            quad_mass            = 1.66779
+            quad_mass            = rospy.get_param("quadrotor_mass",1.442)
             ):
 
         self.__integral_gain_xy     = integral_gain_xy

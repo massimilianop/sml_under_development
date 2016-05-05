@@ -49,10 +49,7 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
         # Copy the parameters into self variables
         # Subscribe to the necessary topics, if any
 
-        mission.Mission.__init__(self)
-        
-        # converting our controlller standard into iris+ standard
-        self.IrisPlusConverterObject = IrisPlusConverter()
+        mission.Mission.__init__(self)        
 
         # controller needs to have access to STATE: comes from simulator
         self.SubToSim = rospy.Subscriber("quad_state", quad_state, self.get_state_from_simulator)
@@ -69,7 +66,13 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
 
         self.YawControllerObject = yaw_controller
 
-        pass  
+        # # converting our controlller standard into iris+ standard
+        # self.IrisPlusConverterObject = IrisPlusConverter()
+        # self.IrisPlusConverterObject.set_mass(self.ControllerObject.MASS)
+
+        self.iris_plus_converter_object_mission.set_mass(self.ControllerObject.MASS)
+        
+        pass
 
 
     def initialize_state(self):
@@ -123,20 +126,15 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
         return self.state_quad[6:9]
 
 
-    def real_publish(self,desired_3d_force_quad,yaw_rate):
-
-        euler_rad     = self.state_quad[6:9]*math.pi/180 
-
-        self.IrisPlusConverterObject.set_rotation_matrix(euler_rad)
-        iris_plus_rc_input = self.IrisPlusConverterObject.input_conveter(desired_3d_force_quad,yaw_rate)
+    def real_publish(self,desired_3d_force_quad,yaw_rate,rc_output):
 
         # create a message of the type quad_cmd, that the simulator subscribes to 
         cmd  = quad_cmd()
         
-        cmd.cmd_1 = iris_plus_rc_input[0]
-        cmd.cmd_2 = iris_plus_rc_input[1]
-        cmd.cmd_3 = iris_plus_rc_input[2]
-        cmd.cmd_4 = iris_plus_rc_input[3]
+        cmd.cmd_1 = rc_output[0]
+        cmd.cmd_2 = rc_output[1]
+        cmd.cmd_3 = rc_output[2]
+        cmd.cmd_4 = rc_output[3]
 
         cmd.cmd_5 = 1500.0
         cmd.cmd_6 = 1500.0

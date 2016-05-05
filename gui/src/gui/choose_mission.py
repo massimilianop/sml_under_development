@@ -8,7 +8,7 @@ from python_qt_binding.QtGui import QWidget
 from PyQt4.QtCore import QObject, pyqtSignal
 
 # import services defined in quad_control; service being used: SrvCreateJsonableObjectByStr
-from quad_control.srv import SrvCreateJsonableObjectByStr
+from quad_control.srv import SrvCreateJsonableObjectByStr,IrisPlusResetNeutral,IrisPlusSetNeutral
 
 import argparse
 
@@ -332,10 +332,12 @@ class ChooseMissionPlugin(Plugin):
                 if reply.received == True:
                     self._widget.ThrottleNeutralValue.setValue(reply.k_trottle_neutral)
                     rospy.logwarn('Service for reseting neutral value succeded')
-            except rospy.ServiceException:
+            except rospy.ServiceException as exc:
+                rospy.logwarn("Service did not process request: " + str(exc))
                 rospy.logwarn('Service for reseting neutral value failed')
                 pass
-        except:
+        except rospy.ServiceException as exc:
+            rospy.logwarn("Service did not process request: " + str(exc))
             rospy.logwarn('Service for reseting neutral value failed')      
             pass
 
@@ -350,10 +352,12 @@ class ChooseMissionPlugin(Plugin):
                 reply = ResetingNeutral(k_trottle_neutral = self._widget.ThrottleNeutralValue.value())
                 if reply.received == True:
                     rospy.logwarn('Service for seting neutral value succeded')
-            except rospy.ServiceException:
+            except rospy.ServiceException as exc:
+                rospy.logwarn("Service did not process request: " + str(exc))
                 rospy.logwarn('Service for seting neutral value failed')
                 pass
-        except:
+        except rospy.ServiceException as exc:
+            rospy.logwarn("Service did not process request: " + str(exc))
             rospy.logwarn('Service for seting neutral value failed')      
             pass            
 

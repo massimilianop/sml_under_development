@@ -20,6 +20,8 @@ from quad_control.srv import *
 # to work with directories relative to ROS packages
 from rospkg import RosPack
 
+
+
 import numpy
 from numpy import *
 
@@ -83,19 +85,19 @@ class QuadController():
     def _handle_iris_plus_reset_neutral(self,req):
         # return message to GUI, to let it know resquest has been fulfilled
         # IrisPlusResetNeutral: service type
-        median_force = self.DesiredZForceMedian.output()
+        median_force = self.mission_object.DesiredZForceMedian.output()
         rospy.logwarn('median force = '+ str(median_force))
-        self.IrisPlusConverterObject.reset_k_trottle_neutral(median_force)
+        self.mission_object.iris_plus_converter_object_mission.reset_k_trottle_neutral(median_force)
 
         # new neutral value
-        k_trottle_neutral = self.IrisPlusConverterObject.get_k_throttle_neutral()
+        k_trottle_neutral = self.mission_object.iris_plus_converter_object_mission.get_k_throttle_neutral()
         return IrisPlusResetNeutralResponse(received = True, k_trottle_neutral = k_trottle_neutral)
 
     # callback for when "seting iris plus neutral value" is requested
     def _handle_iris_plus_set_neutral(self,req):
         # return message to GUI, to let it know resquest has been fulfilled
         # IrisPlusSetNeutral: service type
-        self.IrisPlusConverterObject.set_k_trottle_neutral(req.k_trottle_neutral)
+        self.mission_object.iris_plus_converter_object_mission.set_k_trottle_neutral(req.k_trottle_neutral)
         return IrisPlusSetNeutralResponse(True)
 
 
@@ -321,7 +323,7 @@ class QuadController():
             st_cmd.xd    = position_velocity_desired[0]; st_cmd.yd    = position_velocity_desired[1]; st_cmd.zd    = position_velocity_desired[2]
             st_cmd.vxd   = position_velocity_desired[3]; st_cmd.vyd   = position_velocity_desired[4]; st_cmd.vzd   = position_velocity_desired[5]
 
-            rc_input_to_quad = self.mission_object.get_rc_output()
+            rc_input_to_quad = self.mission_object.rc_output
             st_cmd.cmd_1 = rc_input_to_quad[0]; st_cmd.cmd_2 = rc_input_to_quad[1]; st_cmd.cmd_3 = rc_input_to_quad[2]; st_cmd.cmd_4 = rc_input_to_quad[3]
 
             st_cmd.cmd_5 = 1500.0; st_cmd.cmd_6 = 1500.0; st_cmd.cmd_7 = 1500.0; st_cmd.cmd_8 = 1500.0
