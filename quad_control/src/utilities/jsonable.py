@@ -44,8 +44,6 @@ def update_input_dictionary(dictionary, list_of_keys, NestedClassName, nested_di
 #print check_completeness(dictionary)
 
 
-
-
 class Jsonable:
     """A Jsonable object is an object that can be constructed
     from a json string.
@@ -54,6 +52,7 @@ class Jsonable:
     those should be declared in the class variable `inner`.
     """
 
+    UNIQUE_STRING = "##########"
 
 
     @classmethod
@@ -132,8 +131,19 @@ class Jsonable:
         string = string.replace(']"',']')
         string = string.replace('{','{\n')
         string = string.replace('}','\n}')
-        string = string.replace(', \n0',', 0')
-        string = string.replace(', \n1',', 1')
+        for i in range(10):
+            string = string.replace(', \n'+str(i),', '+str(i))
+        # string = string.replace(', \n0',', 0')
+        # string = string.replace(', \n1',', 1')
+        # string = string.replace(', \n2',', 2')
+        # string = string.replace(', \n3',', 3')
+        # string = string.replace(', \n4',', 4')
+        # string = string.replace(', \n5',', 5')
+        # string = string.replace(', \n6',', 6')
+        # string = string.replace(', \n7',', 7')
+        # string = string.replace(', \n8',', 8')
+        # string = string.replace(', \n9',', 9')
+
         #string = string.replace('"','')
         return string
         
@@ -165,13 +175,21 @@ class Jsonable:
         return params
         
         
+    # def get_parameters_recursive(self):
+    #     params = {}
+    #     for name, obj in self.get_inner_jsonables.items():
+    #         params[name] = obj.parameters_to_string_recursive()
+    #     params.update(self.get_parameters())
+    #     return params
+        
+
     def get_parameters_recursive(self):
         params = {}
         for name, obj in self.get_inner_jsonables.items():
             params[name] = obj.parameters_to_string_recursive()
         params.update(self.get_parameters())
         return params
-        
+
     
     #TODO make this based on the inner,
     #so that the child classes do not have to redefine it.
@@ -186,11 +204,25 @@ class Jsonable:
         
         
     def parameters_to_string(self):
-        dic = self.get_parameters_recursive()
-        string = json.dumps(dic)
+        # dic = self.get_parameters_recursive()
+        # string = json.dumps(dic)
+        string = self.description()
         return string
-        
-             
+    
+    def parametric_description(self,name):
+        string  = self.UNIQUE_STRING+"\n"
+        string += name+"\n"
+        string += self.parameters_to_string()
+        string += self.UNIQUE_STRING
+        return string
+
+    @classmethod
+    def inverse_parametric_description(cls,string):
+        """from a string withouth the unique string, get name"""
+        string = string.splitlines() 
+        name   = string[1]
+        parametric_description = string[2:]
+        return name, parametric_description
      
         
 

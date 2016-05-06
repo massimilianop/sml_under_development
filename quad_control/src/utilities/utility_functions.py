@@ -22,6 +22,7 @@ E3_VERSOR = numpy.array([0.0, 0.0, 1.0])
 
 
 def skew(xx):
+    """Skew matrix blabla"""
     x = xx[0]
     y = xx[1]
     z = xx[2]

@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+"""aaaa"""
+
 ## ! DO NOT MANUALLY INVOKE THIS setup.py, USE CATKIN INSTEAD
 
 from distutils.core import setup

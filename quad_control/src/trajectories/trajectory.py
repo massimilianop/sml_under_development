@@ -10,6 +10,10 @@ from utilities import jsonable as js
 
 import rospy
 
+DEFAULT_OFFSET = np.array([
+    rospy.get_param("trajectry_offset_x",0),
+    rospy.get_param("trajectry_offset_y",0),
+    rospy.get_param("trajectry_offset_z",0)]) 
 
 class Trajectory(js.Jsonable):
 
@@ -19,11 +23,7 @@ class Trajectory(js.Jsonable):
         return "<b>Abstract Trajectory</b> with 3D offset in (m) and rotation as [roll,pitch,yaw] in (deg)"
 
 
-    def __init__(self, offset=np.zeros(3), rotation=np.zeros(3)):
-        
-        offset[0] = rospy.get_param("trajectry_offset_x",offset[0])
-        offset[1] = rospy.get_param("trajectry_offset_y",offset[1])
-        offset[2] = rospy.get_param("trajectry_offset_z",offset[2])
+    def __init__(self, offset=DEFAULT_OFFSET, rotation=np.zeros(3)):
 
         self.__offset = np.array(offset)
         self.__rotation = np.array(rotation)

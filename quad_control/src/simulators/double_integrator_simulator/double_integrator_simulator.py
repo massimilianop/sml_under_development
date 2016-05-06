@@ -65,7 +65,7 @@ class DoubleIntegratorSimulator(simulator.Simulator):
         force_3d, yaw_rate = simulator.stabilize_mode_command_to_thrust_and_yaw_rate(
             command,
             current_psi,
-            self.MASS,
+            self.mass,
             self.THROTTLE_NEUTRAL,
             self.MAX_PSI_SPEED_RAD,
             self.MAX_ANGLE_RAD

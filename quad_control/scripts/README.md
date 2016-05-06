@@ -5,6 +5,7 @@
   . velocity components x,y,z in meter/second in inertial reference frame
   . euler angles: roll, picth and yaw (inertial to body) in degrees
 
+1. new node: do not forget to make file executable (chmod +x file)
 
 Describe in detail control law
 

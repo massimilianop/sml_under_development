@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>822</width>
-    <height>846</height>
+    <width>796</width>
+    <height>768</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,263 +18,208 @@
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="1" column="0">
-    <widget class="QGroupBox" name="groupBox_7">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Preferred" vsizetype="Ignored">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
+    <widget class="QScrollArea" name="scrollArea_2">
+     <property name="widgetResizable">
+      <bool>true</bool>
      </property>
-     <property name="title">
-      <string>Mission Set-up</string>
-     </property>
-     <widget class="QGroupBox" name="groupBox_6">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>30</y>
-        <width>771</width>
-        <height>91</height>
-       </rect>
-      </property>
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Ignored">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="title">
-       <string>Iris Neutral Value     </string>
-      </property>
-      <widget class="QPushButton" name="ResetIrisNeutralValue">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>30</y>
-         <width>211</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Reset Iris Neutral Value</string>
-       </property>
-      </widget>
-      <widget class="QDoubleSpinBox" name="ThrottleNeutralValue">
-       <property name="geometry">
-        <rect>
-         <x>560</x>
-         <y>30</y>
-         <width>69</width>
-         <height>27</height>
-        </rect>
-       </property>
-       <property name="decimals">
-        <number>0</number>
-       </property>
-       <property name="minimum">
-        <double>1000.000000000000000</double>
-       </property>
-       <property name="maximum">
-        <double>1600.000000000000000</double>
-       </property>
-       <property name="singleStep">
-        <double>10.000000000000000</double>
-       </property>
-       <property name="value">
-        <double>1480.000000000000000</double>
-       </property>
-      </widget>
-      <widget class="QLabel" name="label_8">
-       <property name="geometry">
-        <rect>
-         <x>440</x>
-         <y>30</y>
-         <width>121</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Throttle Neutral</string>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="SetIrisNeutralValue">
-       <property name="geometry">
-        <rect>
-         <x>220</x>
-         <y>30</y>
-         <width>211</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Set Iris Neutral Value</string>
-       </property>
-      </widget>
-     </widget>
-     <widget class="QGroupBox" name="groupBox">
+     <widget class="QWidget" name="scrollAreaWidgetContents_4">
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>110</y>
-        <width>811</width>
-        <height>721</height>
+        <y>0</y>
+        <width>776</width>
+        <height>748</height>
        </rect>
       </property>
-      <property name="title">
-       <string>GroupBox</string>
-      </property>
-      <widget class="QTabWidget" name="tabWidget">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>20</y>
-         <width>781</width>
-         <height>691</height>
-        </rect>
-       </property>
-       <property name="currentIndex">
-        <number>0</number>
-       </property>
-       <widget class="QWidget" name="tab_3">
-        <attribute name="title">
-         <string>Mission</string>
-        </attribute>
-        <widget class="QGroupBox" name="groupBox_8">
-         <property name="geometry">
-          <rect>
-           <x>0</x>
-           <y>10</y>
-           <width>801</width>
-           <height>801</height>
-          </rect>
+      <layout class="QGridLayout" name="gridLayout_8">
+       <item row="0" column="0">
+        <widget class="QGroupBox" name="groupBox_7">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Ignored">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
          </property>
          <property name="title">
-          <string>Setting Mission</string>
+          <string>Mission Set-up</string>
          </property>
-         <widget class="QRadioButton" name="Failure">
-          <property name="geometry">
-           <rect>
-            <x>340</x>
-            <y>30</y>
-            <width>81</width>
-            <height>21</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Failure</string>
-          </property>
-         </widget>
-         <widget class="QRadioButton" name="Success">
-          <property name="geometry">
-           <rect>
-            <x>250</x>
-            <y>30</y>
-            <width>91</width>
-            <height>22</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Success</string>
-          </property>
-         </widget>
-         <widget class="QPushButton" name="SetControllerButton">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>30</y>
-            <width>221</width>
-            <height>27</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Set Desired Mission</string>
-          </property>
-         </widget>
-         <widget class="QListWidget" name="ListControllersWidget">
-          <property name="geometry">
-           <rect>
-            <x>0</x>
-            <y>120</y>
-            <width>771</width>
-            <height>141</height>
-           </rect>
-          </property>
-         </widget>
-         <widget class="QPlainTextEdit" name="ControllerMessageInput">
-          <property name="geometry">
-           <rect>
-            <x>0</x>
-            <y>310</y>
-            <width>771</width>
-            <height>151</height>
-           </rect>
-          </property>
-         </widget>
-         <widget class="QLabel" name="label">
-          <property name="geometry">
-           <rect>
-            <x>0</x>
-            <y>290</y>
-            <width>161</width>
-            <height>17</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Controller Parameters</string>
-          </property>
-         </widget>
-         <widget class="QLabel" name="label_2">
-          <property name="geometry">
-           <rect>
-            <x>0</x>
-            <y>90</y>
-            <width>161</width>
-            <height>17</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Available Controllers</string>
-          </property>
-         </widget>
-         <widget class="QPushButton" name="ResetControllersList">
-          <property name="geometry">
-           <rect>
-            <x>150</x>
-            <y>80</y>
-            <width>181</width>
-            <height>31</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Reset Controllers List</string>
-          </property>
-         </widget>
-         <widget class="QLabel" name="label_3">
-          <property name="geometry">
-           <rect>
-            <x>0</x>
-            <y>470</y>
-            <width>161</width>
-            <height>17</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Message</string>
-          </property>
-         </widget>
-         <widget class="QTextEdit" name="ItemClickedMessage">
-          <property name="geometry">
-           <rect>
-            <x>0</x>
-            <y>490</y>
-            <width>771</width>
-            <height>131</height>
-           </rect>
-          </property>
-         </widget>
+         <layout class="QGridLayout" name="gridLayout_7">
+          <item row="1" column="0">
+           <widget class="QGroupBox" name="groupBox_6">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Ignored">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="title">
+             <string>Iris Neutral Value     </string>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout">
+             <item>
+              <widget class="QPushButton" name="SetIrisNeutralValue">
+               <property name="text">
+                <string>Set Iris Neutral Value</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_8">
+               <property name="text">
+                <string>Throttle Neutral</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QDoubleSpinBox" name="ThrottleNeutralValue">
+               <property name="decimals">
+                <number>0</number>
+               </property>
+               <property name="minimum">
+                <double>1000.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>1600.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>10.000000000000000</double>
+               </property>
+               <property name="value">
+                <double>1480.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="ResetIrisNeutralValue">
+               <property name="text">
+                <string>Reset Iris Neutral Value</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QGroupBox" name="groupBox">
+               <property name="title">
+                <string>GroupBox</string>
+               </property>
+               <layout class="QGridLayout" name="gridLayout_4">
+                <item row="0" column="0">
+                 <widget class="QTabWidget" name="tabWidget">
+                  <property name="currentIndex">
+                   <number>0</number>
+                  </property>
+                  <widget class="QWidget" name="tab_3">
+                   <attribute name="title">
+                    <string>Mission</string>
+                   </attribute>
+                   <layout class="QGridLayout" name="gridLayout_5">
+                    <item row="0" column="0">
+                     <widget class="QScrollArea" name="scrollArea">
+                      <property name="widgetResizable">
+                       <bool>true</bool>
+                      </property>
+                      <widget class="QWidget" name="scrollAreaWidgetContents">
+                       <property name="geometry">
+                        <rect>
+                         <x>0</x>
+                         <y>0</y>
+                         <width>656</width>
+                         <height>447</height>
+                        </rect>
+                       </property>
+                       <layout class="QGridLayout" name="gridLayout_2">
+                        <item row="0" column="0">
+                         <widget class="QGroupBox" name="groupBox_8">
+                          <property name="title">
+                           <string>Setting Mission</string>
+                          </property>
+                          <layout class="QGridLayout" name="gridLayout_3">
+                           <item row="0" column="0">
+                            <widget class="QPushButton" name="SetControllerButton">
+                             <property name="text">
+                              <string>Set Desired Mission</string>
+                             </property>
+                            </widget>
+                           </item>
+                           <item row="7" column="0">
+                            <widget class="QLabel" name="label_3">
+                             <property name="text">
+                              <string>Message</string>
+                             </property>
+                            </widget>
+                           </item>
+                           <item row="0" column="1">
+                            <widget class="QRadioButton" name="Success">
+                             <property name="text">
+                              <string>Success</string>
+                             </property>
+                            </widget>
+                           </item>
+                           <item row="8" column="0" colspan="3">
+                            <widget class="QTextEdit" name="ItemClickedMessage"/>
+                           </item>
+                           <item row="1" column="0" colspan="2">
+                            <widget class="QPushButton" name="ResetControllersList">
+                             <property name="text">
+                              <string>Reset Controllers List</string>
+                             </property>
+                            </widget>
+                           </item>
+                           <item row="2" column="0">
+                            <widget class="QLabel" name="label_2">
+                             <property name="text">
+                              <string>Available Controllers</string>
+                             </property>
+                            </widget>
+                           </item>
+                           <item row="0" column="2">
+                            <widget class="QRadioButton" name="Failure">
+                             <property name="text">
+                              <string>Failure</string>
+                             </property>
+                            </widget>
+                           </item>
+                           <item row="4" column="0" colspan="2">
+                            <widget class="QListWidget" name="ListControllersWidget"/>
+                           </item>
+                           <item row="4" column="2">
+                            <widget class="QPlainTextEdit" name="ControllerMessageInput"/>
+                           </item>
+                           <item row="2" column="2">
+                            <widget class="QLabel" name="label">
+                             <property name="text">
+                              <string>Controller Parameters</string>
+                             </property>
+                            </widget>
+                           </item>
+                          </layout>
+                         </widget>
+                        </item>
+                       </layout>
+                      </widget>
+                     </widget>
+                    </item>
+                   </layout>
+                  </widget>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+            </layout>
+            <zorder>ResetIrisNeutralValue</zorder>
+            <zorder>ThrottleNeutralValue</zorder>
+            <zorder>label_8</zorder>
+            <zorder>SetIrisNeutralValue</zorder>
+            <zorder>scrollArea_2</zorder>
+            <zorder>groupBox</zorder>
+           </widget>
+          </item>
+         </layout>
         </widget>
-       </widget>
-      </widget>
+       </item>
+      </layout>
+      <zorder>groupBox_6</zorder>
+      <zorder>groupBox_7</zorder>
      </widget>
     </widget>
    </item>

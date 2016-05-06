@@ -191,8 +191,7 @@ class ChooseSystemPlugin(Plugin):
         #os.system('killall gzclient;killall gzserver')
         subprocess.call('killall gzclient &', shell=True)
         subprocess.call('killall gzserver &', shell=True)
-        return 
-
+        return
 
     def MinThrottle(self):
         #Change the flight mode on the Pixhawk flight controller

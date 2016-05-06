@@ -8,7 +8,11 @@ import numpy
 
 import collections  
 
+from controllers import controller
+
 from systems_functions.Double_Integrator_Functions.Double_Integrator_Bounded_and_Component_wise.DI_Bounded_1 import DI_controller
+
+import rospy
 
 #--------------------------------------------------------------------------#
 from numpy import cos as c
@@ -37,9 +41,9 @@ def GetRotFromEulerAnglesDeg(ee_deg):
 #--------------------------------------------------------------------------#
 # This is a dynamic controller, not a static controller
 
-class ControllerPIDXYAndZBounded():
+class ControllerPIDXYAndZBounded(controller.Controller):
     
-    MASS    = 1.66779
+    MASS    = rospy.get_param("quadrotor_mass",1.442)
 
     GRAVITY = 9.81
 
