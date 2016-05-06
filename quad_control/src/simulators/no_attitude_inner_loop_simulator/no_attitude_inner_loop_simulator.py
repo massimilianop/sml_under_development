@@ -70,7 +70,6 @@ class NoAttitudeInnerLoopSimulator(sm.Simulator):
         
     def vector_field(self, time, state, control):
         
-        
         position = np.array(state[0:3])
         velocity = np.array(state[3:6])
         #TODO make sure that this is a rotation matrix

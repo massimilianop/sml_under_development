@@ -148,7 +148,7 @@ class Mission(js.Jsonable):
 
         # for reseting neutral value that makes iris+ stay at desired altitude
         self.DesiredZForceMedian = utility_functions.MedianFilter(10)
-              
+
         pass
         
         

@@ -119,7 +119,9 @@ class quad_controller():
                 self.flag_measurements = 1
 
                 # position
-                x=bodies["x"]; y=bodies["y"]; z=bodies["z"]   
+                x=bodies["x"]
+                y=bodies["y"]
+                z=bodies["z"]   
                 p = numpy.array([x,y,z])
 
                 # velocity

@@ -115,7 +115,7 @@ class ControllerPIDXYAndZBounded():
     def update_parameters(self,parameters):
         self.parameters = parameters
 
-    def output(self,time,states,states_d):
+    def output(self, time, states, states_d):
         # convert euler angles from deg to rotation matrix
         ee = states[6:9]
         R  = uts.rot_from_euler_deg(ee)
