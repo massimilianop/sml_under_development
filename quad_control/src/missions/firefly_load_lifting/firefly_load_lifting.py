@@ -27,8 +27,7 @@ import numpy
 import rospy
 
 
-
-class FireflyTrajectoryTracking(mission.Mission):
+class FireflyLoadLifting(mission.Mission):
 
     inner = {}
 
@@ -39,8 +38,7 @@ class FireflyTrajectoryTracking(mission.Mission):
 
     @classmethod
     def description(cls):
-        string = """
-        Firefly, from RotorS, to track a desired trajectory
+        string = """Firefly and load, from RotorS, to track a desired trajectory
         This mission depends on:
         . a trajectory tracking controller
         . a reference trajectory to be tracked
@@ -48,8 +46,7 @@ class FireflyTrajectoryTracking(mission.Mission):
         """
         
         return string
-    
-    
+        
     def __init__(self,
             controller     = fa_trajectory_tracking_controllers_database.database["Default"](),
             reference      = trajectories_database.database["Default"](),
@@ -64,19 +61,26 @@ class FireflyTrajectoryTracking(mission.Mission):
         # converting our controlller standard into rotors standard
         self.RotorSObject = RotorSConverter()
 
-        # subscriber to odometry from RotorS
+        # subscriber to odometry of firefly center of mass from RotorS
         self.sub_odometry = rospy.Subscriber(
             "/firefly/ground_truth/odometry",
             Odometry,
             self.get_state_from_rotorS_simulator
             )
 
+        # subscriber: to odometry of load attached to firefly
+        self.sub_odometry_load = rospy.Subscriber(
+            "/firefly/ground_truth/odometry_load",
+            Odometry,
+            self.update_load_odometry) 
+
+
         # publisher: command firefly motor speeds 
         self.pub_motor_speeds = rospy.Publisher(
             '/firefly/command/motor_speed',
             Actuators,
             queue_size=10
-            )      
+            )
 
         # dy default, desired trajectory is staying still in origin
         self.TrajGenerator = reference
@@ -143,6 +147,18 @@ class FireflyTrajectoryTracking(mission.Mission):
         self.RotorSObject.rotor_s_attitude_for_control(odometry_rotor_s)
         # get state from rotorS simulator
         self.state_quad = self.RotorSObject.get_quad_state(odometry_rotor_s)
-        
-        
-        
+
+
+    def update_load_odometry(self,data_odometry):
+
+        self.load_odometry_position = numpy.array([data_odometry.pose.pose.position.x,\
+                                                   data_odometry.pose.pose.position.y,\
+                                                   data_odometry.pose.pose.position.z])
+
+        # beware that velocity obtained in this way is expressed in body reference frame
+        # self.load_odometry_velocity = numpy.array([data_odometry.twist.twist.linear.x,\
+        #                                            data_odometry.twist.twist.linear.y,\
+        #                                            data_odometry.twist.twist.linear.z])
+
+        current_time  = data_odometry.header.stamp.secs + data_odometry.header.stamp.nsecs/1e9
+        self.load_odometry_velocity = self.LoadVelocityEstimator.out(self.load_odometry_position,current_time)
