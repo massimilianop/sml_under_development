@@ -8,7 +8,7 @@ from mavros_msgs.msg import OverrideRCIn
 # from mavros_msgs.srv import ParamSet,ParamGet,CommandBool,SetMode
 
 # import converter from 3d_force and yaw rate into iris rc standard 
-from converter_between_standards.iris_plus_converter import IrisPlusConverter
+from converters.iris_plus_converter import IrisPlusConverter
 
 # import list of available trajectories
 from trajectories import trajectories_database
@@ -27,7 +27,7 @@ import rospy
 
 import utilities.mocap_source as mocap_source
 
-from utilities.utility_functions import Velocity_Filter
+from utilities.utility_functions import VelocityFilter
 
 class IrisRealTrajectoryTracking(mission.Mission):
 
@@ -154,15 +154,8 @@ class IrisRealTrajectoryTracking(mission.Mission):
     def get_euler_angles(self):
         return self.state_quad[6:9]
 
-<<<<<<< HEAD
 
-    def real_publish(self, desired_3d_force_quad,yaw_rate):
-
-        self.IrisPlusConverterObject.set_rotation_matrix(euler_rad)
-        iris_plus_rc_input = self.IrisPlusConverterObject.input_conveter(desired_3d_force_quad,yaw_rate)
-=======
     def real_publish(self,desired_3d_force_quad,yaw_rate,rc_output):
->>>>>>> 8b40b5e03ad3b4895f93a6be2de27c5222c64612
 
         # ORDER OF INPUTS IS VERY IMPORTANT: roll, pitch, throttle,yaw_rate
         # create message of type OverrideRCIn

@@ -35,7 +35,7 @@ from numpy import sin as s
 
 
 # from utility_functions import GetEulerAnglesDeg
-from utilities.utility_functions import GetEulerAnglesDeg
+from utilities.utility_functions import euler_deg_from_rot
 
 import simulators.simulators_dictionary as shsd
 
@@ -190,7 +190,7 @@ class SimulatorNode():
         # rotation matrix
         R  = simstate[6:15]
         R  = numpy.reshape(R,(3,3))
-        ee = GetEulerAnglesDeg(R)
+        ee = euler_deg_from_rot(R)
 
         state.roll  = ee[0]
         state.pitch = ee[1]

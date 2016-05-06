@@ -10,9 +10,9 @@
 
 import numpy
 import rospy
-from utilities.utility_functions import roll_pitch,bound,Rz,GetRotFromEulerAngles
-# we use pi
-import math
+import utilities.utility_functions as uts
+
+
 
 class IrisPlusConverter(object):
 
@@ -53,7 +53,7 @@ class IrisPlusConverter(object):
         self.__THROTTLE_NEUTRAL = self.__THROTTLE_NEUTRAL*force/(self.__MASS*self.__GRAVITY)
 
         # for safety better bound this value
-        self.__THROTTLE_NEUTRAL = bound(self.__THROTTLE_NEUTRAL,1600,1400)
+        self.__THROTTLE_NEUTRAL = numpy.clip(self.__THROTTLE_NEUTRAL,1400,1600)
         rospy.logwarn('new neutral value = ' + str(self.__THROTTLE_NEUTRAL) + ' in [1400,1600]')
         return 
 
@@ -61,7 +61,7 @@ class IrisPlusConverter(object):
         # setting throttle value
         self.__THROTTLE_NEUTRAL = throttle_neutral
         # for safety better bound this value
-        self.__THROTTLE_NEUTRAL = bound(self.__THROTTLE_NEUTRAL,1600,1400)
+        self.__THROTTLE_NEUTRAL = numpy.clip(self.__THROTTLE_NEUTRAL,1400,1600)
         rospy.logwarn('settting neutral value to = ' + str(self.__THROTTLE_NEUTRAL) + ' in [1400,1600]')
         return 
 
@@ -82,7 +82,7 @@ class IrisPlusConverter(object):
         #---------------------------------------------------------------------#
         # third canonical basis vector
         e3 = numpy.array([0.0,0.0,1.0])
-        rotation_matrix      = GetRotFromEulerAngles(self.euler_angles)
+        rotation_matrix      = uts.rot_from_euler_rad(self.euler_angles)
         throttle_unit_vector = rotation_matrix.dot(e3) 
 
         # STABILIZE MODE:APM COPTER
@@ -101,10 +101,10 @@ class IrisPlusConverter(object):
         #---------------------------------------------------------------------#
         # degrees per second
         MAX_PSI_SPEED_Deg = self.MAX_PSI_SPEED_Deg
-        MAX_PSI_SPEED_Rad = MAX_PSI_SPEED_Deg*math.pi/180.0
+        MAX_PSI_SPEED_Rad = MAX_PSI_SPEED_Deg*numpy.pi/180.0
 
         MAX_ANGLE_DEG = self.MAX_ANGLE_DEG
-        MAX_ANGLE_RAD = MAX_ANGLE_DEG*math.pi/180.0
+        MAX_ANGLE_RAD = MAX_ANGLE_DEG*numpy.pi/180.0
 
         #---------------------------------------------------------------------#
         # input for IRIS+ comes in specific order
@@ -128,7 +128,7 @@ class IrisPlusConverter(object):
         U[2]  = Throttle*self.__THROTTLE_NEUTRAL/(self.__GRAVITY*self.__MASS);
 
         # need to bound between 1000 and 2000; element-wise operation
-        U     = bound(U,2000,1000) 
+        U     = numpy.clip(U,1000,2000) 
 
         return U
 
@@ -138,20 +138,19 @@ class IrisPlusConverter(object):
 
         #--------------------------------------#
         # Rz(psi)*Ry(theta_des)*Rx(phi_des) = n_des
-
         # desired roll and pitch angles
         n_des     = Full_actuation/numpy.linalg.norm(Full_actuation)
-        n_des_rot = Rz(-psi).dot(n_des)
+        n_des_rot = uts.rot_z(-psi).dot(n_des)
 
 
         sin_phi   = -n_des_rot[1]
-        sin_phi   = bound(sin_phi,1,-1)
+        sin_phi   = numpy.clip(sin_phi,-1,1)
         phi       = numpy.arcsin(sin_phi)
 
         sin_theta = n_des_rot[0]/numpy.cos(phi)
-        sin_theta = bound(sin_theta,1,-1)
+        sin_theta = numpy.clip(sin_theta,-1,1)
         cos_theta = n_des_rot[2]/numpy.cos(phi)
-        cos_theta = bound(cos_theta,1,-1)
+        cos_theta = numpy.clip(cos_theta,-1,1)
         pitch     = numpy.arctan2(sin_theta,cos_theta)
 
         return (phi,pitch)

@@ -69,8 +69,8 @@ def rot_z(tt):
 def unit_vector_from_euler_angles(psi, theta):
 
     e1  = np.array([1.0,0.0,0.0])
-    aux = Rz(psi).dot(e1)
-    aux = Ry(theta).dot(aux)
+    aux = rot_z(psi).dot(e1)
+    aux = rot_y(theta).dot(aux)
 
     return aux
 
@@ -91,9 +91,9 @@ def euler_rad_from_rot(R):
 
     euler = np.array([0.0,0.0,0.0])
 
-    euler[0] = np.arctan2(bound(R[2,1],1,-1),bound(R[2,2],1,-1));
-    euler[1] = np.arcsin(-bound(R[2,0],1,-1));
-    euler[2] = np.arctan2(bound(R[1,0],1,-1),bound(R[0,0],1,-1));    
+    euler[0] = np.arctan2(np.clip(R[2,1],-1,1),np.clip(R[2,2],-1,1));
+    euler[1] = np.arcsin(-np.clip(R[2,0],-1,1));
+    euler[2] = np.arctan2(np.clip(R[1,0],-1,1),np.clip(R[0,0],-1,1));    
 
     return euler
 
@@ -103,11 +103,11 @@ def euler_deg_from_rot(R):
 
 
 def rot_from_euler_rad(ee_rad):
-    return Rz(ee_rad[2]).dot(Ry(ee_rad[1]).dot(Rx(ee_rad[0])))
+    return rot_z(ee_rad[2]).dot(rot_y(ee_rad[1]).dot(rot_x(ee_rad[0])))
 
 
 def rot_from_euler_deg(ee_deg):
-    return rot_from_euler_rad(ee_deg*math.pi/180.0)
+    return rot_from_euler_rad(ee_deg*np.pi/180.0)
 
 
 
@@ -151,13 +151,13 @@ def roll_and_pitch_from_full_actuation_and_yaw_rad(full_actuation, psi):
 
 
     sin_phi   = -n_des_rot[1]
-    sin_phi   = bound(sin_phi,1,-1)
+    sin_phi   = np.clip(sin_phi,-1,1)
     phi       = np.arcsin(sin_phi)
 
     sin_theta = n_des_rot[0]/np.cos(phi)
-    sin_theta = bound(sin_theta,1,-1)
+    sin_theta = np.clip(sin_theta,-1,1)
     cos_theta = n_des_rot[2]/np.cos(phi)
-    cos_theta = bound(cos_theta,1,-1)
+    cos_theta = np.clip(cos_theta,-1,1)
     pitch     = np.arctan2(sin_theta,cos_theta)
 
     return phi, pitch
