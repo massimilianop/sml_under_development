@@ -95,34 +95,34 @@ class NotComponentWise3DDIC(dic.DoubleIntegratorController):
         h1     = kp*sat_p*p
         if pp >= eps:
             # matrix
-            h1_p   = kp*Dsat_p/sigma_p*outer(p,p)/pp + kp*sat_p*I
+            h1_p   = kp*Dsat_p/sigma_p*numpy.outer(p,p)/pp + kp*sat_p*I
             # tensor
             h1_p_p = numpy.zeros((3,3,3));
             for i in range(3):
                 ee = I[:,i];
-                h1_p_p[:,:,i] = kp*D2sat_p/sigma_p**2*outer(p,p)/(pp**2)*dot(p,ee)       + \
-                                kp*Dsat_p/sigma_p*dot(p,ee)/pp*I                         + \
-                                kp*Dsat_p/sigma_p*outer(p,ee)/pp                         + \
-                                (-1)*kp*Dsat_p/sigma_p*outer(p,p)/pp**3*dot(p,ee)        + \
-                                kp*Dsat_p/sigma_p*outer(ee,p)/pp
+                h1_p_p[:,:,i] = kp*D2sat_p/sigma_p**2*numpy.outer(p,p)/(pp**2)*numpy.dot(p,ee)       + \
+                                kp*Dsat_p/sigma_p*numpy.dot(p,ee)/pp*I                         + \
+                                kp*Dsat_p/sigma_p*numpy.outer(p,ee)/pp                         + \
+                                (-1)*kp*Dsat_p/sigma_p*numpy.outer(p,p)/pp**3*numpy.dot(p,ee)        + \
+                                kp*Dsat_p/sigma_p*numpy.outer(ee,p)/pp
         else:
             h1_p          = kp*I
             h1_p_p = numpy.zeros((3,3,3))
 
         # vector
         h2     = kv*sat_v*v
-        if vv >= eps: 
+        if vv >= eps:   
             # matrix
-            h2_v   = kv*Dsat_v/sigma_v*outer(v,v)/vv + kv*sat_v*I
+            h2_v   = kv*Dsat_v/sigma_v*numpy.outer(v,v)/vv + kv*sat_v*I
             # tensor
             h2_v_v = numpy.zeros((3,3,3))
             for i in range(3):
                 ee = I[:,i]
-                h2_v_v[:,:,i] = kv*D2sat_v/sigma_v**2*outer(v,v)/(vv**2)*dot(v,ee)    + \
-                                kv*Dsat_v/sigma_v*dot(v,ee)/vv*I                      + \
-                                kv*Dsat_v/sigma_v*outer(v,ee)/vv                      + \
-                                (-1)*kv*Dsat_v/sigma_v*outer(v,v)/(vv**3)*dot(v,ee)   + \
-                                kv*Dsat_v/sigma_v*outer(ee,v)/vv
+                h2_v_v[:,:,i] = kv*D2sat_v/sigma_v**2*numpy.outer(v,v)/(vv**2)*numpy.dot(v,ee)    + \
+                                kv*Dsat_v/sigma_v*numpy.dot(v,ee)/vv*I                      + \
+                                kv*Dsat_v/sigma_v*numpy.outer(v,ee)/vv                      + \
+                                (-1)*kv*Dsat_v/sigma_v*numpy.outer(v,v)/(vv**3)*numpy.dot(v,ee)   + \
+                                kv*Dsat_v/sigma_v*numpy.outer(ee,v)/vv
         else:
             h2_v   = kv*I
             h2_v_v = numpy.zeros((3,3,3))
@@ -150,16 +150,16 @@ class NotComponentWise3DDIC(dic.DoubleIntegratorController):
         # this part is not really necessary
         if pp > eps and vv > eps:
             V  = beta*kv**2*h1_int     + \
-                 beta*dot(h1,h2)       + \
+                 beta*numpy.dot(h1,h2)       + \
                  1.0/2.0*vv**2         + \
                  h1_int                + \
-                 beta*1.0/2.0*(kv**2*dot(v,v) - dot(h2,h2))
+                 beta*1.0/2.0*(kv**2*numpy.dot(v,v) - numpy.dot(h2,h2))
 
             VD = (-1)*(\
-                       beta*dot(h1,h1)*kv*sat_v                                                        + \
-                       dot(v,h2)*beta*kp**2*pp**2*sat_p**2*dot(p/pp,v/vv)**2*(kv*Dsat_v/sigma_v)/(kv*sat_v*vv)   + \
-                       dot(v,h2)*(1.0 - beta*kp*(sat_p + Dsat_p/sigma_p*pp*dot(p/pp,v/vv)**2))                   + \
-                       beta*dot(v,h2)*kv**2*(1.0 - sat_v*(Dsat_v/sigma_v*vv + sat_v))   \
+                       beta*numpy.dot(h1,h1)*kv*sat_v                                                        + \
+                       numpy.dot(v,h2)*beta*kp**2*pp**2*sat_p**2*numpy.dot(p/pp,v/vv)**2*(kv*Dsat_v/sigma_v)/(kv*sat_v*vv)   + \
+                       numpy.dot(v,h2)*(1.0 - beta*kp*(sat_p + Dsat_p/sigma_p*pp*numpy.dot(p/pp,v/vv)**2))                   + \
+                       beta*numpy.dot(v,h2)*kv**2*(1.0 - sat_v*(Dsat_v/sigma_v*vv + sat_v))   \
                       )
         else:
             V  = 0
@@ -169,15 +169,15 @@ class NotComponentWise3DDIC(dic.DoubleIntegratorController):
         # V_v_p = d/d(p) [dV/d(v)]
         # V_v_v = d/d(v) [dV/d(v)]
 
-        V_p   = beta*kv**2*h1 + beta*dot(h1_p.T,h2) + h1
+        V_p   = beta*kv**2*h1 + beta*numpy.dot(h1_p.T,h2) + h1
 
-        V_v   = beta*dot(h2_v.T,h1) + v + beta*(kv**2*v - dot(h2_v.T,h2))
+        V_v   = beta*numpy.dot(h2_v.T,h1) + v + beta*(kv**2*v - numpy.dot(h2_v.T,h2))
 
-        V_v_p = beta*dot(h2_v.T,h1_p)
+        V_v_p = beta*numpy.dot(h2_v.T,h1_p)
 
-        V_v_v = beta*dot(h2_v_v,h1).T                                 + \
+        V_v_v = beta*numpy.dot(h2_v_v,h1).T                                 + \
                 I                                                     + \
-                beta*(kv**2*I - dot(h2_v_v,h2).T  - dot(h2_v.T,h2_v))
+                beta*(kv**2*I - numpy.dot(h2_v_v,h2).T  - numpy.dot(h2_v.T,h2_v))
   
 
         return (u,u_p,u_v,u_p_p,u_v_v,u_p_v,V,VD,V_p,V_v,V_v_p,V_v_v)

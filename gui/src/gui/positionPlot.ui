@@ -22,12 +22,18 @@
      <property name="text">
       <string>x</string>
      </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
     </widget>
    </item>
    <item row="8" column="1">
     <widget class="QCheckBox" name="Xdcheck">
      <property name="text">
       <string>xd</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
      </property>
     </widget>
    </item>
@@ -36,6 +42,9 @@
      <property name="text">
       <string>yd</string>
      </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
     </widget>
    </item>
    <item row="6" column="2">
@@ -43,12 +52,18 @@
      <property name="text">
       <string>y</string>
      </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
     </widget>
    </item>
    <item row="8" column="3">
     <widget class="QCheckBox" name="Zdcheck">
      <property name="text">
       <string>zd</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
      </property>
     </widget>
    </item>
@@ -63,6 +78,9 @@
     <widget class="QCheckBox" name="ButtonSubscribe">
      <property name="text">
       <string>Connect</string>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
      </property>
     </widget>
    </item>
@@ -126,6 +144,9 @@
     <widget class="QCheckBox" name="Zcheck">
      <property name="text">
       <string>z</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
      </property>
     </widget>
    </item>
@@ -202,12 +223,18 @@
      <property name="text">
       <string>channel 1</string>
      </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
     </widget>
    </item>
    <item row="20" column="5">
     <widget class="QCheckBox" name="Ch2check">
      <property name="text">
       <string>channel 2</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
      </property>
     </widget>
    </item>
@@ -216,12 +243,18 @@
      <property name="text">
       <string>channel 4</string>
      </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
     </widget>
    </item>
    <item row="21" column="4">
     <widget class="QCheckBox" name="Ch3check">
      <property name="text">
       <string>channel 3</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
      </property>
     </widget>
    </item>

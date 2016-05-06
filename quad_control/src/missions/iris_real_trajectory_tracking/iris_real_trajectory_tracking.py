@@ -25,6 +25,10 @@ import numpy
 # for subscribing to topics, and publishing
 import rospy
 
+import utilities.mocap_source as mocap_source
+
+from utilities.utility_functions import Velocity_Filter
+
 class IrisRealTrajectoryTracking(mission.Mission):
 
     inner = {}
@@ -40,7 +44,7 @@ class IrisRealTrajectoryTracking(mission.Mission):
     
     
     def __init__(self,
-            body_id = 12,
+            body_id        = 29,
             controller     = fa_trajectory_tracking_controllers_database.database["Default"](),
             reference      = trajectories_database.database["Default"](),
             yaw_controller = yaw_controllers_database.database["Default"]()
@@ -49,11 +53,6 @@ class IrisRealTrajectoryTracking(mission.Mission):
         # Subscribe to the necessary topics, if any
 
         mission.Mission.__init__(self)
-    
-        self.inner['controllers_dictionary']     = controllers_dictionary.controllers_dictionary
-        self.inner['trajectories_database']    = trajectories_database.trajectories_database
-        self.inner['yaw_controllers_dictionary'] = yaw_controllers_dictionary.yaw_controllers_dictionary
-
         
         # converting our controlller standard into iris+ standard
         self.IrisPlusConverterObject = IrisPlusConverter()
@@ -70,20 +69,18 @@ class IrisRealTrajectoryTracking(mission.Mission):
         # but median will take care of minimizing effects
         self.velocity_estimator = VelocityFilter(3,numpy.zeros(3),0.0)
 
-        # dy default, desired trajectory is staying still in origin
-        TrajectoryClass    = self.inner['trajectories_database']['StayAtRest']
-        self.TrajGenerator = TrajectoryClass()
+        # dy default, desired reference is staying still in origin
+        self.TrajGenerator = reference
         self.reference     = self.TrajGenerator.output(self.time_instant_t0)
 
         # controllers selected by default
-        ControllerClass       = self.inner['controllers_dictionary']['PIDSimpleBoundedIntegralController']
-        self.ControllerObject = ControllerClass()
+        self.ControllerObject = controller
 
-        # controllers selected by default
-        YawControllerClass       = self.inner['yaw_controllers_dictionary']['YawRateControllerTrackReferencePsi']
-        self.YawControllerObject = YawControllerClass()     
+        self.YawControllerObject = yaw_controller
 
-        pass  
+        self.iris_plus_converter_object_mission.set_mass(self.ControllerObject.MASS)
+
+        pass
 
 
     def initialize_state(self):
@@ -108,11 +105,13 @@ class IrisRealTrajectoryTracking(mission.Mission):
     	return numpy.concatenate([euler_rad,euler_rad_dot])
 
 
-    def get_reference(cls,time_instant):
-        return self.TrajGenerator.output(time_instant)
+    def get_reference(self,time_instant):
+        self.reference = self.TrajGenerator.output(time_instant)
+        return self.reference
+        # return numpy.zeros(3*5)
 
 
-    def get_state(cls):
+    def get_state(self):
 
         bodies = self.Qs.get_body(self.body_id)
 
@@ -144,29 +143,32 @@ class IrisRealTrajectoryTracking(mission.Mission):
 
         return self.state_quad
 
-
-    def get_pv():
+    def get_pv(self):
         return self.state_quad[0:6]
 
 
-    def get_pv_desired():
+    def get_pv_desired(self):
         return self.reference[0:6]
 
 
-    def get_euler_angles():
+    def get_euler_angles(self):
         return self.state_quad[6:9]
 
+<<<<<<< HEAD
 
     def real_publish(self, desired_3d_force_quad,yaw_rate):
 
         self.IrisPlusConverterObject.set_rotation_matrix(euler_rad)
         iris_plus_rc_input = self.IrisPlusConverterObject.input_conveter(desired_3d_force_quad,yaw_rate)
+=======
+    def real_publish(self,desired_3d_force_quad,yaw_rate,rc_output):
+>>>>>>> 8b40b5e03ad3b4895f93a6be2de27c5222c64612
 
         # ORDER OF INPUTS IS VERY IMPORTANT: roll, pitch, throttle,yaw_rate
         # create message of type OverrideRCIn
         rc_cmd          = OverrideRCIn()
         other_channels  = numpy.array([1500,1500,1500,1500])
-        channels        = numpy.concatenate([iris_plus_rc_input,other_channels])
+        channels        = numpy.concatenate([rc_output,other_channels])
         channels        = numpy.array(channels,dtype=numpy.uint16)
         rc_cmd.channels = channels
         self.rc_override.publish(rc_cmd)     

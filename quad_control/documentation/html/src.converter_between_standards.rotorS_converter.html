@@ -1,0 +1,93 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module src.converter_between_standards.rotorS_converter</title>
+<meta charset="utf-8">
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="src.html"><font color="#ffffff">src</font></a>.<a href="src.converter_between_standards.html"><font color="#ffffff">converter_between_standards</font></a>.rotorS_converter</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/pedrootao/SML_CODE/src/quad_control/src/converter_between_standards/rotorS_converter.py">/home/pedrootao/SML_CODE/src/quad_control/src/converter_between_standards/rotorS_converter.py</a></font></td></tr></table>
+    <p><tt>#&nbsp;this&nbsp;line&nbsp;is&nbsp;just&nbsp;used&nbsp;to&nbsp;define&nbsp;the&nbsp;type&nbsp;of&nbsp;document</tt></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="src.converter_between_standards.firefly_parameters.html">src.converter_between_standards.firefly_parameters</a><br>
+</td><td width="25%" valign=top><a href="numpy.html">numpy</a><br>
+</td><td width="25%" valign=top><a href="rospy.html">rospy</a><br>
+</td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="__builtin__.html#object">__builtin__.object</a>
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="src.converter_between_standards.rotorS_converter.html#RotorSConverter">RotorSConverter</a>
+</font></dt></dl>
+</dd>
+</dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="RotorSConverter">class <strong>RotorSConverter</strong></a>(<a href="__builtin__.html#object">__builtin__.object</a>)</font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="RotorSConverter-compute_torque"><strong>compute_torque</strong></a>(self, desired_acceleration, desired_acceleration_dot, rotation_matrix, angular_velocity_body, omega_z_body_desired)</dt></dl>
+
+<dl><dt><a name="RotorSConverter-get_quad_state"><strong>get_quad_state</strong></a>(self, data_odometry)</dt></dl>
+
+<dl><dt><a name="RotorSConverter-rotor_s_attitude_for_control"><strong>rotor_s_attitude_for_control</strong></a>(self, data_odometry)</dt></dl>
+
+<dl><dt><a name="RotorSConverter-rotor_s_message"><strong>rotor_s_message</strong></a>(self, U, PsiStar)</dt></dl>
+
+<dl><dt><a name="RotorSConverter-rotor_s_standard_converter"><strong>rotor_s_standard_converter</strong></a>(self, U, omega_z_body_desired)</dt></dl>
+
+<dl><dt><a name="RotorSConverter-torque_unit_vector"><strong>torque_unit_vector</strong></a>(self, n, w, n_star, w_star, w_star_dot)</dt></dl>
+
+<dl><dt><a name="RotorSConverter-unit_vector_from_vector"><strong>unit_vector_from_vector</strong></a>(self, U_0dot, U_1dot, U_2dot)</dt></dl>
+
+<hr>
+Data descriptors defined here:<br>
+<dl><dt><strong>__dict__</strong></dt>
+<dd><tt>dictionary&nbsp;for&nbsp;instance&nbsp;variables&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<dl><dt><strong>__weakref__</strong></dt>
+<dd><tt>list&nbsp;of&nbsp;weak&nbsp;references&nbsp;to&nbsp;the&nbsp;object&nbsp;(if&nbsp;defined)</tt></dd>
+</dl>
+<hr>
+Data and other attributes defined here:<br>
+<dl><dt><strong>angular_rate_gain</strong> = 0.52</dl>
+
+<dl><dt><strong>angular_rate_gain_z</strong> = 0.18</dl>
+
+<dl><dt><strong>attitude_gain</strong> = 3</dl>
+
+<dl><dt><strong>attitude_gain_z</strong> = 0.15</dl>
+
+<dl><dt><strong>matrix_motor_speeds</strong> = array([[  9.06810018e+04,  -1.57064102e+05,  -1....05,   1.21852596e+06,
+          1.94964154e+04]])</dl>
+
+<dl><dt><strong>omega_body</strong> = array([ 0.,  0.,  0.])</dl>
+
+<dl><dt><strong>quad_inertia_matrix</strong> = array([[ 0.0347563,  0.       ,  0.       ],
+   ... ],
+       [ 0.       ,  0.       ,  0.0977   ]])</dl>
+
+<dl><dt><strong>rotation_matrix</strong> = array([[ 1.,  0.,  0.],
+       [ 0.,  1.,  0.],
+       [ 0.,  0.,  1.]])</dl>
+
+</td></tr></table></td></tr></table>
+</body></html>

@@ -8,6 +8,7 @@ from controllers import controller
 
 from utilities import utility_functions as uts
 
+import rospy
 
 class SimplePIDController(controller.Controller):
 
@@ -31,7 +32,7 @@ class SimplePIDController(controller.Controller):
         derivative_gain_z    = 1.0, \
         integral_gain_z      = 0.5, \
         bound_integral_z     = 0.0,
-        quad_mass=1.6677
+        quad_mass            = rospy.get_param("quadrotor_mass",1.442)
         ):
 
         self.__proportional_gain_xy = proportional_gain_xy

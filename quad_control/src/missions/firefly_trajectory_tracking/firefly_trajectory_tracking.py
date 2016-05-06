@@ -132,7 +132,7 @@ class FireflyTrajectoryTracking(mission.Mission):
         return self.state_quad[6:9]
 
 
-    def real_publish(self,desired_3d_force_quad,yaw_rate):
+    def real_publish(self,desired_3d_force_quad,yaw_rate,rc_output):
 		# publish message
 		self.pub_motor_speeds.publish(self.RotorSObject.rotor_s_message(desired_3d_force_quad,yaw_rate))
 

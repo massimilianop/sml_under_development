@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # this line is just used to define the type of document
 
+import rospy
 import mavros
 
 from mavros_msgs.msg import OverrideRCIn
@@ -12,7 +13,6 @@ from mav_msgs.msg import Actuators
 #node will subscribe to odometry measurements
 from nav_msgs.msg import Odometry
 
-import rospy
 
 # controller node publishes message of this type so that GUI can plot stuff
 from quad_control.msg import quad_state_and_cmd
@@ -36,7 +36,7 @@ from quad_control.msg import Controller_State
 from quad_control.srv import *
 
 # when Mocap is used this is necessary
-import mocap_source
+import utilities.mocap_source
 
 # to work with directories relative to ROS packages
 from rospkg import RosPack
@@ -47,7 +47,7 @@ from numpy import *
 from utilities.utility_functions import GetRotFromEulerAnglesDeg,Velocity_Filter,Median_Filter
 
 # import list of available trajectories
-from TrajectoryPlanner import trajectories_dictionary
+from trajectories.TrajectoryPlanner import trajectories_dictionary
 from Yaw_Rate_Controller import yaw_controllers_dictionary
 
 # from quadrotor_tracking_controllers_hierarchical import controllers_dictionary

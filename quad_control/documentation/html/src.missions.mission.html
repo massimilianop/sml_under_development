@@ -1,0 +1,159 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head><title>Python: module src.missions.mission</title>
+<meta charset="utf-8">
+</head><body bgcolor="#f0f0f8">
+
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="heading">
+<tr bgcolor="#7799ee">
+<td valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial">&nbsp;<br><big><big><strong><a href="src.html"><font color="#ffffff">src</font></a>.<a href="src.missions.html"><font color="#ffffff">missions</font></a>.mission</strong></big></big></font></td
+><td align=right valign=bottom
+><font color="#ffffff" face="helvetica, arial"><a href=".">index</a><br><a href="file:/home/pedrootao/SML_CODE/src/quad_control/src/missions/mission.py">/home/pedrootao/SML_CODE/src/quad_control/src/missions/mission.py</a></font></td></tr></table>
+    <p></p>
+<p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#aa55cc">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Modules</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#aa55cc"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><table width="100%" summary="list"><tr><td width="25%" valign=top><a href="utilities.jsonable.html">utilities.jsonable</a><br>
+<a href="matplotlib.html">matplotlib</a><br>
+</td><td width="25%" valign=top><a href="numpy.html">numpy</a><br>
+<a href="matplotlib.pyplot.html">matplotlib.pyplot</a><br>
+</td><td width="25%" valign=top><a href="rospy.html">rospy</a><br>
+<a href="utilities.utility_functions.html">utilities.utility_functions</a><br>
+</td><td width="25%" valign=top></td></tr></table></td></tr></table><p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ee77aa">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#ffffff" face="helvetica, arial"><big><strong>Classes</strong></big></font></td></tr>
+    
+<tr><td bgcolor="#ee77aa"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%"><dl>
+<dt><font face="helvetica, arial"><a href="utilities.jsonable.html#Jsonable">utilities.jsonable.Jsonable</a>
+</font></dt><dd>
+<dl>
+<dt><font face="helvetica, arial"><a href="src.missions.mission.html#Mission">Mission</a>
+</font></dt></dl>
+</dd>
+</dl>
+ <p>
+<table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
+<tr bgcolor="#ffc8d8">
+<td colspan=3 valign=bottom>&nbsp;<br>
+<font color="#000000" face="helvetica, arial"><a name="Mission">class <strong>Mission</strong></a>(<a href="utilities.jsonable.html#Jsonable">utilities.jsonable.Jsonable</a>)</font></td></tr>
+    
+<tr><td bgcolor="#ffc8d8"><tt>&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
+<td width="100%">Methods defined here:<br>
+<dl><dt><a name="Mission-__del__"><strong>__del__</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="Mission-__init__"><strong>__init__</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="Mission-__str__"><strong>__str__</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="Mission-change_controller"><strong>change_controller</strong></a>(self, key, string)</dt><dd><tt>Change&nbsp;controller</tt></dd></dl>
+
+<dl><dt><a name="Mission-change_reference"><strong>change_reference</strong></a>(self, key, string)</dt><dd><tt>Change&nbsp;reference&nbsp;trajectory</tt></dd></dl>
+
+<dl><dt><a name="Mission-change_yaw_controller"><strong>change_yaw_controller</strong></a>(self, key, string)</dt><dd><tt>Change&nbsp;yaw&nbsp;controller</tt></dd></dl>
+
+<dl><dt><a name="Mission-change_yaw_reference"><strong>change_yaw_reference</strong></a>(self, key, string)</dt><dd><tt>Change&nbsp;yaw&nbsp;reference&nbsp;trajectory</tt></dd></dl>
+
+<dl><dt><a name="Mission-compute_desired_3d_force"><strong>compute_desired_3d_force</strong></a>(self, time_instant)</dt></dl>
+
+<dl><dt><a name="Mission-description"><strong>description</strong></a>(cls)</dt></dl>
+
+<dl><dt><a name="Mission-get_complementary_data"><strong>get_complementary_data</strong></a>(self)</dt><dd><tt>Get&nbsp;complementary&nbsp;data&nbsp;that&nbsp;is&nbsp;not&nbsp;included&nbsp;<br>
+in&nbsp;<a href="#Mission-get_complete_data">get_complete_data</a>()&nbsp;already</tt></dd></dl>
+
+<dl><dt><a name="Mission-get_complete_data"><strong>get_complete_data</strong></a>(self)</dt><dd><tt>Get&nbsp;all&nbsp;data&nbsp;relevant&nbsp;to&nbsp;the&nbsp;mission<br>
+from&nbsp;this&nbsp;data,&nbsp;mission&nbsp;should&nbsp;be&nbsp;able&nbsp;to&nbsp;do&nbsp;data&nbsp;post-analysis,&nbsp;<br>
+like&nbsp;ploting&nbsp;or&nbsp;computing&nbsp;average&nbsp;errors</tt></dd></dl>
+
+<dl><dt><a name="Mission-get_desired_yaw_rad"><strong>get_desired_yaw_rad</strong></a>(self, time_instant)</dt><dd><tt>Get&nbsp;desired&nbsp;yaw&nbsp;in&nbsp;radians,&nbsp;and&nbsp;its&nbsp;time&nbsp;derivative</tt></dd></dl>
+
+<dl><dt><a name="Mission-get_euler_angles"><strong>get_euler_angles</strong></a>(self)</dt><dd><tt>Get&nbsp;euler&nbsp;angles&nbsp;of&nbsp;the&nbsp;quadrotor&nbsp;(rad)</tt></dd></dl>
+
+<dl><dt><a name="Mission-get_labels_complementary_data"><strong>get_labels_complementary_data</strong></a>(self)</dt><dd><tt>Get&nbsp;labels&nbsp;of&nbsp;the&nbsp;complementary&nbsp;data&nbsp;as&nbsp;defined&nbsp;in&nbsp;<a href="#Mission-get_complementary_data">get_complementary_data</a>()</tt></dd></dl>
+
+<dl><dt><a name="Mission-get_pv"><strong>get_pv</strong></a>(self)</dt><dd><tt>Get&nbsp;position&nbsp;(m)&nbsp;and&nbsp;velocity&nbsp;(m/s)&nbsp;of&nbsp;quadrotor</tt></dd></dl>
+
+<dl><dt><a name="Mission-get_pv_desired"><strong>get_pv_desired</strong></a>(self)</dt><dd><tt>Get&nbsp;desired&nbsp;position&nbsp;(m)&nbsp;and&nbsp;velocity&nbsp;(m/s)&nbsp;for&nbsp;the&nbsp;quadrotor</tt></dd></dl>
+
+<dl><dt><a name="Mission-get_quad_ea_rad"><strong>get_quad_ea_rad</strong></a>(self)</dt><dd><tt>Get&nbsp;euler&nbsp;angles&nbsp;(roll,&nbsp;pitch,&nbsp;yaw)&nbsp;in&nbsp;radians,<br>
+and&nbsp;get&nbsp;their&nbsp;time&nbsp;derivatives</tt></dd></dl>
+
+<dl><dt><a name="Mission-get_rc_output"><strong>get_rc_output</strong></a>(self)</dt><dd><tt>Get&nbsp;rc&nbsp;output</tt></dd></dl>
+
+<dl><dt><a name="Mission-get_reference"><strong>get_reference</strong></a>(self, time_instant)</dt><dd><tt>Get&nbsp;reference&nbsp;that&nbsp;must&nbsp;be&nbsp;accepted&nbsp;by&nbsp;controller<br>
+A&nbsp;reference&nbsp;might&nbsp;not&nbsp;exist</tt></dd></dl>
+
+<dl><dt><a name="Mission-get_state"><strong>get_state</strong></a>(self)</dt><dd><tt>Get&nbsp;state&nbsp;that&nbsp;is&nbsp;accepted&nbsp;by&nbsp;controller.<br>
+It&nbsp;is&nbsp;the&nbsp;job&nbsp;of&nbsp;a&nbsp;child&nbsp;class&nbsp;to&nbsp;write&nbsp;a&nbsp;state<br>
+that&nbsp;is&nbsp;accepted&nbsp;by&nbsp;the&nbsp;controllers&nbsp;that&nbsp;it&nbsp;imports.</tt></dd></dl>
+
+<dl><dt><a name="Mission-get_state_string"><strong>get_state_string</strong></a>(self)</dt><dd><tt>In&nbsp;the&nbsp;main&nbsp;cycle,&nbsp;call&nbsp;this&nbsp;function&nbsp;to&nbsp;get&nbsp;a&nbsp;line&nbsp;that&nbsp;can&nbsp;be<br>
+written&nbsp;on&nbsp;a&nbsp;file:<br>
+filehandle.write(mission.<a href="#Mission-get_state_string">get_state_string</a>())</tt></dd></dl>
+
+<dl><dt><a name="Mission-initialize_state"><strong>initialize_state</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="Mission-publish"><strong>publish</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="Mission-real_publish"><strong>real_publish</strong></a>(self, desired_3d_force_quad, yaw_rate)</dt></dl>
+
+<dl><dt><a name="Mission-reset_initial_time"><strong>reset_initial_time</strong></a>(self, time_instant<font color="#909090">=None</font>)</dt></dl>
+
+<dl><dt><a name="Mission-yaw_rate"><strong>yaw_rate</strong></a>(self, time_instant)</dt></dl>
+
+<hr>
+Class methods defined here:<br>
+<dl><dt><a name="Mission-plot_from_string"><strong>plot_from_string</strong></a>(cls, string)<font color="#909090"><font face="helvetica, arial"> from __builtin__.classobj</font></font></dt></dl>
+
+<hr>
+Data and other attributes defined here:<br>
+<dl><dt><strong>file_labels</strong> = ['time', 'position_x', 'position_y', 'position_z', 'roll', 'pitch', 'yaw', 'velocity_x', 'velocity_y', 'velocity_z', 'control_x', 'control_y', 'control_z']</dl>
+
+<dl><dt><strong>inner</strong> = {'controller': {}, 'reference': {}, 'yaw_controller': {}, 'yaw_reference': {}}</dl>
+
+<hr>
+Methods inherited from <a href="utilities.jsonable.html#Jsonable">utilities.jsonable.Jsonable</a>:<br>
+<dl><dt><a name="Mission-get_inner_jsonables"><strong>get_inner_jsonables</strong></a>(self)</dt><dd><tt>Child&nbsp;classes&nbsp;redefine&nbsp;this<br>
+and&nbsp;return&nbsp;the&nbsp;inner&nbsp;jsonable&nbsp;objects</tt></dd></dl>
+
+<dl><dt><a name="Mission-get_parameters"><strong>get_parameters</strong></a>(self)</dt><dd><tt>Child&nbsp;classes&nbsp;redefine&nbsp;this<br>
+and&nbsp;return&nbsp;a&nbsp;dictionary&nbsp;of&nbsp;their&nbsp;parameters,<br>
+for&nbsp;example:&nbsp;proportional_gain,&nbsp;derivative_gain</tt></dd></dl>
+
+<dl><dt><a name="Mission-get_parameters_recursive"><strong>get_parameters_recursive</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="Mission-parameters_to_string"><strong>parameters_to_string</strong></a>(self)</dt></dl>
+
+<dl><dt><a name="Mission-parametric_description"><strong>parametric_description</strong></a>(self, name)</dt></dl>
+
+<hr>
+Class methods inherited from <a href="utilities.jsonable.html#Jsonable">utilities.jsonable.Jsonable</a>:<br>
+<dl><dt><a name="Mission-contained_objects"><strong>contained_objects</strong></a>(cls)<font color="#909090"><font face="helvetica, arial"> from __builtin__.classobj</font></font></dt></dl>
+
+<dl><dt><a name="Mission-from_string"><strong>from_string</strong></a>(cls, string<font color="#909090">=''</font>)<font color="#909090"><font face="helvetica, arial"> from __builtin__.classobj</font></font></dt><dd><tt>Returns&nbsp;an&nbsp;object&nbsp;of&nbsp;this&nbsp;class&nbsp;constructed&nbsp;from&nbsp;the&nbsp;json&nbsp;string<br>
+`string`.</tt></dd></dl>
+
+<dl><dt><a name="Mission-get_dic_recursive"><strong>get_dic_recursive</strong></a>(cls, dictionary, list_of_keys)<font color="#909090"><font face="helvetica, arial"> from __builtin__.classobj</font></font></dt></dl>
+
+<dl><dt><a name="Mission-inverse_parametric_description"><strong>inverse_parametric_description</strong></a>(cls, string)<font color="#909090"><font face="helvetica, arial"> from __builtin__.classobj</font></font></dt><dd><tt>from&nbsp;a&nbsp;string&nbsp;withouth&nbsp;the&nbsp;unique&nbsp;string,&nbsp;get&nbsp;name</tt></dd></dl>
+
+<dl><dt><a name="Mission-to_string"><strong>to_string</strong></a>(cls, inner<font color="#909090">={}</font>)<font color="#909090"><font face="helvetica, arial"> from __builtin__.classobj</font></font></dt><dd><tt>Returns&nbsp;a&nbsp;string<br>
+that&nbsp;can&nbsp;be&nbsp;used&nbsp;to&nbsp;construct&nbsp;an&nbsp;object&nbsp;of&nbsp;this&nbsp;class.<br>
+In&nbsp;the&nbsp;`inner`&nbsp;dictionary,&nbsp;each&nbsp;key&nbsp;is&nbsp;one&nbsp;of&nbsp;the&nbsp;arguments&nbsp;of&nbsp;the<br>
+constructor&nbsp;that&nbsp;are&nbsp;<a href="utilities.jsonable.html#Jsonable">Jsonable</a>&nbsp;objects.&nbsp;(Therefore&nbsp;inner&nbsp;has&nbsp;the&nbsp;same&nbsp;keys<br>
+as&nbsp;cls.inner.)&nbsp;The&nbsp;corresponding&nbsp;value&nbsp;is&nbsp;a&nbsp;<br>
+the&nbsp;chosen&nbsp;class&nbsp;name&nbsp;for&nbsp;that&nbsp;object.</tt></dd></dl>
+
+<hr>
+Data and other attributes inherited from <a href="utilities.jsonable.html#Jsonable">utilities.jsonable.Jsonable</a>:<br>
+<dl><dt><strong>UNIQUE_STRING</strong> = '##########'</dl>
+
+</td></tr></table></td></tr></table>
+</body></html>

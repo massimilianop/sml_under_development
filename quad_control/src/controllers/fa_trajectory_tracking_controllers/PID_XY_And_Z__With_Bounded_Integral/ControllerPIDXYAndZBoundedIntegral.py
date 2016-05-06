@@ -6,10 +6,20 @@ import rospy
 import numpy as np
 import collections  
 
+<<<<<<< HEAD
 from utilities import utility_functions as uts
 
 from systems_functions.Double_Integrator_Functions.Double_Integrator_Bounded_and_Component_wise.DI_Bounded_1 import DI_controller
 
+=======
+from controllers import controller
+
+from systems_functions.Double_Integrator_Functions.Double_Integrator_Bounded_and_Component_wise.DI_Bounded_1 import DI_controller
+
+import rospy
+
+#--------------------------------------------------------------------------#
+>>>>>>> 8b40b5e03ad3b4895f93a6be2de27c5222c64612
 from numpy import cos as c
 from numpy import sin as s
 
@@ -37,9 +47,9 @@ from numpy import sin as s
 #--------------------------------------------------------------------------#
 # This is a dynamic controller, not a static controller
 
-class ControllerPIDXYAndZBounded():
+class ControllerPIDXYAndZBounded(controller.Controller):
     
-    MASS    = 1.66779
+    MASS    = rospy.get_param("quadrotor_mass",1.442)
 
     GRAVITY = 9.81
 
