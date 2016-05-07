@@ -89,6 +89,7 @@ add_service_files(
    DEPENDENCIES
    std_msgs
    geometry_msgs
+   quad_control
    # mavros
    # px4
  )

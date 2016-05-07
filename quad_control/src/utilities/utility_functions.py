@@ -134,7 +134,7 @@ def quaternion_from_unit_vector_and_yaw_rad(unit_vector, psi):
     r1 = r1/np.linalg.norm(r1)
     r2 = np.dot(skew(r3),r1)
 
-    RR = column_stack((r1,r2,r3))
+    RR = np.column_stack((r1,r2,r3))
 
     return quaternion_from_rot(RR)  
 
