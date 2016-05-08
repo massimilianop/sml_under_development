@@ -75,6 +75,7 @@ add_service_files(
   IrisPlusSetNeutral.srv
   TradeLandmarks.srv
   PlotService.srv
+  ReceiveToken.srv
 )
 
 ## Generate actions in the 'action' folder

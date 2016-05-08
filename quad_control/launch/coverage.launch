@@ -1,10 +1,41 @@
 <launch>
 
+<group ns='Axel'>
 <node pkg='quad_control' name='coverage_planner' type='coverage_planner.py'/>
 <node pkg='quad_control' name='planar_integrator' type='planar_integrator.py'/>
-<node pkg='tf' name='static_transform_publisher' type='static_transform_publisher' args='0 0 0 0 0 0 1 map my_frame 10'/>
-<!--<node pkg='rviz' name='rviz' type='rviz'/>-->
-<node pkg='rqt_plot' name='rqt_plot' type='rqt_plot'/>
+<!--<node pkg='rqt_plot' name='rqt_plot' type='rqt_plot' args='/Axel/pose/x:y:theta'/>-->
+<param name='name' type='str' value='Axel'/>
+<param name='token' type='bool' value='true'/>
 <param name='others_names' type='str' value='Bo Calle David'/>
+</group>
+
+<group ns='Bo'>
+<node pkg='quad_control' name='coverage_planner' type='coverage_planner.py'/>
+<node pkg='quad_control' name='planar_integrator' type='planar_integrator.py'/>
+<!--<node pkg='rqt_plot' name='rqt_plot' type='rqt_plot' args='/Bo/pose/x:y:theta'/>-->
+<param name='name' type='str' value='Bo'/>
+<param name='token' type='bool' value='false'/>
+<param name='others_names' type='str' value='Axel Calle David'/>
+</group>
+
+<group ns='Calle'>
+<node pkg='quad_control' name='coverage_planner' type='coverage_planner.py'/>
+<node pkg='quad_control' name='planar_integrator' type='planar_integrator.py'/>
+<!--<node pkg='rqt_plot' name='rqt_plot' type='rqt_plot' args='/Calle/pose/x:y:theta'/>-->
+<param name='name' type='str' value='Calle'/>
+<param name='token' type='bool' value='false'/>
+<param name='others_names' type='str' value='Axel Bo David'/>
+</group>
+
+<group ns='David'>
+<node pkg='quad_control' name='coverage_planner' type='coverage_planner.py'/>
+<node pkg='quad_control' name='planar_integrator' type='planar_integrator.py'/>
+<!--<node pkg='rqt_plot' name='rqt_plot' type='rqt_plot' args='/David/pose/x'/>-->
+<param name='name' type='str' value='David'/>
+<param name='token' type='bool' value='false'/>
+<param name='others_names' type='str' value='Axel Bo Calle'/>
+</group>
+
+<node pkg='rqt_plot' name='rqt_plot' type='rqt_plot' args='/David/pose/x'/>
 
 </launch>
