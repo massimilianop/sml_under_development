@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # import Misson abstract class
-from .. import mission
+from ... import mission
 
 from converter_between_standards.rotorS_converter import RotorSConverter
 

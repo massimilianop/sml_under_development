@@ -41,7 +41,7 @@ from src.simulators import simulators_dictionary
 
 from choose_jsonable import ChooseJsonablePlugin
 
-class ChooseSystemPlugin(Plugin):
+class ChooseMocapPlugin(Plugin):
 
 
     def __init__(self, context,namespace = None, system_type = 'gazebo'):
@@ -50,9 +50,9 @@ class ChooseSystemPlugin(Plugin):
         self.namespace = self._parse_args(context.argv())
 
 
-        super(ChooseSystemPlugin, self).__init__(context)
+        super(ChooseMocapPlugin, self).__init__(context)
         # Give QObjects reasonable names
-        self.setObjectName('ChooseSystemPlugin')
+        self.setObjectName('ChooseMocapPlugin')
 
         # Process standalone plugin command-line arguments
         from argparse import ArgumentParser
@@ -72,11 +72,11 @@ class ChooseSystemPlugin(Plugin):
         self._widget = QWidget()
         # Get path to UI file which is a sibling of this file
         # in this example the .ui and .py file are in the same folder
-        ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'choose_system.ui')
+        ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'choose_mocap.ui')
         # Extend the widget with all attributes and children from UI file
         loadUi(ui_file, self._widget)
         # Give QObjects reasonable names
-        self._widget.setObjectName('ChooseSystemUi')
+        self._widget.setObjectName('ChooseMocapUi')
         # Show _widget.windowTitle on left-top of each plugin (when 
         # it's set in _widget). This is useful when you open multiple 
         # plugins at once. Also if you open multiple instances of your 
@@ -86,25 +86,6 @@ class ChooseSystemPlugin(Plugin):
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
         # Add widget to the user interface
         context.add_widget(self._widget)
-
-        # ---------------------------------------------- #
-        # ---------------------------------------------- #
-
-        # BUTTON TO SET DESIRED SIMULATOR
-
-        jsonableWidget = ChooseJsonablePlugin(context,\
-            self.namespace,\
-            name_tab = "Simulator",
-            dictionary_of_options = simulators_dictionary.simulators_dictionary,\
-            service_name = 'ServiceChangeSimulator',\
-            ServiceClass = SrvCreateJsonableObjectByStr)._widget
-
-        self._widget.tabWidgetSimulator.addTab(jsonableWidget,'Select Simulator')
-
-
-        self._widget.start_radio_button.toggled.connect(self.__service_request_simulator)
-        self._widget.stop_radio_button.toggled.connect(self.__service_request_simulator)
-        self._widget.reset_radio_button.toggled.connect(self.__service_request_simulator)
 
 
 
@@ -131,67 +112,6 @@ class ChooseSystemPlugin(Plugin):
         self._widget.ModeSTABILIZE.toggled.connect(self.ChangeMode)
         self._widget.ModeACRO.toggled.connect(self.ChangeMode)
 
-
-        # Button to start gazebo
-        self._widget.start_gazebo.clicked.connect(self.start_gazebo)
-
-        # Button to kill gazebo
-        self._widget.kill_gazebo.clicked.connect(self.kill_gazebo)  
-
-    #@Slot(bool)
-    def __service_request_simulator(self):
-        
-        try: 
-            # time out of one second for waiting for service
-            rospy.wait_for_service(self.namespace+'StartSimulator',1.0)
-            
-            try:
-                AskForStart = rospy.ServiceProxy(self.namespace+'StartSimulator', StartSim)
-
-                # if button is pressed save data
-                if self._widget.start_radio_button.isChecked():
-                    # request controller to save data
-                    reply = AskForStart(True)
-                    if reply.Started == True:
-                        # if controller receives message, we know it
-                        # print('Started')
-                        self._widget.SimulatorSuccess.setChecked(True) 
-                        self._widget.SimulatorFailure.setChecked(False) 
-                else:
-                    # request simulator to freeze and restart
-                    reply = AskForStart(False)
-                    if  reply.Started == True:
-                        # if controller receives message, we know it
-                        # print('Stopped')
-                        self._widget.SimulatorSuccess.setChecked(True) 
-                        self._widget.SimulatorFailure.setChecked(False) 
-
-            except rospy.ServiceException:
-                # print "Service call failed: %s"%e   
-                self._widget.SimulatorSuccess.setChecked(False) 
-                self._widget.SimulatorFailure.setChecked(True) 
-            
-        except: 
-            # print "Service not available ..."        
-            self._widget.SimulatorSuccess.setChecked(False) 
-            self._widget.SimulatorFailure.setChecked(True)
-            pass  
-
-    #@Slot(bool)
-    def start_gazebo(self):
-        #os.system('roslaunch quad_control mav_hovering_example.launch')
-        #subprocess.call('roslaunch quad_control mav_hovering_example.launch &', shell=True)
-        subprocess.call('roslaunch quad_control mav_with_load_example.launch &', shell=True)
-        # subprocess.call('roslaunch quad_control firefly_example.launch &', shell=True)
-        return 
-
-    #@Slot(bool)
-    def kill_gazebo(self):
-        #os.system('killall gzclient')
-        #os.system('killall gzclient;killall gzserver')
-        subprocess.call('killall gzclient &', shell=True)
-        subprocess.call('killall gzserver &', shell=True)
-        return
 
     def MinThrottle(self):
         #Change the flight mode on the Pixhawk flight controller

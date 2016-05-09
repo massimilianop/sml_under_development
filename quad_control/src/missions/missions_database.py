@@ -6,18 +6,17 @@ Database of the missions.
 
 import rospy
 
-database = {}
+# by default, gazebo is used
+arg = rospy.get_param("mission_type","gazebo")
 
-import firefly_trajectory_tracking.firefly_trajectory_tracking
-database["FireflyTrajectoryTracking"] = firefly_trajectory_tracking.firefly_trajectory_tracking.FireflyTrajectoryTracking
+if arg == "gazebo":
+	import gazebo.missions_database
+	database = gazebo.missions_database.database
 
-import iris_real_trajectory_tracking.iris_real_trajectory_tracking
-database["IrisRealTrajectoryTracking"] = iris_real_trajectory_tracking.iris_real_trajectory_tracking.IrisRealTrajectoryTracking
+if arg == "mocap":
+	import mocap.missions_database
+	database = mocap.missions_database.database
 
-import iris_simulator_trajectory_tracking.iris_simulator_trajectory_tracking
-database["IrisSimulatorTrajectoryTracking"] = iris_simulator_trajectory_tracking.iris_simulator_trajectory_tracking.IrisSimulatorTrajectoryTracking
-
-import firefly_load_lifting.firefly_load_lifting
-database["FireflyLoadLifting"] = firefly_load_lifting.firefly_load_lifting.FireflyLoadLifting
-
-database["Default"] = database[rospy.get_param("MissionDefault","IrisSimulatorTrajectoryTracking")]
+if arg == "rviz":
+	import rviz.missions_database
+	database = rviz.missions_database.database

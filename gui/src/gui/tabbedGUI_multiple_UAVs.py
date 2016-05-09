@@ -29,12 +29,14 @@ from choose_gazebo import ChooseGazeboPlugin
 
 from choose_mocap import ChooseMocapPlugin
 
+from tabbedGUI import tabbedGUIPlugin
+
 import argparse
 
 
-class tabbedGUIPlugin(Plugin):
+class tabbedGUIMultipleUAVPlugin(Plugin):
 
-    def __init__(self, context,namespace = None, system_type = 'gazebo'):
+    def __init__(self, context,namespaces = None, system_type = 'gazebo'):
 
         # it is either "" or the input given at creation of plugin
         self.namespace, system_type = self._parse_args(context.argv())
@@ -44,7 +46,7 @@ class tabbedGUIPlugin(Plugin):
 
         super(tabbedGUIPlugin, self).__init__(context)
         # Give QObjects reasonable names
-        self.setObjectName('tabbedGUIPlugin')
+        self.setObjectName('tabbedGUIMultipleUAVPlugin')
 
         # Process standalone plugin command-line arguments
         from argparse import ArgumentParser
@@ -62,11 +64,11 @@ class tabbedGUIPlugin(Plugin):
         self._widget = QWidget()
         # Get path to UI file which is a sibling of this file
         # in this example the .ui and .py file are in the same folder
-        ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tabbedGUI.ui')
+        ui_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'tabbedGUI_multiple_UAVs.ui')
         # Extend the widget with all attributes and children from UI file
         loadUi(ui_file, self._widget)
         # Give QObjects reasonable names
-        self._widget.setObjectName('tabbedGUIUi')
+        self._widget.setObjectName('tabbedGUIGUIMultipleUAVUi')
         # Show _widget.windowTitle on left-top of each plugin (when 
         # it's set in _widget). This is useful when you open multiple 
         # plugins at once. Also if you open multiple instances of your 
@@ -77,7 +79,7 @@ class tabbedGUIPlugin(Plugin):
         # Add widget to the user interface
         context.add_widget(self._widget)
         
-        # # Adding all the tabs
+        # Adding all the tabs: one for each UAV
 
         self.ChooseMission   = ChooseMissionPlugin(context,self.namespace)
         self.positionPlot    = positionPlotPlugin(context,self.namespace)
