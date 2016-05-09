@@ -55,7 +55,8 @@ class NDimensionalBoundedDIC(dic.DoubleIntegratorController):
             proportional_gain       = None,
             derivative_gain         = None,
             position_saturation     = 1.0,
-            velocity_saturation     = 1.0
+            velocity_saturation     = 1.0,
+            size_di                 = 3
             ):
         
         if proportional_gain == None or derivative_gain==None:
@@ -77,6 +78,7 @@ class NDimensionalBoundedDIC(dic.DoubleIntegratorController):
 
         self.__eps = 0.01
 
+        self.size_di = size_di
 
     def output(self,p,v):
         return self._DI_Bounded(p,v)
@@ -110,7 +112,9 @@ class NDimensionalBoundedDIC(dic.DoubleIntegratorController):
     def  _DI_Bounded(self,p,v):
 
         # size of position of double integrator system
-        size_di = len(p)
+        # this does not work when p is a float because float does not have length
+        # size_di = len(p)
+        size_di = self.size_di
 
         # gains
         kp = self.get_proportional_gain()

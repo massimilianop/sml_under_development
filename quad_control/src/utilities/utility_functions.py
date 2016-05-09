@@ -1,11 +1,6 @@
 #!/usr/bin/env python
 # this line is just used to define the type of document
 
-
-
-#TODO is rospy needed?
-import rospy
-
 import numpy
 
 from numpy import *
@@ -50,9 +45,14 @@ def unskew(X):
 #--------------------------------------------------------------------------#
 # orthogonal projection operator
 #TODO rename to projection_operator or something like that
+# def OP(x):
+#     return -skew(x).dot(skew(x))
+
 def OP(x):
-    
-    return -skew(x).dot(skew(x))
+    out = numpy.zeros((3,3))
+    I   = numpy.identity(3)
+    out = I - outer(x,x)
+    return out
 
 #print OP([1,2,3])
 #print OP([1,0,0])

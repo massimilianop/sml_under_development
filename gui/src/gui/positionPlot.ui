@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1266</width>
-    <height>715</height>
+    <width>714</width>
+    <height>605</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,6 +17,23 @@
    <string notr="true"/>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="4" colspan="3">
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
+      <string>File Name</string>
+     </property>
+     <widget class="QPlainTextEdit" name="input_file_name">
+      <property name="geometry">
+       <rect>
+        <x>80</x>
+        <y>0</y>
+        <width>261</width>
+        <height>31</height>
+       </rect>
+      </property>
+     </widget>
+    </widget>
+   </item>
    <item row="6" column="1">
     <widget class="QCheckBox" name="Xcheck">
      <property name="text">
@@ -71,16 +88,6 @@
     <widget class="QCheckBox" name="Roll_check">
      <property name="text">
       <string>Roll</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="1">
-    <widget class="QCheckBox" name="ButtonSubscribe">
-     <property name="text">
-      <string>Connect</string>
-     </property>
-     <property name="checked">
-      <bool>false</bool>
      </property>
     </widget>
    </item>
@@ -258,21 +265,27 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="4" colspan="3">
-    <widget class="QGroupBox" name="groupBox">
-     <property name="title">
-      <string>File Name</string>
+   <item row="0" column="1">
+    <widget class="QCheckBox" name="ButtonSubscribe">
+     <property name="text">
+      <string>Connect</string>
      </property>
-     <widget class="QPlainTextEdit" name="input_file_name">
-      <property name="geometry">
-       <rect>
-        <x>90</x>
-        <y>0</y>
-        <width>341</width>
-        <height>21</height>
-       </rect>
-      </property>
-     </widget>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="22" column="4">
+    <widget class="QListWidget" name="list_pdf_files"/>
+   </item>
+   <item row="22" column="3">
+    <widget class="QListWidget" name="list_text_files"/>
+   </item>
+   <item row="22" column="1">
+    <widget class="QPushButton" name="refresh_button">
+     <property name="text">
+      <string>Refresh</string>
+     </property>
     </widget>
    </item>
   </layout>

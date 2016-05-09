@@ -185,7 +185,7 @@ class Mission(js.Jsonable):
         raise NotImplementedError()
 
 
-    def real_publish(self,desired_3d_force_quad,yaw_rate):
+    def real_publish(self,desired_3d_force_quad,yaw_rate,rc_output):
         return NotImplementedError()
 
 

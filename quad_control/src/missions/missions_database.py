@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 """
 Database of the missions.
@@ -16,5 +17,7 @@ database["IrisRealTrajectoryTracking"] = iris_real_trajectory_tracking.iris_real
 import iris_simulator_trajectory_tracking.iris_simulator_trajectory_tracking
 database["IrisSimulatorTrajectoryTracking"] = iris_simulator_trajectory_tracking.iris_simulator_trajectory_tracking.IrisSimulatorTrajectoryTracking
 
+import firefly_load_lifting.firefly_load_lifting
+database["FireflyLoadLifting"] = firefly_load_lifting.firefly_load_lifting.FireflyLoadLifting
 
 database["Default"] = database[rospy.get_param("MissionDefault","IrisSimulatorTrajectoryTracking")]

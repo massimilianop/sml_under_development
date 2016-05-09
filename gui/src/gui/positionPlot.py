@@ -26,10 +26,18 @@ from quad_control.msg import quad_state_and_cmd
 
 # import services defined in quad_control
 from quad_control.srv import *
-
+from quad_control.srv import PlotService
 
 import argparse
 
+
+
+import rospkg
+# get an instance of RosPack with the default search paths
+rospack = rospkg.RosPack()
+# get the file path for rospy_tutorials
+import sys
+sys.path.insert(0, rospack.get_path('quad_control'))
 
 
 class positionPlotPlugin(Plugin):
@@ -82,7 +90,6 @@ class positionPlotPlugin(Plugin):
     Ch2on = pyqtSignal(float)
     Ch3on = pyqtSignal(float)    
     Ch4on = pyqtSignal(float)      
-
 
     # ---------------------------------------------- #
     # ---------------------------------------------- #
@@ -409,6 +416,73 @@ class positionPlotPlugin(Plugin):
         self._widget.ButtonRequestSave.stateChanged.connect(self.SaveDataClient)
 
 
+        self.path_txt_files = rospack.get_path('quad_control')+"/experimental_data/data/"
+
+        self.refresh_lists()
+        self._widget.refresh_button.clicked.connect(self.refresh_lists)
+
+        # if item in list is clicked twice, 
+        self._widget.list_text_files.itemDoubleClicked.connect(self.__service_print_plots)
+
+        # if item in list is clicked twice, open pdf
+        self._widget.list_pdf_files.itemDoubleClicked.connect(self.__open_plots)
+
+    def print_txt_files(self):
+
+        self._widget.list_text_files.clear()
+        for file in os.listdir(self.path_txt_files):
+            if file.endswith(".txt"):
+                self._widget.list_text_files.addItem(file) 
+
+    def print_pdf_files(self):
+
+        self._widget.list_pdf_files.clear()
+        for file in os.listdir(self.path_txt_files):
+            if file.endswith(".pdf"):
+                self._widget.list_pdf_files.addItem(file) 
+
+    def refresh_lists(self):
+        self.print_txt_files()
+        self.print_pdf_files()
+        pass
+
+    def __open_plots(self):
+        pdf_file_selected = self._widget.list_pdf_files.currentItem().text()
+        command = 'see '+ self.path_txt_files+pdf_file_selected + ' &'
+        # subprocess.call(command, shell=True)
+        subprocess.call(command, shell=False)
+
+
+    def __service_print_plots(self):
+        """Request service for new jsonable object with parameters chosen by user"""
+
+        text_file_selected = self._widget.list_text_files.currentItem().text()
+
+        # request service
+        try: 
+            # time out of one second for waiting for service
+            rospy.wait_for_service("PlotService",1.0)
+            
+            try:
+                Requesting = rospy.ServiceProxy("PlotService", PlotService)
+
+                reply = Requesting(file_path = self.path_txt_files+text_file_selected)
+
+                if reply.success == True:
+                    print('plot service provided')
+
+            except rospy.ServiceException as exc:
+                rospy.logwarn("Service did not process request: " + str(exc))
+                rospy.logwarn('Proxy for service that sets controller FAILED')
+                print('plot service NOT provided')
+            
+        except rospy.ServiceException as exc:
+            rospy.logwarn("Service did not process request: " + str(exc))
+            rospy.logwarn('Timeout for service that sets controller')
+            print('plot service NOT provided')
+
+        pass 
+
     def callback(self,data):
 
         
@@ -661,10 +735,8 @@ class positionPlotPlugin(Plugin):
         
         if not file_name:
         # if file_name == "":
-            file_name = 'temporary_file'+str(rospy.get_time())
-            rospy.logwarn('testing')
-
-        rospy.logwarn(file_name)
+            #file_name = 'temporary_file'+str(rospy.get_time())
+            file_name = 'untitled_file'
 
         try: 
             # time out of one second for waiting for service
@@ -726,6 +798,3 @@ class positionPlotPlugin(Plugin):
         # Comment in to signal that the plugin has a way to configure
         # This will enable a setting button (gear icon) in each dock widget title bar
         # Usually used to open a modal configuration dialog
-
-    
-

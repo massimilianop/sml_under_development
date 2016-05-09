@@ -1,7 +1,7 @@
 <launch>
 
         <!-- Controller Node -->
-        <node pkg="quad_control" name="plot_nodeasas" type="plot_experiment.py"/>
+        <node pkg="quad_control" name="plot_nodeasas" type="plot_experiment.py"  output="screen"/>
 
         <!-- Default Mission -->
         <param name="MissionDefault" type="str" value="FireflyTrajectoryTracking"/>
@@ -22,7 +22,7 @@
 
 
         <!-- Controller Node -->
-        <node pkg="quad_control" name="controller_Iris1" type="cycle_quad_control_mission.py"  output="screen"/>
+        <node pkg="quad_control" name="controller_Iris1" type="cycle_quad_control_mission.py" output="screen"/>
 
         <!-- Controller parameters -->
         <param name="gravity_ctr" value="9.81"/>
@@ -86,6 +86,6 @@
         <!-- This runs rqt and we have to select plugin manually -->
         <!-- similar to rosrun rqt_gui rqt_gui -->
         <!-- <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui"/> -->
-        <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" args="--standalone  tabbedGUI"/>
+        <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" args="--standalone  tabbedGUI" output="screen"/>
 
 </launch>

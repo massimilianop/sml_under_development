@@ -16,6 +16,10 @@ database["NOTComponentWise3DDIC"] = not_component_wise_3d_dic.not_component_wise
 import n_dimensional_bounded_dic.n_dimensional_bounded_dic
 database["BoundedNotComponentWiseDIC"] = n_dimensional_bounded_dic.n_dimensional_bounded_dic.NDimensionalBoundedDIC
 
+import one_dimensional_bounded_dic.one_dimensional_bounded_dic
+database["OneDBoundedDIC"] = one_dimensional_bounded_dic.one_dimensional_bounded_dic.OneDimensionalBoundedDIC
+
+
 database["Default"] = database[rospy.get_param("DIControllerDefault","ComponentWise3DDIC")]
 
 

@@ -66,7 +66,8 @@ class QuadController():
             time_stamp = str(int(rospy.get_time()))
 
             # file name provided by user in request 
-            file_name    = req.file_name
+            file_name         = req.file_name
+            # note that "_" is necessary because time_stamp is a number (and file name cannot start with numbers)
             self.file_handle  = file(self.package_save_path+'_'+time_stamp+'_'+file_name+namespace+'.txt', 'w')
 
             # if GUI request data to be saved, set flag to true
