@@ -1,0 +1,8 @@
+# Service for trading landmarks
+string name
+geometry_msgs/Pose2D pose
+quad_control/Landmark[] landmarks
+------
+bool success
+int32[] to_remove
+quad_control/Landmark[] to_add

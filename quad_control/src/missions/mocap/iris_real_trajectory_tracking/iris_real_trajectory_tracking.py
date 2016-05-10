@@ -8,7 +8,7 @@ from mavros_msgs.msg import OverrideRCIn
 # from mavros_msgs.srv import ParamSet,ParamGet,CommandBool,SetMode
 
 # import converter from 3d_force and yaw rate into iris rc standard 
-from converter_between_standards.iris_plus_converter import IrisPlusConverter
+from converters.iris_plus_converter import IrisPlusConverter
 
 # import list of available trajectories
 from trajectories import trajectories_database
@@ -27,7 +27,7 @@ import rospy
 
 import utilities.mocap_source as mocap_source
 
-from utilities.utility_functions import Velocity_Filter
+from utilities.utility_functions import VelocityFilter
 
 class IrisRealTrajectoryTracking(mission.Mission):
 
@@ -67,7 +67,7 @@ class IrisRealTrajectoryTracking(mission.Mission):
 
         # intiialization should be done in another way,
         # but median will take care of minimizing effects
-        self.VelocityEstimator = Velocity_Filter(3,numpy.zeros(3),0.0)
+        self.velocity_estimator = VelocityFilter(3,numpy.zeros(3),0.0)
 
         # dy default, desired reference is staying still in origin
         self.TrajGenerator = reference
@@ -125,15 +125,19 @@ class IrisRealTrajectoryTracking(mission.Mission):
 
             # velocity
             #v = numpy.array([data.vx,data.vy,data.vz])
-            v = self.VelocityEstimator.out(p,rospy.get_time())
+            v = self.velocity_estimator.out(p,rospy.get_time())
 
             # attitude: euler angles THESE COME IN DEGREES
-            roll = bodies["roll"]; pitch=-bodies["pitch"]; yaw  = bodies["yaw"]
+            roll = bodies["roll"]
+            pitch=-bodies["pitch"]
+            yaw  = bodies["yaw"]
             ee = numpy.array([roll,pitch,yaw])
 
             # collect all components of state
-            self.state_quad = numpy.concatenate([p,v,ee])  
+            self.state_quad = numpy.concatenate([p,v,ee])
+            
         else:
+        
             # do nothing, keep previous state
             self.flag_measurements = False
 
@@ -149,6 +153,7 @@ class IrisRealTrajectoryTracking(mission.Mission):
 
     def get_euler_angles(self):
         return self.state_quad[6:9]
+
 
     def real_publish(self,desired_3d_force_quad,yaw_rate,rc_output):
 

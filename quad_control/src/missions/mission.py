@@ -31,10 +31,10 @@ from matplotlib import pyplot as plt
 # If the mocap is needed, the module mocap must be imported
 # import mocap 
 
-import math
+#import math
 
 # import converter from 3d_force and yaw rate into iris rc standard 
-from converter_between_standards.iris_plus_converter import IrisPlusConverter
+from converters.iris_plus_converter import IrisPlusConverter
 
 class Mission(js.Jsonable):
 
@@ -161,7 +161,7 @@ class Mission(js.Jsonable):
         self.initialize_state()
 
         # for reseting neutral value that makes iris+ stay at desired altitude
-        self.DesiredZForceMedian = utility_functions.Median_Filter(10)
+        self.DesiredZForceMedian = utility_functions.MedianFilter(10)
               
         self.rc_output = numpy.zeros(4)
 
@@ -295,10 +295,10 @@ class Mission(js.Jsonable):
             self.YawTrajGenerator = YawTrajectoryClass.from_string(string)
 
 
-    def change_controller(self,key,string):
+    def change_controller(self, key, string):
         """Change controller"""
         if key in self.inner['controller'].keys():
-            ControllerClass      = self.inner['controller'][key]
+            ControllerClass       = self.inner['controller'][key]
             self.ControllerObject = ControllerClass.from_string(string)
 
 
@@ -360,7 +360,7 @@ class Mission(js.Jsonable):
 
 
     def rc_command(self,desired_3d_force_quad,yaw_rate):
-        euler_rad          = self.get_euler_angles()*math.pi/180
+        euler_rad          = self.get_euler_angles()*numpy.pi/180
         self.iris_plus_converter_object_mission.set_rotation_matrix(euler_rad)
         iris_plus_rc_input = self.iris_plus_converter_object_mission.input_conveter(desired_3d_force_quad,yaw_rate)
         self.rc_output     = iris_plus_rc_input

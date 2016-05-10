@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # this line is just used to define the type of document
 
+#TODO: this file refers to the old setup, it has to be rewritten
+
 import numpy
-from numpy import *
 from numpy import cos as c
 from numpy import sin as s
 
@@ -43,7 +44,7 @@ class ControllerOmega():
     def output(self,t,states,states_d):
         # convert euler angles from deg to rotation matrix
         ee = states[6:9]
-        R  = GetRotFromEulerAnglesDeg(ee)
+        R  = rot_from_euler_deg(ee)
         R  = numpy.reshape(R,9)
         # collecting states
         states  = numpy.concatenate([states[0:6],R])
@@ -117,7 +118,7 @@ def controller(states,states_d,parameters):
     # desired yaw: psi_star
     psi_star = parameters.psi_star; 
     # current euler angles
-    euler = GetEulerAngles(R);
+    euler = euler_rad_from_rot(R);
     phi   = euler[0];
     theta = euler[1];
     psi   = euler[2];
@@ -182,33 +183,29 @@ def GetEulerAngles(R):
     EULER = numpy.array([0.0,0.0,0.0])
 
     sin_theta = -R[2,0]
-    sin_theta = bound(sin_theta,1,-1)
+    sin_theta = numpy.clip(sin_theta,1,-1)
     theta     = numpy.arcsin(sin_theta)
     EULER[1]      = theta
 
     sin_phi   = R[2,1]/c(theta)
-    sin_phi   = bound(sin_phi,1,-1)
+    sin_phi   = numpy.clip(sin_phi,1,-1)
     cos_phi   = R[2,2]/c(theta)
-    cos_phi   = bound(cos_phi,1,-1)
+    cos_phi   = numpy.clip(cos_phi,1,-1)
     phi       = numpy.arctan2(sin_phi,cos_phi)
     EULER[0]  = phi
 
     sin_psi   = R[1,0]/c(theta)
-    sin_psi   = bound(sin_psi,1,-1)
+    sin_psi   = numpy.clip(sin_psi,1,-1)
     cos_psi   = R[0,0]/c(theta)
-    cos_psi   = bound(cos_psi,1,-1)
+    cos_psi   = numpy.clip(cos_psi,1,-1)
     psi       = numpy.arctan2(sin_psi,cos_psi)
     EULER[2]  = psi
 
-    # EULER[0] = numpy.arctan2(bound(R[2,1],1,-1),bound(R[2,2],1,-1));
-    # EULER[1] = numpy.arcsin(-bound(R[2,0],1,-1));
-    # EULER[2] = numpy.arctan2(bound(R[1,0],1,-1),bound(R[0,0],1,-1));    
+    # EULER[0] = numpy.arctan2(numpy.clip(R[2,1],1,-1),numpy.clip(R[2,2],1,-1));
+    # EULER[1] = numpy.arcsin(-numpy.clip(R[2,0],1,-1));
+    # EULER[2] = numpy.arctan2(numpy.clip(R[1,0],1,-1),numpy.clip(R[0,0],1,-1));    
 
     return EULER
-
-def bound(x,maxmax,minmin):
-
-    return numpy.maximum(minmin,numpy.minimum(maxmax,x))
 
 #--------------------------------------------------------------------------#
 

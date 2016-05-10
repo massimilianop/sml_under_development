@@ -4,7 +4,7 @@
 from ... import mission
 
 # import converter from 3d_force and yaw rate into iris rc standard 
-from converter_between_standards.iris_plus_converter import IrisPlusConverter
+from converters.iris_plus_converter import IrisPlusConverter
 
 # publish message quad_cmd that contains commands to simulator
 from quad_control.msg import quad_cmd, quad_state
@@ -57,7 +57,7 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
         # message published by quad_control that simulator will subscribe to 
         self.pub_cmd = rospy.Publisher('quad_cmd', quad_cmd, queue_size=10)
         
-        # dy default, desired reference is staying still in origin
+        # by default, desired reference is staying still in origin
         self.TrajGenerator = reference
         self.reference     = self.TrajGenerator.output(self.time_instant_t0)
 
@@ -145,7 +145,7 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
 
 
     # callback when simulator publishes states
-    def get_state_from_simulator(self,simulator_message):
+    def get_state_from_simulator(self, simulator_message):
 
         # position
         p = numpy.array([simulator_message.x,simulator_message.y,simulator_message.z])

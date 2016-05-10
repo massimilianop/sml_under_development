@@ -17,6 +17,7 @@ DEFAULT_OFFSET = np.array([
 
 class Trajectory(js.Jsonable):
 
+
     @classmethod
     def description(cls):
         #raise NotImplementedError()
@@ -27,7 +28,7 @@ class Trajectory(js.Jsonable):
 
         self.__offset = np.array(offset)
         self.__rotation = np.array(rotation)
-        self.__rotation_matrix = uts.GetRotFromEulerAnglesDeg(self.__rotation)
+        self.__rotation_matrix = uts.rot_from_euler_rad(self.__rotation)
         #TODO change the names in the utility_functions module
     
     

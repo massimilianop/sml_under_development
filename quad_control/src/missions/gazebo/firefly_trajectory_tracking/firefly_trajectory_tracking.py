@@ -3,7 +3,7 @@
 # import Misson abstract class
 from ... import mission
 
-from converter_between_standards.rotorS_converter import RotorSConverter
+from converters.rotorS_converter import RotorSConverter
 
 # node will publish motor speeds
 from mav_msgs.msg import Actuators

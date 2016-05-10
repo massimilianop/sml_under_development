@@ -3,7 +3,7 @@
 # import Misson abstract class
 from ... import mission
 
-from converter_between_standards.rotorS_converter import RotorSConverter
+from converters.rotorS_converter import RotorSConverter
 
 # node will publish motor speeds
 from mav_msgs.msg import Actuators
@@ -24,7 +24,7 @@ import math
 import numpy
 
 # to estimate load velocity: recall that velocity from rotorS comes w.r.t. the body reference frame
-from utilities.utility_functions import Velocity_Filter
+from utilities.utility_functions import VelocityFilter
 
 # for subscribing to topics, and publishing
 import rospy
@@ -87,8 +87,8 @@ class FireflyLoadLifting(mission.Mission):
             queue_size=10
             )
 
-        self.load_velocity_estimator = Velocity_Filter(3,numpy.zeros(3),0.0)
-        # self.quad_velocity_estimator = Velocity_Filter(3,numpy.zeros(3),0.0)
+        self.load_velocity_estimator = VelocityFilter(3,numpy.zeros(3),0.0)
+        # self.quad_velocity_estimator = VelocityFilter(3,numpy.zeros(3),0.0)
 
         # dy default, desired trajectory is staying still in origin
         self.TrajGenerator = reference

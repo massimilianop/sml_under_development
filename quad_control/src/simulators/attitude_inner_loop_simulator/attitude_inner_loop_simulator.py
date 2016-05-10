@@ -6,7 +6,7 @@ with attitude inner loop.
 
 import numpy as np
 import utilities.utility_functions as uts
-from .. import simulator
+from simulators import simulator
 import rospy
 import numpy as np
 
@@ -55,7 +55,7 @@ class AttitudeInnerLoopSimulator(simulator.Simulator):
         
         
     def get_attitude(self):
-        return uts.GetEulerAnglesDeg(np.reshape(self.state, (3,3)))
+        return uts.euler_deg_from_rot(np.reshape(self.state, (3,3)))
         
         
     def set_control(self, command):
