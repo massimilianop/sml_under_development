@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 """aaaa"""
 
@@ -17,7 +18,8 @@ setup_args = generate_distutils_setup(
         'controllers',
         'trajectories',
         'missions',
-        'converter_between_standards'
+        'converters'
+        'coverage_planners'
         ],
     package_dir={'': 'src'},
 )

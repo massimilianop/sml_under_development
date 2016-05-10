@@ -10,6 +10,7 @@ from utilities import jsonable
 import quad_control.srv
 
 import matplotlib
+# this is necessary because of threading and plotting
 matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 
@@ -26,13 +27,10 @@ def handle_plot_service(request):
 
     read_file.pop(0)
 
-    
-    pdf = matplotlib.backends.backend_pdf.PdfPages("/home/pedrootao/SML_CODE/src/quad_control/experimental_data/data/_1461313605_temporary_file1461313605.36.pdf")
+    pdf = matplotlib.backends.backend_pdf.PdfPages(data_file[:-4]+".pdf")
 
     while len(read_file) >= 1:
         description = read_file.pop(0)
-
-        rospy.logwarn(description)
 
         name, parametric_description = jsonable.Jsonable.inverse_parametric_description(description)
 
@@ -49,8 +47,8 @@ def handle_plot_service(request):
         pdf.savefig(fig)
         plt.close(fig)
 
-    #     for fig in mission_active.plot_from_string(data):
-    #         pdf.savefig(fig)
+        for fig in mission_active.plot_from_string(data):
+            pdf.savefig(fig)
 
     pdf.close()
     plt.close("all")

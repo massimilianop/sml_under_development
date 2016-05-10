@@ -9,7 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   message_generation
-  
+  geometry_msgs
   # mavros
   # px4
 )
@@ -55,6 +55,7 @@ add_message_files(
    quad_cmd.msg
    Controller_State.msg
    Num.msg
+   Landmark.msg
 )
 
 # Generate services in the 'srv' folder
@@ -72,7 +73,9 @@ add_service_files(
   PlannerStart.srv
   IrisPlusResetNeutral.srv
   IrisPlusSetNeutral.srv
+  TradeLandmarks.srv
   PlotService.srv
+  ReceiveToken.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -86,6 +89,8 @@ add_service_files(
  generate_messages(
    DEPENDENCIES
    std_msgs
+   geometry_msgs
+   quad_control
    # mavros
    # px4
  )

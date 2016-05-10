@@ -23,15 +23,21 @@ from choose_mission import ChooseMissionPlugin
 
 from choose_system import ChooseSystemPlugin
 
+from choose_simulator import ChooseSimulatorPlugin
+
+from choose_gazebo import ChooseGazeboPlugin
+
+from choose_mocap import ChooseMocapPlugin
+
 import argparse
 
 
 class tabbedGUIPlugin(Plugin):
 
-    def __init__(self, context,namespace = None):
+    def __init__(self, context,namespace = None, system_type = 'gazebo'):
 
         # it is either "" or the input given at creation of plugin
-        self.namespace = self._parse_args(context.argv())
+        self.namespace, system_type = self._parse_args(context.argv())
         # warn message for letting user know namespace for the gui
         rospy.logwarn("Gui within namespace: " + self.namespace)
 
@@ -74,10 +80,18 @@ class tabbedGUIPlugin(Plugin):
         # # Adding all the tabs
 
         self.ChooseMission   = ChooseMissionPlugin(context,self.namespace)
-        self.ChooseSystem    = ChooseSystemPlugin(context,self.namespace)
         self.positionPlot    = positionPlotPlugin(context,self.namespace)
+        
+        # self.ChooseSystem    = ChooseSystemPlugin(context,self.namespace)
+        if system_type == 'gazebo':
+            self.ChooseSystem    = ChooseGazeboPlugin(context,self.namespace)
+        if system_type == 'rviz':
+            self.ChooseSystem    = ChooseSimulatorPlugin(context,self.namespace)            
+        if system_type == 'mocap':
+            self.ChooseSystem    = ChooseMocapPlugin(context,self.namespace)
 
         self._widget.tabWidget.addTab(self.ChooseMission._widget  ,'Select Mission')
+        # if system_type == 'gazebo' or system_type == 'rviz':
         self._widget.tabWidget.addTab(self.ChooseSystem._widget   ,'Select System')
         self._widget.tabWidget.addTab(self.positionPlot._widget   ,'Check Data')
 
@@ -90,11 +104,12 @@ class tabbedGUIPlugin(Plugin):
         # args = parser.parse_args(argv)
 
         if argv:
-            namespace = argv[0]
-            return namespace            
+            namespace   = argv[0]
+            system_type = argv[1]
+            return namespace, system_type
         else:
             # is argv is empty return empty string
-            return ""
+            return "","gazebo"
 
         
     # def execute(self,cmd):

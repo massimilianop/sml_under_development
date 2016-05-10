@@ -1,0 +1,13 @@
+# Service to trade landmarks in a coverage mission
+# The client sends its pose in 2D and the set of the landmarks that it owns.
+# The server makes all the math and returns the new landmarks for the client.
+# Landmarks can also be facets.
+# If they are facets, they also have an orientation.
+# If they are not facets, the `theta` field is disregarded.
+string name
+geometry_msgs/Pose2D pose
+geometry_msgs/Pose2D[] landmarks
+---
+string name
+bool success
+geometry_msgs/Pose2D[] new_landmarks

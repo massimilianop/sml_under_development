@@ -2,8 +2,7 @@
 # this line is just used to define the type of document
 
 import numpy as np
-
-from .. import yaw_controller as yc
+from yaw_rate_controllers import yaw_controller as yc
 
 
 class SimpleTrackingYawController(yc.YawController):

@@ -56,7 +56,7 @@ def stabilize_mode_command_to_thrust_and_yaw_rate(
     # desired euler angles in (rad)
     ee_des = numpy.array([roll_des,pitch_des,current_psi])
 
-    rotation_matrix = utility_functions.GetRotFromEulerAngles(ee_des)
+    rotation_matrix = utility_functions.rot_from_euler_rad(ee_des)
     unit_vector_des = rotation_matrix.dot(utility_functions.E3_VERSOR)
 
     # -----------------------------------------------------------------------------#
