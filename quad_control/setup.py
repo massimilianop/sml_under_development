@@ -17,6 +17,7 @@ setup_args = generate_distutils_setup(
         'systems_functions',
         'controllers',
         'trajectories',
+        'yaw_trajectories',
         'missions',
         'converters'
         'coverage_planners'

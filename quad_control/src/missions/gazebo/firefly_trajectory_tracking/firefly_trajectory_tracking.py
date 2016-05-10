@@ -17,8 +17,13 @@ from trajectories import trajectories_database
 # import yaw controllers dictionary
 from yaw_rate_controllers import yaw_controllers_database
 
+# import list of available yaw trajectories
+from yaw_trajectories import yaw_trajectories_database
+
+
 # import controllers dictionary
 from controllers.fa_trajectory_tracking_controllers import fa_trajectory_tracking_controllers_database
+
 
 import math
 import numpy
@@ -35,7 +40,7 @@ class FireflyTrajectoryTracking(mission.Mission):
     inner['controller']     = fa_trajectory_tracking_controllers_database.database
     inner['reference']      = trajectories_database.database
     inner['yaw_controller'] = yaw_controllers_database.database
-
+    inner['yaw_reference']  = yaw_trajectories_database.database
 
     @classmethod
     def description(cls):
@@ -53,7 +58,8 @@ class FireflyTrajectoryTracking(mission.Mission):
     def __init__(self,
             controller     = fa_trajectory_tracking_controllers_database.database["Default"](),
             reference      = trajectories_database.database["Default"](),
-            yaw_controller = yaw_controllers_database.database["Default"]()
+            yaw_controller = yaw_controllers_database.database["Default"](),
+            yaw_reference  = yaw_trajectories_database.database["Default"]()
             ):
         # Copy the parameters into self variables
         # Subscribe to the necessary topics, if any
@@ -88,11 +94,15 @@ class FireflyTrajectoryTracking(mission.Mission):
         # controllers selected by default
         self.YawControllerObject = yaw_controller
 
+        # controllers selected by default
+        self.yaw_reference_object = yaw_reference
 
     def initialize_state(self):
         # state of quad: position, velocity and attitude
         # ROLL, PITCH, AND YAW (EULER ANGLES IN DEGREES)
-        self.state_quad = numpy.zeros(3+3+3)
+        self.state_quad  = numpy.zeros(3+3+3)
+        
+        self.yaw_desired = 0.0
 
         
     def __str__(self):
@@ -110,6 +120,14 @@ class FireflyTrajectoryTracking(mission.Mission):
     	euler_rad_dot = numpy.zeros(3)
     	return numpy.concatenate([euler_rad,euler_rad_dot])
 
+    # overriding mission method
+    def get_desired_yaw_rad(self,time_instant):
+        '''Get desired yaw in radians, and its time derivative'''
+        self.yaw_desired = self.yaw_reference_object.output(time_instant)[0]
+        return self.yaw_reference_object.output(time_instant)
+    
+    def get_ea_desired(self):
+        return numpy.array([0.0,0.0,self.yaw_desired*180.0/math.pi]) 
 
     def get_reference(self,time_instant):
         self.reference = self.TrajGenerator.output(time_instant)

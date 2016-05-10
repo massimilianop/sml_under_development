@@ -240,6 +240,11 @@ class Mission(js.Jsonable):
         """Get desired position (m) and velocity (m/s) for the quadrotor"""
         return NotImplementedError()
 
+    def get_ea_desired(self):
+        """Get desired euler angles in degrees for UAV"""
+        return numpy.array([0.0,0.0,0.0])
+        # return NotImplementedError()        
+
     def get_rc_output(self):
         """Get rc output"""
         return numpy.zeros(8)
@@ -292,7 +297,7 @@ class Mission(js.Jsonable):
         """Change yaw reference trajectory"""
         if key in self.inner['yaw_reference'].keys():
             YawTrajectoryClass   = self.inner['yaw_reference'][key]
-            self.YawTrajGenerator = YawTrajectoryClass.from_string(string)
+            self.yaw_reference_object = YawTrajectoryClass.from_string(string)
 
 
     def change_controller(self, key, string):
@@ -322,7 +327,7 @@ class Mission(js.Jsonable):
         input_for_yaw_controller = self.get_desired_yaw_rad(time_instant)
 
         yaw_rate = self.YawControllerObject.output(state_for_yaw_controller,
-            input_for_yaw_controller) 
+            input_for_yaw_controller)
 
         return yaw_rate
 

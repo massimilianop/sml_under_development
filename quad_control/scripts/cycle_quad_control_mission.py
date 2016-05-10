@@ -318,7 +318,9 @@ class QuadController():
             euler_angle  = self.mission_object.get_euler_angles()
 
             st_cmd.roll  = euler_angle[0]; st_cmd.pitch = euler_angle[1]; st_cmd.yaw   = euler_angle[2]
-            
+            ea_desired = self.mission_object.get_ea_desired()            
+            st_cmd.roll_d  = ea_desired[0]; st_cmd.pitch_d = ea_desired[1]; st_cmd.yaw_d   = ea_desired[2]
+
             position_velocity_desired = self.mission_object.get_pv_desired()
 
             st_cmd.xd    = position_velocity_desired[0]; st_cmd.yd    = position_velocity_desired[1]; st_cmd.zd    = position_velocity_desired[2]
@@ -329,7 +331,7 @@ class QuadController():
 
             st_cmd.cmd_5 = 1500.0; st_cmd.cmd_6 = 1500.0; st_cmd.cmd_7 = 1500.0; st_cmd.cmd_8 = 1500.0
 
-            self.pub.publish(st_cmd)     
+            self.pub.publish(st_cmd)
 
             # controller state is supposed to be published
             if self.flagPublish_ctr_st:
