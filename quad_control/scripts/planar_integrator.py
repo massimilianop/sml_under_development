@@ -40,6 +40,7 @@ rp.Subscriber('cmd_vel', gms.Pose2D, __cmd_vel_callback)
 __pose_2d_pub = rp.Publisher('pose_2d', gms.Pose2D, queue_size=10)
 __pose_stamped_pub = rp.Publisher('pose_stamped', gms.PoseStamped, queue_size=10)
 
+
 def __work():
     global __cmd_vel_lock
     global __cmd_vel_pos, __cmd_vel_ang

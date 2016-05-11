@@ -56,6 +56,7 @@ add_message_files(
    Controller_State.msg
    Num.msg
    Landmark.msg
+   CoverageAgent.msg
 )
 
 # Generate services in the 'srv' folder

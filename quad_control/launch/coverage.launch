@@ -1,5 +1,7 @@
 <launch>
 
+<param name='agents_names' type='str' value='Axel Bo Calle David'/>
+
 <group ns='Axel'>
 <node pkg='quad_control' name='coverage_planner' type='coverage_planner.py'/>
 <node pkg='quad_control' name='planar_integrator' type='planar_integrator.py'/>

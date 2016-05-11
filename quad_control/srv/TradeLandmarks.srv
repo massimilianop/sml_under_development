@@ -1,7 +1,6 @@
 # Service for trading landmarks
 string name
-geometry_msgs/Pose2D pose
-quad_control/Landmark[] landmarks
+quad_control/CoverageAgent agent
 ------
 bool success
 int32[] to_remove
