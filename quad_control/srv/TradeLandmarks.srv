@@ -1,7 +1,8 @@
 # Service for trading landmarks
 string name
 geometry_msgs/Pose2D pose
-quad_control/LandmarkArray landmarks
+quad_control/Point2DArray landmarks
 ------
 bool success
-quad_control/LandmarkArray landmarks
+int32[] indexes_to_remove
+quad_control/Point2DArray landmarks_to_add

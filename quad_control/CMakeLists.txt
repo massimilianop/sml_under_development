@@ -55,8 +55,8 @@ add_message_files(
    quad_cmd.msg
    Controller_State.msg
    Num.msg
-   LandmarkArray.msg
-   CoverageAgent.msg
+   Point2D.msg
+   Point2DArray.msg
 )
 
 # Generate services in the 'srv' folder
