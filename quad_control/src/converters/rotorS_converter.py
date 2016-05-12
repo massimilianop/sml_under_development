@@ -139,7 +139,7 @@ class RotorSConverter(object):
 
 		return n    
 
-	def rotor_s_message(self,U,PsiStar):   
+	def rotor_s_message(self,U,omega_z_body_desired):   
 
 		# creating actuators message
 		actuators_message = Actuators()
@@ -150,7 +150,7 @@ class RotorSConverter(object):
 		# just for debug pruposes
 		# actuators_message.angular_velocities = np.array([200,200,200,200,200,200])
 
-		actuators_message.angular_velocities = self.rotor_s_standard_converter(U,PsiStar)
+		actuators_message.angular_velocities = self.rotor_s_standard_converter(U,omega_z_body_desired)
 
 		return actuators_message	    
 
@@ -178,11 +178,41 @@ class RotorSConverter(object):
 
 		return (unit_vector_des,omega_des,omega_des_dot)        
 
+	# def compute_torque(self,desired_acceleration,desired_acceleration_dot,rotation_matrix,angular_velocity_body,omega_z_body_desired):
+
+	# 	r3  = desired_acceleration
+	# 	r3  = r3/np.linalg.norm(r3)
+	# 	psi = np.arctan2(np.clip(rotation_matrix[1,0],1,-1),np.clip(rotation_matrix[0,0],1,-1))
+	# 	#psi = -20.0*3.142/180.0
+	# 	r1  = np.array([np.cos(psi),np.sin(psi),0.0])
+	# 	r1  = np.dot(np.identity(3) - np.outer(r3,r3),r1)
+	# 	r1  = r1/np.linalg.norm(r1)
+	# 	r2  = np.dot(uts.skew(r3),r1)        
+
+	# 	R_desired = np.column_stack((r1,r2,r3))
+
+	# 	R_error = np.dot(np.transpose(R_desired),rotation_matrix) 
+
+	# 	# angular_rate_des   = np.zeros(3)
+	# 	# angular_rate_error = angular_velocity_body - np.dot(np.transpose(rotation_matrix), np.dot(R_desired, angular_rate_des))
+	# 	angular_rate_des   = np.dot(uts.skew(r3),desired_acceleration_dot/np.linalg.norm(desired_acceleration)) + r3*omega_z_body_desired
+
+	# 	angular_rate_error = angular_velocity_body - (np.dot(np.transpose(rotation_matrix), angular_rate_des)) 
+
+
+	# 	angular_acceleration = -self.attitude_gain*uts.unskew(1.0/2.0*(R_error - np.transpose(R_error))) \
+	# 	                       -np.array([self.angular_rate_gain,self.angular_rate_gain,1.0])*angular_rate_error +\
+	# 	                       np.dot(uts.skew(angular_velocity_body),np.dot(self.quad_inertia_matrix,angular_velocity_body))
+
+	# 	return angular_acceleration
+
+
 	def compute_torque(self,desired_acceleration,desired_acceleration_dot,rotation_matrix,angular_velocity_body,omega_z_body_desired):
 
 		r3  = desired_acceleration
 		r3  = r3/np.linalg.norm(r3)
 		psi = np.arctan2(np.clip(rotation_matrix[1,0],1,-1),np.clip(rotation_matrix[0,0],1,-1))
+		#psi = -20.0*3.142/180.0
 		r1  = np.array([np.cos(psi),np.sin(psi),0.0])
 		r1  = np.dot(np.identity(3) - np.outer(r3,r3),r1)
 		r1  = r1/np.linalg.norm(r1)
@@ -194,11 +224,13 @@ class RotorSConverter(object):
 
 		# angular_rate_des   = np.zeros(3)
 		# angular_rate_error = angular_velocity_body - np.dot(np.transpose(rotation_matrix), np.dot(R_desired, angular_rate_des))
-		angular_rate_des   = np.dot(uts.skew(r3),desired_acceleration_dot/np.linalg.norm(desired_acceleration))
-		angular_rate_error = angular_velocity_body - (np.dot(np.transpose(rotation_matrix), angular_rate_des) + np.array([0.0,0.0,1.0])*omega_z_body_desired) 
+		angular_rate_des   = np.dot(uts.skew(r3),desired_acceleration_dot/np.linalg.norm(desired_acceleration)) + r3*omega_z_body_desired
 
-		angular_acceleration = -self.attitude_gain*uts.unskew(1.0/2.0*(R_error - np.transpose(R_error))) \
-		                       -self.angular_rate_gain*angular_rate_error +\
+		angular_rate_error = angular_velocity_body - (np.dot(np.transpose(rotation_matrix), angular_rate_des)) 
+
+
+		angular_acceleration = -np.dot(np.array([[1.0,0.0,0.0],[0.0,1.0,0.0],[0.0,0.0,0.0]]),self.attitude_gain*uts.unskew(1.0/2.0*(R_error - np.transpose(R_error)))) \
+		                       -np.array([self.angular_rate_gain,self.angular_rate_gain,1.0])*angular_rate_error +\
 		                       np.dot(uts.skew(angular_velocity_body),np.dot(self.quad_inertia_matrix,angular_velocity_body))
 
 		return angular_acceleration

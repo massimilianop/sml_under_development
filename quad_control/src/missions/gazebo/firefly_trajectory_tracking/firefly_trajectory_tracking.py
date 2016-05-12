@@ -151,8 +151,9 @@ class FireflyTrajectoryTracking(mission.Mission):
 
 
     def real_publish(self,desired_3d_force_quad,yaw_rate,rc_output):
-		# publish message
-		self.pub_motor_speeds.publish(self.RotorSObject.rotor_s_message(desired_3d_force_quad,yaw_rate))
+        # publish message
+        self.pub_motor_speeds.publish(self.RotorSObject.rotor_s_message(desired_3d_force_quad,yaw_rate))
+        pass
 
 
     # callback when ROTORS simulator publishes states
