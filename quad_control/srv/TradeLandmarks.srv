@@ -1,7 +1,7 @@
 # Service for trading landmarks
 string name
-quad_control/CoverageAgent agent
+geometry_msgs/Pose2D pose
+quad_control/LandmarkArray landmarks
 ------
 bool success
-int32[] to_remove
-quad_control/Landmark[] to_add
+quad_control/LandmarkArray landmarks

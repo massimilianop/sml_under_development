@@ -55,7 +55,7 @@ add_message_files(
    quad_cmd.msg
    Controller_State.msg
    Num.msg
-   Landmark.msg
+   LandmarkArray.msg
    CoverageAgent.msg
 )
 
@@ -87,14 +87,14 @@ add_service_files(
 # )
 
 # Generate added messages and services with any dependencies listed here
- generate_messages(
+generate_messages(
    DEPENDENCIES
    std_msgs
    geometry_msgs
    quad_control
    # mavros
    # px4
- )
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##

@@ -11,6 +11,7 @@ import geometry_msgs.msg as gms
 import threading as thd
 import utilities.utility_functions as uts
 import tf.transformations as tfm
+import utilities.coverage_utilities as cov
 
 
 
@@ -18,9 +19,9 @@ def quaternion_from_yaw(yaw):
     return tfm.quaternion_from_euler(0.0, 0.0, yaw)
 
 
-
-__pos = np.zeros(2)
-__ang = 0.0
+__name = rp.get_param('name', 'Axel')
+__pos = cov.INITIAL_POSES[__name][0:2]
+__ang = cov.INITIAL_POSES[__name][2]
 __cmd_vel_pos = np.zeros(2)
 __cmd_vel_ang = 0.0
 __cmd_vel_lock = thd.Lock()

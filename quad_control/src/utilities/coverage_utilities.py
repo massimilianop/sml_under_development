@@ -15,7 +15,7 @@ import rospy as rp
 
 
 TOLERANCE = 0.01
-NUM_LANDMARKS = 400
+NUM_LANDMARKS = 16
 DOMAIN_SIZE = 5.0
 __sq = np.sqrt(NUM_LANDMARKS)
 
@@ -129,7 +129,7 @@ class Landmark:
         return cls(pose.x, pose.y)
 
 
-    def __init__(self, x=0.0, y=0.0):
+    def __init__(self, x, y):
         self.__x = x
         self.__y = y
 
@@ -143,6 +143,10 @@ class Landmark:
 
     def to_pose2d(self):
         return gms.Pose2D(self.__x, self.__y, 0.0)
+
+
+    def copy(self):
+        return Landmark(self.__x, self.__y)
 
 
     def visibility(self, x, y, theta):
@@ -172,7 +176,13 @@ class Landmark:
 
     def draw(self, color):
         sq = np.sqrt(NUM_LANDMARKS)
-        plt.scatter(self.__x, self.__y, c=color, s=1e4*DOMAIN_SIZE/NUM_LANDMARKS, alpha=0.3, edgecolor=color, marker='s')
+        plt.scatter(self.__x, self.__y,
+            color=color,
+            s=1.2e4*DOMAIN_SIZE/NUM_LANDMARKS,
+            alpha=0.3,
+            edgecolor=color,
+            linewidth=2,
+            marker='s')
 
 
 
@@ -183,16 +193,16 @@ class Agent:
     global TOLERANCE
 
 
-    @classmethod
-    def from_pose2d(cls, pose):
-        return cls(pose.x, pose.y, pose.theta)
+    # @classmethod
+    # def from_pose2d(cls, pose):
+    #     return cls(pose.x, pose.y, pose.theta)
 
 
     def __init__(self, x=0.0, y=0.0, theta=0.0, landmarks=[], color='black'):
         self.__x = x
         self.__y = y
         self.__theta = theta
-        self.__landmarks = landmarks
+        self.__landmarks = [lmk.copy() for lmk in list(landmarks)]
         self.__color = color
 
 
@@ -214,11 +224,29 @@ class Agent:
         self.__theta = theta
 
 
-    def to_coverage_agent(self):
-        msg = qms.CoverageAgent()
-        msg.pose = gms.Pose2D(*self.get_pose())
-        msg.landmarks = [lmk.to_pose2d() for lmk in self.__landmarks]
-        return msg
+    def get_pose2d(self):
+        return gms.Pose2D(*self.get_pose())
+
+
+    def set_landmarks(self, landmarks):
+        self.__landmarks = [lmk.copy() for lmk in list(landmarks)]
+
+
+    def get_landmarks(self):
+        return [lmk.copy() for lmk in list(self.__landmarks)]
+
+
+    def get_landmark_array(self):
+        array = qms.LandmarkArray([lmk.to_pose2d() for lmk in self.get_landmarks()])
+        assert len(array.data) == len(self.__landmarks)
+        return array
+
+
+    # def to_coverage_agent(self):
+    #     msg = qms.CoverageAgent()
+    #     msg.pose = gms.Pose2D(*self.get_pose())
+    #     msg.landmarks = [lmk.to_pose2d() for lmk in self.__landmarks]
+    #     return msg
 
 
     def coverage(self):
@@ -243,28 +271,33 @@ class Agent:
 
 
     def trade(self, x, y, theta, landmarks):
-        indexes_i_remove = []
-        indexes_you_remove = []
-        landmarks_i_add = []
-        landmarks_you_add = []
+        for_me = list()
+        for_you = list()
         success = False
-        for index, lmk in enumerate(self.__landmarks):
+        for lmk in self.get_landmarks():
             if lmk.visibility(x, y, theta) > lmk.visibility(self.__x, self.__y, self.__theta) + TOLERANCE:
-                indexes_i_remove.append(index)
-                landmarks_you_add.append(lmk)
+                for_you.append(lmk)
                 success = True
-        for index, lmk in enumerate(landmarks):
+            else:
+                for_me.append(lmk)
+        for lmk in list(landmarks):
             if lmk.visibility(self.__x, self.__y, self.__theta) > lmk.visibility(x, y, theta) + TOLERANCE:
-                indexes_you_remove.append(index)
-                landmarks_i_add.append(lmk)
+                for_me.append(lmk)
                 success = True
-        self.update_landmarks(indexes_i_remove, landmarks_i_add)
-        return success, indexes_you_remove, landmarks_you_add
+            else:
+                for_you.append(lmk)
+        assert len(self.get_landmarks())+len(landmarks) == len(for_me) + len(for_you)
+        # if success:
+        if True:
+            self.set_landmarks(list(for_me))
+        return success, for_you
 
 
-    def update_landmarks(self, indexes_i_remove, landmarks_i_add):
-        self.__landmarks = [self.__landmarks[index] for index in filter(lambda i: not i in indexes_i_remove, range(len(self.__landmarks)))]
-        self.__landmarks += landmarks_i_add
+    # def update_landmarks(self, indexes_i_remove, landmarks_i_add):
+    #     filtered_landmarks = [self.__landmarks[i] for i in filter(lambda i: not i in indexes_i_remove, range(len(self.__landmarks)))]
+    #     self.__landmarks = list(filtered_landmarks)
+    #     # for landmark in landmarks_i_add:
+    #     #     self.__landmarks.append(landmark)
 
 
     def draw(self):
@@ -294,42 +327,42 @@ for index in range(NUM_LANDMARKS):
     
     
 
-PLANNERS_NAMES = rp.get_param('agents_names', 'Axel Bo Calle David').split()
-
+AGENTS_NAMES = rp.get_param('agents_names', 'Axel Bo Calle David').split()
+AGENTS_COLORS = {'Axel':'blue', 'Bo':'red', 'Calle':'green', 'David':'yellow'}
 
 INITIAL_LANDMARKS_LISTS = {}
-for name in PLANNERS_NAMES:
+for name in AGENTS_NAMES:
     INITIAL_LANDMARKS_LISTS[name] = []
+
 for lmk in LANDMARKS:
-    agent = rdm.choice(INITIAL_LANDMARKS_LISTS.keys())
-    INITIAL_LANDMARKS_LISTS[agent].append(lmk)
+    name = rdm.choice(AGENTS_NAMES)
+    INITIAL_LANDMARKS_LISTS[name].append(lmk)
 
     
 INITIAL_POSES = {}
 idx = 0
-for name in PLANNERS_NAMES:
-    INITIAL_POSES[name] = {'x':0.0, 'y':0.0, 'theta':2*np.pi*idx/len(PLANNERS_NAMES)}
+for name in AGENTS_NAMES:
+    INITIAL_POSES[name] = (0.0, 0.0, 2*np.pi*idx/len(AGENTS_NAMES))
     idx += 1
 
 # '''Test'''
 
-# axel = Agent(x=-1, y=1, theta=0, landmarks=INITIAL_LANDMARKS_LISTS['Axel'], color='blue')
-# bo = Agent(x=1, y=-1, theta=np.pi, landmarks=INITIAL_LANDMARKS_LISTS['Bo'], color='red')
+# agents = [Agent(*INITIAL_POSES[name],
+#     landmarks=INITIAL_LANDMARKS_LISTS[name],
+#     color=AGENTS_COLORS[name]) for name in AGENTS_NAMES]
 
 # plt.figure()
-# axel.draw()
-# bo.draw()
-# plt.draw()
-# print axel.coverage()
+# for agent in agents:
+#     agent.draw()
 
-# msg = bo.to_coverage_agent()
-# success, iyr, lya = axel.trade(msg.pose.x, msg.pose.y, msg.pose.theta, [Landmark.from_pose2d(lmk) for lmk in msg.landmarks])
-# bo.update_landmarks(iyr, lya)
+
+# success, for_you = agents[0].trade(*agents[1].get_pose(), landmarks=agents[1].get_landmarks())
+# agents[1].set_landmarks(for_you)
 
 # plt.figure()
-# axel.draw()
-# bo.draw()
-# plt.draw()
-# print axel.coverage()
+# for agent in agents:
+#     agent.draw()
+
+# plt.show()
 
 # plt.show()

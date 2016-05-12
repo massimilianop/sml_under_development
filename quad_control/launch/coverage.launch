@@ -38,6 +38,6 @@
 <param name='others_names' type='str' value='Axel Bo Calle'/>
 </group>
 
-<node pkg='rqt_plot' name='rqt_plot' type='rqt_plot' args='/David/pose/x'/>
-
+<node pkg='rqt_plot' name='rqt_plot' type='rqt_plot'/>
+ <node pkg='quad_control' name='coverage_plotter' type='coverage_plotter.py'/>
 </launch>
