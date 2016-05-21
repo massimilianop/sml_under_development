@@ -90,20 +90,20 @@ class Mission(js.Jsonable):
             if line:
                 numbers = line.split(' ')
                 
-                times.append(       float(numbers[0]))
-                positions_x.append( float(numbers[1]))
-                positions_y.append( float(numbers[2]))
-                positions_z.append( float(numbers[3]))
-                rolls.append(       float(numbers[4]))
-                pitches.append(     float(numbers[5]))
-                yaws.append(        float(numbers[6]))
+                times.append(float(numbers[0]))
+                positions_x.append(float(numbers[1]))
+                positions_y.append(float(numbers[2]))
+                positions_z.append(float(numbers[3]))
+                rolls.append(float(numbers[4]))
+                pitches.append(float(numbers[5]))
+                yaws.append(float(numbers[6]))
                 velocities_x.append(float(numbers[7]))
                 velocities_y.append(float(numbers[8]))
                 velocities_z.append(float(numbers[9]))
-                controls_x.append(  float(numbers[10]))
-                controls_y.append(  float(numbers[11]))
-                controls_z.append(  float(numbers[12]))
-                yaw_rates.append(   float(numbers[13]))
+                controls_x.append(float(numbers[10]))
+                controls_y.append(float(numbers[11]))
+                controls_z.append(float(numbers[12]))
+                yaw_rates.append(float(numbers[13]))
         
         fig1 = plt.figure()
         plt.plot(times, positions_x, label=r'$x$')
@@ -289,8 +289,8 @@ class Mission(js.Jsonable):
     def change_reference(self,key,string):
         """Change reference trajectory"""
         if key in self.inner['reference'].keys():
-            TrajectoryClass    = self.inner['reference'][key]
-            self.TrajGenerator = TrajectoryClass.from_string(string)
+            TrajectoryClass    = self.inner['reference'][key]          
+            self.reference = TrajectoryClass.from_string(string)
 
 
     def change_yaw_reference(self,key,string):

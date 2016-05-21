@@ -193,7 +193,7 @@ class QuadController():
 
         # parametric description is a method of jsonable
         string = self.mission_object.parametric_description(self.mission_name)
-        
+
         if self.SaveDataFlag == True:
             rospy.logwarn(string)
             # if data is being saved, append mission header

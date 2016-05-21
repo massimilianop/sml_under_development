@@ -88,8 +88,8 @@ class FireflyTrajectoryTracking(mission.Mission):
             )      
 
         # dy default, desired trajectory is staying still in origin
-        self.TrajGenerator = reference
-        self.current_reference     = self.TrajGenerator.output(self.time_instant_t0)
+        self.reference = reference
+        self.current_reference     = self.reference.output(self.time_instant_t0)
 
         # controllers selected by default
         self.controller = controller
@@ -112,7 +112,7 @@ class FireflyTrajectoryTracking(mission.Mission):
         print("11111")
         string  = self.description()
         string += self.controller.description()
-        string += self.TrajGenerator.description()
+        string += self.reference.description()
         string += self.YawControllerObject.description()
         string += self.yaw_reference_object.description()
         return string
@@ -120,7 +120,7 @@ class FireflyTrajectoryTracking(mission.Mission):
     def __str__(self):
         string  = self.description()
         string += self.controller.description()
-        string += self.TrajGenerator.description()
+        string += self.reference.description()
         string += self.YawControllerObject.description()
         string += self.yaw_reference_object.description()
         return string
@@ -147,7 +147,7 @@ class FireflyTrajectoryTracking(mission.Mission):
         return numpy.array([0.0,0.0,self.yaw_desired*180.0/math.pi]) 
 
     def get_reference(self,time_instant):
-        self.current_reference = self.TrajGenerator.output(time_instant)
+        self.current_reference = self.reference.output(time_instant)
         return self.current_reference
 
 

@@ -20,12 +20,12 @@ services_database['IrisPlusSetNeutral']      = IrisPlusSetNeutral
 import json
 
 # TODO: reply may have other fields
-def request_service(namespace,service_name_str,inputs_service_dic):
+def request_service(namespace,service_name_str,service_inputs_dic):
 
     ServiceClass = services_database[service_name_str]
     try: 
         # time out of one second for waiting for service
-        rospy.wait_for_service(self.namespace+service_name_str,1.0)
+        rospy.wait_for_service(namespace+service_name_str,1.0)
         try:
             # request service
             request = rospy.ServiceProxy(namespace+service_name_str, ServiceClass)
@@ -48,6 +48,7 @@ class ServiceTimeSequencer():
         self.frequency = 1.0
 
     def _handle_service_sequence(self,data):
+        print('aaaaaaa')
         self.service_sequence = json.loads(data.service_sequence)
         self.initial_instant  = rospy.get_time()
 
@@ -58,7 +59,7 @@ class ServiceTimeSequencer():
     def handle_service_sequence(self):
 
         # if service_sequence is non-empty
-        if service_sequence:
+        if self.service_sequence:
             
             # remove first service in list of services
             service = self.service_sequence.pop(0)
@@ -72,7 +73,8 @@ class ServiceTimeSequencer():
 
     def update_and_request(self):
 
-        request_service(self.namespace,self.service_name_str,self.inputs_service_dic)
+        print(self.service_name)
+        request_service(self.namespace,self.service_name,self.inputs_service)
 
         self.handle_service_sequence()
 

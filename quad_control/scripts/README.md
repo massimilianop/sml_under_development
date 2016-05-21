@@ -10,3 +10,13 @@
 Describe in detail control law
 
 1. ....
+
+
+# node: plot
+
+sudo pip install pdfkit
+sudo apt-get install wkhtmltopdf
+#sudo easy_install pypdf
+sudo easy_install PyPDF2
+
+for creating pdf from html
