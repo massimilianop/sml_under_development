@@ -304,7 +304,7 @@ class Mission(js.Jsonable):
         """Change controller"""
         if key in self.inner['controller'].keys():
             ControllerClass       = self.inner['controller'][key]
-            self.ControllerObject = ControllerClass.from_string(string)
+            self.controller = ControllerClass.from_string(string)
 
 
     def change_yaw_controller(self,key,string):
@@ -341,7 +341,7 @@ class Mission(js.Jsonable):
         state = self.get_state()
 
         # compute input to send to QUAD
-        desired_3d_force_quad = self.ControllerObject.output(time_instant,
+        desired_3d_force_quad = self.controller.output(time_instant,
             state, reference)
 
         return desired_3d_force_quad
@@ -369,4 +369,3 @@ class Mission(js.Jsonable):
         self.iris_plus_converter_object_mission.set_rotation_matrix(euler_rad)
         iris_plus_rc_input = self.iris_plus_converter_object_mission.input_conveter(desired_3d_force_quad,yaw_rate)
         self.rc_output     = iris_plus_rc_input
-

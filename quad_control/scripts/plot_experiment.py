@@ -36,11 +36,13 @@ def handle_plot_service(request):
 
         data = read_file.pop(0)
 
-        # rospy.logwarn(parametric_description)        
+        print(parametric_description)        
 
-        mission_active = missions.missions_database.database[name]
+        MissionClass   = missions.missions_database.database[name]
+        mission_active = MissionClass.from_string(parametric_description)
 
-        mission_description = mission_active.description()
+        # mission_description = mission_active.description()
+        mission_description = mission_active.object_combined_description()
 
         fig = plt.figure()
         plt.suptitle(mission_description)

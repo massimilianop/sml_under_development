@@ -31,6 +31,17 @@ import numpy
 # for subscribing to topics, and publishing
 import rospy
 
+description = """
+<p>
+<b>Firefly</b>, from RotorS, to track a desired trajectory. This mission depends on: 
+<ul>
+  <li>a trajectory tracking controller</li>
+  <li>a reference position trajectory to be tracked</li>
+  <li>a yaw controller</li>
+  <li>a yaw reference</li>
+</ul>
+</p>
+"""
 
 
 class FireflyTrajectoryTracking(mission.Mission):
@@ -44,15 +55,7 @@ class FireflyTrajectoryTracking(mission.Mission):
 
     @classmethod
     def description(cls):
-        string = """
-        Firefly, from RotorS, to track a desired trajectory
-        This mission depends on:
-        . a trajectory tracking controller
-        . a reference trajectory to be tracked
-        . a yaw controller
-        """
-        
-        return string
+        return description
     
     
     def __init__(self,
@@ -76,7 +79,7 @@ class FireflyTrajectoryTracking(mission.Mission):
             Odometry,
             self.get_state_from_rotorS_simulator
             )
-
+        
         # publisher: command firefly motor speeds 
         self.pub_motor_speeds = rospy.Publisher(
             '/firefly/command/motor_speed',
@@ -86,10 +89,10 @@ class FireflyTrajectoryTracking(mission.Mission):
 
         # dy default, desired trajectory is staying still in origin
         self.TrajGenerator = reference
-        self.reference     = self.TrajGenerator.output(self.time_instant_t0)
+        self.current_reference     = self.TrajGenerator.output(self.time_instant_t0)
 
         # controllers selected by default
-        self.ControllerObject = controller
+        self.controller = controller
 
         # controllers selected by default
         self.YawControllerObject = yaw_controller
@@ -104,9 +107,23 @@ class FireflyTrajectoryTracking(mission.Mission):
         
         self.yaw_desired = 0.0
 
+
+    def complete_description(self):
+        print("11111")
+        string  = self.description()
+        string += self.controller.description()
+        string += self.TrajGenerator.description()
+        string += self.YawControllerObject.description()
+        string += self.yaw_reference_object.description()
+        return string
         
     def __str__(self):
-        return self.description()
+        string  = self.description()
+        string += self.controller.description()
+        string += self.TrajGenerator.description()
+        string += self.YawControllerObject.description()
+        string += self.yaw_reference_object.description()
+        return string
         # Add the self variables
         
         
@@ -130,8 +147,8 @@ class FireflyTrajectoryTracking(mission.Mission):
         return numpy.array([0.0,0.0,self.yaw_desired*180.0/math.pi]) 
 
     def get_reference(self,time_instant):
-        self.reference = self.TrajGenerator.output(time_instant)
-        return self.reference
+        self.current_reference = self.TrajGenerator.output(time_instant)
+        return self.current_reference
 
 
     def get_state(self):
@@ -143,7 +160,7 @@ class FireflyTrajectoryTracking(mission.Mission):
 
 
     def get_pv_desired(self):
-        return self.reference[0:6]
+        return self.current_reference[0:6]
 
 
     def get_euler_angles(self):

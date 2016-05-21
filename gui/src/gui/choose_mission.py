@@ -196,6 +196,7 @@ class ChooseMissionPlugin(Plugin):
 
             self.__head_class_set = True
             self.__head_class_key = self._widget.ListControllersWidget.currentItem().text()
+            # notice this is a class, not an object
             self.__HeadClass      = missions_database.database[self.__head_class_key]
 
             head_class_input_dic = {}
@@ -269,7 +270,8 @@ class ChooseMissionPlugin(Plugin):
         self._widget.ListControllersWidget.clear()
 
         # print message on GUI
-        self._widget.ItemClickedMessage.setText('Selected Mission: '+self.__HeadClass.description())
+        #self._widget.ItemClickedMessage.setText('Selected Mission: '+self.__HeadClass.description())
+        self._widget.ItemClickedMessage.setText('<p>Selected Mission:</p>'+self.__HeadClass.combined_description(self.__head_class_input_dic))
 
         self.__add_tab()
 

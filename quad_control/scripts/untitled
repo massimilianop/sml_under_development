@@ -1,0 +1,26 @@
+import json 
+service_data_example = {'trigger_instant':0.0,'service_name':'change_mission','inputs_service':{'a':2,'b':3}}
+service_data_example = json.dumps(service_data_example)
+print service_data_example
+service_data_example = json.loads(service_data_example)
+print service_data_example['trigger_instant'] 
+print service_data_example['inputs_service']
+ 
+
+service_data_example1 = {'trigger_instant':0.0,'service_name':'change_mission','inputs_service':{'a':2,'b':3}}
+service_data_example2 = {'trigger_instant':1.0,'service_name':'change_mission','inputs_service':{'a':3,'b':3}}
+service_data_example_list = [service_data_example1,service_data_example2]
+
+service_data_example = json.dumps(service_data_example)
+print service_data_example
+
+service_data_example = json.loads(service_data_example)
+print service_data_example_list[0]['trigger_instant'] 
+print service_data_example_list[0]['inputs_service']
+
+
+print service_data_example_list[0]['trigger_instant'] 
+print service_data_example_list[0]['inputs_service']
+service_data_example_list.pop(0)
+print service_data_example_list[0]['trigger_instant'] 
+print service_data_example_list[0]['inputs_service']

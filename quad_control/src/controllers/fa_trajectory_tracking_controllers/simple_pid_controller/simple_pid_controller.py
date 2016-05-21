@@ -20,7 +20,7 @@ class SimplePIDController(controller.Controller):
     
     @classmethod
     def description(cls):
-        return "PID Controller, with saturation on integral part"
+        return "<p>PID Controller, with saturation on integral part</p>"
 
 
     def __init__(self,              \

@@ -191,6 +191,7 @@ class QuadController():
 
     def _add_header_mission(self):
 
+        # parametric description is a method of jsonable
         string = self.mission_object.parametric_description(self.mission_name)
         
         if self.SaveDataFlag == True:
