@@ -13,32 +13,41 @@ import matplotlib.pyplot as plt
 import rospy as rp
 
 
+rdm.seed(890630)
 
-TOLERANCE = 0.1
-NUM_LANDMARKS = 100
+
+TOLERANCE = 0.02
+NUM_LANDMARKS = 400
 DOMAIN_SIZE = 5.0
 __sq = np.sqrt(NUM_LANDMARKS)
 
 
 
 
-def point_2d_from_landmark(landmark):
-    return qms.Point2D(*landmark.get_position())
 
 
-def landmark_from_point_2d(point):
-    return Landmark(point.x, point.y)
+
+
+
+
+
+
 
 
 def point_2d_array_from_landmarks(landmarks):
     array = qms.Point2DArray()
     for lmk in landmarks:
-        array.data.append(point_2d_from_landmark(lmk))
+        array.data.append(lmk.to_point_2d())
     return array
     
 
 def landmarks_from_point_2d_array(array):
-    return [landmark_from_point_2d(point) for point in array.data]
+    landmarks = []
+    for point in array.data:
+        landmarks.append(Landmark.from_point_2d(point))
+    return landmarks
+
+
 
 
 
@@ -56,6 +65,8 @@ def distance_factor(distance):
 def distance_factor_derivative_over_distance(distance):
     return -2.0/(1.0+distance**2)**2
 
+    
+    
     
     
 def versor_from_angle(theta):
@@ -85,8 +96,15 @@ class Landmark:
         return Landmark(self.__x, self.__y)
 
 
-    def get_position(self):
-        return self.__x, self.__y
+    @classmethod
+    def from_point_2d(cls, point):
+        x = point.x
+        y = point.y
+        return cls(x=x, y=y)
+
+
+    def to_point_2d(self):
+        return qms.Point2D(x=self.__x, y=self.__y)
 
 
     def __str__(self):
@@ -100,6 +118,8 @@ class Landmark:
         q = np.array([self.__x, self.__y])
         p = np.array([x, y])
         v = versor_from_angle(theta)
+        if (q-p).dot(v)<=0.0:
+            return 0.0
         d = np.linalg.norm(p-q)
         return -distance_factor(d)*(p-q).dot(v)
 
@@ -108,6 +128,8 @@ class Landmark:
         q = np.array([self.__x, self.__y])
         p = np.array([x, y])
         v = versor_from_angle(theta)
+        if (q-p).dot(v)<=0.0:
+            return np.zeros(2)
         d = np.linalg.norm(p-q)
         mat = -distance_factor_derivative_over_distance(d)*np.outer(p-q,p-q) - distance_factor(d)*np.eye(2)
         return mat.dot(v)
@@ -117,6 +139,8 @@ class Landmark:
         q = np.array([self.__x, self.__y])
         p = np.array([x, y])
         v = versor_from_angle(theta)
+        if (q-p).dot(v)<=0.0:
+            return 0.0
         d = np.linalg.norm(p-q)
         return -distance_factor(d)*versor_gradient(v).dot(p-q)
 
@@ -125,11 +149,14 @@ class Landmark:
         sq = np.sqrt(NUM_LANDMARKS)
         plt.scatter(self.__x, self.__y,
             color=color,
-            s=1.2e4*DOMAIN_SIZE/NUM_LANDMARKS,
+            s=1.5e4*DOMAIN_SIZE/NUM_LANDMARKS,
             alpha=0.3,
             edgecolor=color,
             linewidth=2,
             marker='s')
+
+
+
 
 
 
@@ -140,17 +167,20 @@ class Agent:
     global TOLERANCE
 
 
-    # @classmethod
-    # def from_pose2d(cls, pose):
-    #     return cls(pose.x, pose.y, pose.theta)
+    @classmethod
+    def from_pose2d_landmark_array(cls, pose, array):
+        x = pose.x
+        y = pose.y
+        theta = pose.theta
+        landmarks = [Landmark.from_point_2d(point) for point in array.data]
+        return cls(x, y, theta, landmarks)
 
 
-    def __init__(self, x, y, theta, landmarks, color):
+    def __init__(self, x, y, theta, landmarks):
         self.__x = x
         self.__y = y
         self.__theta = theta
-        self.__landmarks = [lmk.copy() for lmk in list(landmarks)]
-        self.__color = color
+        self.__landmarks = landmarks
 
 
     def __str__(self):
@@ -166,18 +196,26 @@ class Agent:
         return self.__x, self.__y, self.__theta
 
 
+    def get_pose_2d(self):
+        return gms.Pose2D(self.__x, self.__y, self.__theta)
+        
+        
+    def get_landmarks(self):
+        return self.__landmarks
+        
+        
+    def get_landmark_array(self):
+        return point_2d_array_from_landmarks(self.__landmarks)
+        
+        
     def set_pose(self, x, y, theta):
         self.__x = x
         self.__y = y
         self.__theta = theta
-
-
+        
+        
     def set_landmarks(self, landmarks):
-        self.__landmarks = list(landmarks)
-
-
-    def get_landmarks(self):
-        return self.__landmarks
+        self.__landmarks = landmarks
 
 
     def coverage(self):
@@ -230,17 +268,16 @@ class Agent:
             self.__landmarks.append(landmark)
 
 
-    def draw(self):
+    def draw(self, color):
         x = self.__x
         y = self.__y
         th = self.__theta
-        color = self.__color
         al = 1.0
         plt.scatter(x, y, c=color, marker="o", facecolor='k')
         plt.axes().arrow(x, y, al*np.cos(th), al*np.sin(th),
                  head_width=0.35*al, head_length=0.35*al, fc=color, ec='k')
         for lmk in self.__landmarks:
-            lmk.draw(self.__color)
+            lmk.draw(color)
 
 
 
@@ -255,7 +292,7 @@ for index in range(NUM_LANDMARKS):
     y = float(np.mod(index, __sq))/__sq*2.0*DOMAIN_SIZE-DOMAIN_SIZE+DOMAIN_SIZE/__sq
     LANDMARKS.append(Landmark(x, y))
     
-AGENTS_NAMES = rp.get_param('agents_names', 'Axel Bo Calle David').split()
+AGENTS_NAMES = 'Axel Bo Calle David'.split()
 AGENTS_COLORS = {'Axel':'blue', 'Bo':'red', 'Calle':'green', 'David':'yellow'}
 
 INITIAL_LANDMARKS_LISTS = {}
@@ -273,17 +310,15 @@ for name in AGENTS_NAMES:
     idx += 1
 
 
-
-'''Test'''
+#'''Test'''
 #agents = [Agent(
 #*INITIAL_POSES[name],
-#landmarks=INITIAL_LANDMARKS_LISTS[name],
-#color=AGENTS_COLORS[name]
+#landmarks=INITIAL_LANDMARKS_LISTS[name]
 #) for name in AGENTS_NAMES]
 
 #plt.figure()
 #for agent in agents:
-#    agent.draw()
+#    agent.draw('blue')
 #plt.xlim((-DOMAIN_SIZE, DOMAIN_SIZE))
 #plt.ylim((-DOMAIN_SIZE, DOMAIN_SIZE))
 
@@ -292,7 +327,7 @@ for name in AGENTS_NAMES:
 
 #plt.figure()
 #for agent in agents:
-#    agent.draw()
+#    agent.draw('blue')
 #plt.xlim((-DOMAIN_SIZE, DOMAIN_SIZE))
 #plt.ylim((-DOMAIN_SIZE, DOMAIN_SIZE))
 

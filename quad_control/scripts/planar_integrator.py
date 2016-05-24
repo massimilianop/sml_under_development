@@ -39,7 +39,6 @@ def __cmd_vel_callback(cmd_vel_msg):
     
     
 def __done_callback(empty):
-    global __lock
     global __done_flag
     __done_flag = True
     
@@ -47,10 +46,10 @@ def __done_callback(empty):
     
 rp.init_node('planar_integrator')
 __RATE = rp.Rate(1e2)
-rp.Subscriber('cmd_vel', gms.Pose2D, __cmd_vel_callback)
+rp.Subscriber('coverage_cmd_vel', gms.Pose2D, __cmd_vel_callback)
 rp.Subscriber('coverage_done', sms.Empty, __done_callback)
-__pose_2d_pub = rp.Publisher('pose_2d', gms.Pose2D, queue_size=10)
-__pose_stamped_pub = rp.Publisher('pose_stamped', gms.PoseStamped, queue_size=10)
+__pose_2d_pub = rp.Publisher('coverage_pose_2d', gms.Pose2D, queue_size=1)
+__pose_stamped_pub = rp.Publisher('coverage_pose_stamped', gms.PoseStamped, queue_size=2)
 
 
 
@@ -62,7 +61,7 @@ def __work():
     __lock.acquire()
     __pos += __cmd_vel_pos*1e-2
     __ang += __cmd_vel_ang*1e-2
-    __ang = np.arctan2(np.sin(__ang), np.cos(__ang))
+    #__ang = np.arctan2(np.sin(__ang), np.cos(__ang))
     pose_2d = gms.Pose2D(__pos[0], __pos[1], __ang)
     pose_stamped = gms.PoseStamped(pose=gms.Pose(position=gms.Point(x=__pos[0], y=__pos[1]), orientation = gms.Quaternion(*quaternion_from_yaw( __ang))))
     __lock.release()

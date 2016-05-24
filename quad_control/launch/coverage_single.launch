@@ -1,0 +1,22 @@
+<launch>
+
+<group ns='Axel'>
+<node pkg='quad_control' name='coverage_planner' type='coverage_planner.py'/>
+<node pkg='quad_control' name='planar_integrator' type='planar_integrator.py'/>
+<param name='name' type='str' value='Axel'/>
+<param name='token' type='bool' value='true'/>
+<param name='others_names' type='str' value='Bo'/>
+</group>
+
+
+<group ns='Bo'>
+<node pkg='quad_control' name='coverage_planner' type='coverage_planner.py'/>
+<node pkg='quad_control' name='planar_integrator' type='planar_integrator.py'/>
+<param name='name' type='str' value='Bo'/>
+<param name='token' type='bool' value='true'/>
+<param name='others_names' type='str' value='Axel'/>
+</group>
+
+<node pkg='rqt_plot' name='rqt_plot' type='rqt_plot'/>
+<node pkg='quad_control' name='coverage_plotter' type='coverage_plotter.py'/>
+</launch>
