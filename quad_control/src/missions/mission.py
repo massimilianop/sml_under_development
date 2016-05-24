@@ -90,20 +90,20 @@ class Mission(js.Jsonable):
             if line:
                 numbers = line.split(' ')
                 
-                times.append(       float(numbers[0]))
-                positions_x.append( float(numbers[1]))
-                positions_y.append( float(numbers[2]))
-                positions_z.append( float(numbers[3]))
-                rolls.append(       float(numbers[4]))
-                pitches.append(     float(numbers[5]))
-                yaws.append(        float(numbers[6]))
+                times.append(float(numbers[0]))
+                positions_x.append(float(numbers[1]))
+                positions_y.append(float(numbers[2]))
+                positions_z.append(float(numbers[3]))
+                rolls.append(float(numbers[4]))
+                pitches.append(float(numbers[5]))
+                yaws.append(float(numbers[6]))
                 velocities_x.append(float(numbers[7]))
                 velocities_y.append(float(numbers[8]))
                 velocities_z.append(float(numbers[9]))
-                controls_x.append(  float(numbers[10]))
-                controls_y.append(  float(numbers[11]))
-                controls_z.append(  float(numbers[12]))
-                yaw_rates.append(   float(numbers[13]))
+                controls_x.append(float(numbers[10]))
+                controls_y.append(float(numbers[11]))
+                controls_z.append(float(numbers[12]))
+                yaw_rates.append(float(numbers[13]))
         
         fig1 = plt.figure()
         plt.plot(times, positions_x, label=r'$x$')
@@ -240,6 +240,11 @@ class Mission(js.Jsonable):
         """Get desired position (m) and velocity (m/s) for the quadrotor"""
         return NotImplementedError()
 
+    def get_ea_desired(self):
+        """Get desired euler angles in degrees for UAV"""
+        return numpy.array([0.0,0.0,0.0])
+        # return NotImplementedError()        
+
     def get_rc_output(self):
         """Get rc output"""
         return numpy.zeros(8)
@@ -284,22 +289,22 @@ class Mission(js.Jsonable):
     def change_reference(self,key,string):
         """Change reference trajectory"""
         if key in self.inner['reference'].keys():
-            TrajectoryClass    = self.inner['reference'][key]
-            self.TrajGenerator = TrajectoryClass.from_string(string)
+            TrajectoryClass    = self.inner['reference'][key]          
+            self.reference = TrajectoryClass.from_string(string)
 
 
     def change_yaw_reference(self,key,string):
         """Change yaw reference trajectory"""
         if key in self.inner['yaw_reference'].keys():
             YawTrajectoryClass   = self.inner['yaw_reference'][key]
-            self.YawTrajGenerator = YawTrajectoryClass.from_string(string)
+            self.yaw_reference_object = YawTrajectoryClass.from_string(string)
 
 
     def change_controller(self, key, string):
         """Change controller"""
         if key in self.inner['controller'].keys():
             ControllerClass       = self.inner['controller'][key]
-            self.ControllerObject = ControllerClass.from_string(string)
+            self.controller = ControllerClass.from_string(string)
 
 
     def change_yaw_controller(self,key,string):
@@ -322,7 +327,7 @@ class Mission(js.Jsonable):
         input_for_yaw_controller = self.get_desired_yaw_rad(time_instant)
 
         yaw_rate = self.YawControllerObject.output(state_for_yaw_controller,
-            input_for_yaw_controller) 
+            input_for_yaw_controller)
 
         return yaw_rate
 
@@ -336,7 +341,7 @@ class Mission(js.Jsonable):
         state = self.get_state()
 
         # compute input to send to QUAD
-        desired_3d_force_quad = self.ControllerObject.output(time_instant,
+        desired_3d_force_quad = self.controller.output(time_instant,
             state, reference)
 
         return desired_3d_force_quad
@@ -364,4 +369,3 @@ class Mission(js.Jsonable):
         self.iris_plus_converter_object_mission.set_rotation_matrix(euler_rad)
         iris_plus_rc_input = self.iris_plus_converter_object_mission.input_conveter(desired_3d_force_quad,yaw_rate)
         self.rc_output     = iris_plus_rc_input
-

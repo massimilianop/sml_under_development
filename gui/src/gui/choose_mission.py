@@ -8,7 +8,7 @@ from python_qt_binding.QtGui import QWidget
 from PyQt4.QtCore import QObject, pyqtSignal
 
 # import services defined in quad_control; service being used: SrvCreateJsonableObjectByStr
-from quad_control.srv import SrvCreateJsonableObjectByStr,IrisPlusResetNeutral,IrisPlusSetNeutral
+from quad_control.srv import SrvCreateJsonableObjectByStr,IrisPlusResetNeutral,IrisPlusSetNeutral,ServiceSequence
 
 import argparse
 
@@ -27,9 +27,18 @@ from src.utilities import jsonable
 
 from choose_jsonable import ChooseJsonablePlugin
 
+import json
+
+
 class ChooseMissionPlugin(Plugin):
 
     def __init__(self, context,namespace = None):
+
+        # "global variables"
+        self.dic_sequence_services = {}
+        self.dic_sequence_services['last_trigger_time']            = 0.0
+        self.dic_sequence_services['checked_sequence_of_missions'] = True
+        self.dic_sequence_services['list_sequence_services']       = []
 
         # it is either "" or the input given at creation of plugin
         self.namespace = self._parse_args(context.argv())
@@ -77,6 +86,8 @@ class ChooseMissionPlugin(Plugin):
         self._widget.ResetIrisNeutralValue.clicked.connect(self.reset_iris_neutral_value)
         self._widget.SetIrisNeutralValue.clicked.connect(self.set_iris_neutral_value)
 
+
+        self._widget.SetSequenceMissions.clicked.connect(self.send_list_of_services)
         # ---------------------------------------------- #
         
         # button to request service for setting new controller, with new parameters
@@ -98,6 +109,8 @@ class ChooseMissionPlugin(Plugin):
             dictionary_of_options = {},\
             service_name = 'ServiceChangeReference',\
             ServiceClass = SrvCreateJsonableObjectByStr)
+        self.choose_reference.dic_sequence_services = self.dic_sequence_services
+
 
         self.choose_yaw_reference  = ChooseJsonablePlugin(context,\
             self.namespace,\
@@ -105,6 +118,8 @@ class ChooseMissionPlugin(Plugin):
             dictionary_of_options = {},\
             service_name = 'ServiceChangeYawReference',\
             ServiceClass = SrvCreateJsonableObjectByStr)        
+        self.choose_yaw_reference.dic_sequence_services = self.dic_sequence_services
+
 
         self.choose_yaw_controller  = ChooseJsonablePlugin(context,\
             self.namespace,\
@@ -112,6 +127,8 @@ class ChooseMissionPlugin(Plugin):
             dictionary_of_options = {},\
             service_name = 'ServiceChangeYawController',\
             ServiceClass = SrvCreateJsonableObjectByStr)
+        self.choose_yaw_controller.dic_sequence_services = self.dic_sequence_services
+
 
         self.choose_controller  = ChooseJsonablePlugin(context,\
             self.namespace,\
@@ -119,7 +136,64 @@ class ChooseMissionPlugin(Plugin):
             dictionary_of_options = {},\
             service_name = 'ServiceChangeController',\
             ServiceClass = SrvCreateJsonableObjectByStr)
+        self.choose_controller.dic_sequence_services = self.dic_sequence_services
 
+
+        self._widget.tabWidget.currentChanged.connect(self.update_last_trigger_instant)
+
+    def send_list_of_services(self):
+        # # debug
+        # for service in self.dic_sequence_services['list_sequence_services']:
+        #     print(service)
+        #     print('\n\n')
+
+        # request service
+        try: 
+            # time out of one second for waiting for service
+            rospy.wait_for_service(self.namespace+'ServiceSequencer',1.0)
+            
+            try:
+                request = rospy.ServiceProxy(self.namespace+'ServiceSequencer', ServiceSequence)
+
+                service_sequence = json.dumps(self.dic_sequence_services['list_sequence_services'])
+                reply = request(service_sequence = service_sequence)
+
+                if reply.received == True:
+                    # if controller receives message
+                    print('Success')
+
+            except rospy.ServiceException as exc:
+                rospy.logwarn("Service did not process request: " + str(exc))
+            
+        except rospy.ServiceException as exc:
+            rospy.logwarn("Service did not process request: " + str(exc))
+
+    def update_last_trigger_instant(self):
+
+        index = self._widget.tabWidget.currentIndex()
+
+        tab_name = self._widget.tabWidget.tabText(index)
+        
+        time_instant = self.dic_sequence_services['last_trigger_time']
+
+
+        if tab_name == "Mission":
+            self._widget.TriggerInstant.setValue(time_instant)
+
+        if tab_name == "Reset":
+            self._widget.TriggerInstantNeutral.setValue(time_instant)
+        
+        if tab_name == "Controller":
+            self.choose_controller._widget.TriggerInstant.setValue(time_instant)
+
+        if tab_name == "Reference":
+            self.choose_reference._widget.TriggerInstant.setValue(time_instant)
+
+        if tab_name == "YawController":
+            self.choose_yaw_controller._widget.TriggerInstant.setValue(time_instant)
+
+        if tab_name == "YawReference":
+            self.choose_yaw_reference._widget.TriggerInstant.setValue(time_instant)
 
     def __print_controller_item_clicked(self):
 
@@ -165,11 +239,11 @@ class ChooseMissionPlugin(Plugin):
 
     def __remove_tabs(self):
 
-        for index in range(self._widget.tabWidget.count()-1):
+        for index in range(self._widget.tabWidget.count()-2):
             # every time I remove a tab, I get a new tabWidget
             # with one less tab; hence, I remove tab with index 1  
             # until I get tabWidget, with just one tab
-            self._widget.tabWidget.removeTab(1)
+            self._widget.tabWidget.removeTab(2)
 
     def __add_tab(self):
 
@@ -196,6 +270,7 @@ class ChooseMissionPlugin(Plugin):
 
             self.__head_class_set = True
             self.__head_class_key = self._widget.ListControllersWidget.currentItem().text()
+            # notice this is a class, not an object
             self.__HeadClass      = missions_database.database[self.__head_class_key]
 
             head_class_input_dic = {}
@@ -269,7 +344,8 @@ class ChooseMissionPlugin(Plugin):
         self._widget.ListControllersWidget.clear()
 
         # print message on GUI
-        self._widget.ItemClickedMessage.setText('Selected Mission: '+self.__HeadClass.description())
+        #self._widget.ItemClickedMessage.setText('Selected Mission: '+self.__HeadClass.description())
+        self._widget.ItemClickedMessage.setText('<p>Selected Mission:</p>'+self.__HeadClass.combined_description(self.__head_class_input_dic))
 
         self.__add_tab()
 
@@ -277,43 +353,68 @@ class ChooseMissionPlugin(Plugin):
 
     def __get_new_controller_parameters(self):
         """Request service for new controller with parameters chosen by user"""
+
+
         if self.__head_class_completed == True:
-            # get string that user modified with new parameters
-            string              = self._widget.ControllerMessageInput.toPlainText()
-            # get new parameters from string
-            parameters          = string
+        
+            if self.dic_sequence_services['checked_sequence_of_missions'] == True:
 
-            # rospy.logwarn(parameters)
-
-            # request service
-            try: 
-                # time out of one second for waiting for service
-                rospy.wait_for_service("/"+self.namespace+'ServiceChangeMission',2.0)
-                
-                try:
-                    RequestingMission = rospy.ServiceProxy("/"+self.namespace+'ServiceChangeMission', SrvCreateJsonableObjectByStr)
-                    reply = RequestingMission(jsonable_name = self.__head_class_key, string_parameters = parameters)
-
-                    if reply.received == True:
-                        # if controller receives message
-                        self._widget.Success.setChecked(True) 
-                        self._widget.Failure.setChecked(False) 
+                # get string that user modified with new parameters
+                string              = self._widget.ControllerMessageInput.toPlainText()
+                # get new parameters from string
+                parameters          = string
 
 
+                new_service = {}
+
+                trigger_instant = self._widget.TriggerInstant.value()
+                new_service['trigger_instant'] = trigger_instant
+
+                # we are changing the last_trigger_time for all objects that share dictionary
+                self.dic_sequence_services['last_trigger_time'] = trigger_instant
+
+                new_service['service_name']    = 'ServiceChangeMission'
+                new_service['inputs_service']  = {'jsonable_name':self.__head_class_key, 'string_parameters': parameters}
+                self.dic_sequence_services['list_sequence_services'].append(new_service)
+
+            else:
+
+                # get string that user modified with new parameters
+                string              = self._widget.ControllerMessageInput.toPlainText()
+                # get new parameters from string
+                parameters          = string
+
+                # rospy.logwarn(parameters)
+
+                # request service
+                try: 
+                    # time out of one second for waiting for service
+                    rospy.wait_for_service("/"+self.namespace+'ServiceChangeMission',2.0)
+                    
+                    try:
+                        RequestingMission = rospy.ServiceProxy("/"+self.namespace+'ServiceChangeMission', SrvCreateJsonableObjectByStr)
+                        reply = RequestingMission(jsonable_name = self.__head_class_key, string_parameters = parameters)
+
+                        if reply.received == True:
+                            # if controller receives message
+                            self._widget.Success.setChecked(True) 
+                            self._widget.Failure.setChecked(False) 
+
+
+                    except rospy.ServiceException as exc:
+                        rospy.logwarn("Service did not process request: " + str(exc))
+                        rospy.logwarn('Proxy for service that sets mission FAILED')
+                        self._widget.Success.setChecked(False) 
+                        self._widget.Failure.setChecked(True) 
+                        # print "Service call failed: %s"%e
+                    
                 except rospy.ServiceException as exc:
                     rospy.logwarn("Service did not process request: " + str(exc))
-                    rospy.logwarn('Proxy for service that sets mission FAILED')
+                    rospy.logwarn('Timeout for service that sets mission')
                     self._widget.Success.setChecked(False) 
                     self._widget.Failure.setChecked(True) 
-                    # print "Service call failed: %s"%e
-                
-            except rospy.ServiceException as exc:
-                rospy.logwarn("Service did not process request: " + str(exc))
-                rospy.logwarn('Timeout for service that sets mission')
-                self._widget.Success.setChecked(False) 
-                self._widget.Failure.setChecked(True) 
-                # print "Service not available ..."        
-                pass
+                    # print "Service not available ..."        
+                    pass
         else:
             # print message on GUI
             self._widget.ItemClickedMessage.setText('<b>Service cannot be completed: finish choosing</b>')    
@@ -322,24 +423,37 @@ class ChooseMissionPlugin(Plugin):
 
 
     def reset_iris_neutral_value(self):
-        try: 
-            # time out of one second for waiting for service
-            rospy.wait_for_service(self.namespace+'IrisPlusResetNeutral',1.0)
-            try:
-                # request reseting neutral value for iris+ (implicit, with keywords)
-                ResetingNeutral = rospy.ServiceProxy(self.namespace+'IrisPlusResetNeutral', IrisPlusResetNeutral)
-                reply = ResetingNeutral()
-                if reply.received == True:
-                    self._widget.ThrottleNeutralValue.setValue(reply.k_trottle_neutral)
-                    rospy.logwarn('Service for reseting neutral value succeded')
+
+        if self.dic_sequence_services['checked_sequence_of_missions'] == True:
+
+                new_service = {}
+                trigger_instant = self._widget.TriggerInstantNeutral.value()
+                new_service['trigger_instant'] = trigger_instant
+                self.dic_sequence_services['last_trigger_time'] = trigger_instant
+
+                new_service['service_name']    = 'IrisPlusResetNeutral'
+                new_service['inputs_service']  = {}
+                self.dic_sequence_services['list_sequence_services'].append(new_service)
+
+        else:
+            try: 
+                # time out of one second for waiting for service
+                rospy.wait_for_service(self.namespace+'IrisPlusResetNeutral',1.0)
+                try:
+                    # request reseting neutral value for iris+ (implicit, with keywords)
+                    ResetingNeutral = rospy.ServiceProxy(self.namespace+'IrisPlusResetNeutral', IrisPlusResetNeutral)
+                    reply = ResetingNeutral()
+                    if reply.received == True:
+                        self._widget.ThrottleNeutralValue.setValue(reply.k_trottle_neutral)
+                        rospy.logwarn('Service for reseting neutral value succeded')
+                except rospy.ServiceException as exc:
+                    rospy.logwarn("Service did not process request: " + str(exc))
+                    rospy.logwarn('Service for reseting neutral value failed')
+                    pass
             except rospy.ServiceException as exc:
                 rospy.logwarn("Service did not process request: " + str(exc))
-                rospy.logwarn('Service for reseting neutral value failed')
+                rospy.logwarn('Service for reseting neutral value failed')      
                 pass
-        except rospy.ServiceException as exc:
-            rospy.logwarn("Service did not process request: " + str(exc))
-            rospy.logwarn('Service for reseting neutral value failed')      
-            pass
 
 
     def set_iris_neutral_value(self):

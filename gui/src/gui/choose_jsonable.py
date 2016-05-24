@@ -229,41 +229,62 @@ class ChooseJsonablePlugin(Plugin):
         """Request service for new jsonable object with parameters chosen by user"""
 
         if self.__head_class_completed == True:
-            # get string that user modified with new parameters
-            string              = self._widget.JsonableMessageInput.toPlainText()
-            # get new parameters from string
-            parameters          = string
 
-            # request service
-            try: 
-                # time out of one second for waiting for service
-                rospy.wait_for_service("/"+self.namespace+self.service_name,2.0)
-                
-                try:
-                    Requesting = rospy.ServiceProxy("/"+self.namespace+self.service_name, self.ServiceClass)
+            if self.dic_sequence_services['checked_sequence_of_missions'] == True:
 
-                    reply = Requesting(jsonable_name = self.__head_class_key, string_parameters = parameters)
+                # get string that user modified with new parameters
+                string              = self._widget.JsonableMessageInput.toPlainText()
+                # get new parameters from string
+                parameters          = string
 
-                    if reply.received == True:
-                        # if controller receives message
-                        self._widget.Success.setChecked(True) 
-                        self._widget.Failure.setChecked(False) 
+                new_service = {}
+
+                trigger_instant = self._widget.TriggerInstant.value()
+                new_service['trigger_instant'] = trigger_instant
+
+                # we are changing the last_trigger_time for all objects that share dictionary 
+                self.dic_sequence_services['last_trigger_time'] = trigger_instant
+
+                new_service['service_name']    = self.service_name
+                new_service['inputs_service']  = {'jsonable_name':self.__head_class_key, 'string_parameters': parameters}
+                self.dic_sequence_services['list_sequence_services'].append(new_service)
+
+            else:
+                # get string that user modified with new parameters
+                string              = self._widget.JsonableMessageInput.toPlainText()
+                # get new parameters from string
+                parameters          = string
+
+                # request service
+                try: 
+                    # time out of one second for waiting for service
+                    rospy.wait_for_service("/"+self.namespace+self.service_name,2.0)
+                    
+                    try:
+                        Requesting = rospy.ServiceProxy("/"+self.namespace+self.service_name, self.ServiceClass)
+
+                        reply = Requesting(jsonable_name = self.__head_class_key, string_parameters = parameters)
+
+                        if reply.received == True:
+                            # if controller receives message
+                            self._widget.Success.setChecked(True) 
+                            self._widget.Failure.setChecked(False) 
 
 
+                    except rospy.ServiceException as exc:
+                        rospy.logwarn("Service did not process request: " + str(exc))
+                        rospy.logwarn('Proxy for service that sets controller FAILED')
+                        self._widget.Success.setChecked(False) 
+                        self._widget.Failure.setChecked(True) 
+                        # print "Service call failed: %s"%e
+                    
                 except rospy.ServiceException as exc:
                     rospy.logwarn("Service did not process request: " + str(exc))
-                    rospy.logwarn('Proxy for service that sets controller FAILED')
+                    rospy.logwarn('Timeout for service that sets controller')
                     self._widget.Success.setChecked(False) 
                     self._widget.Failure.setChecked(True) 
-                    # print "Service call failed: %s"%e
-                
-            except rospy.ServiceException as exc:
-                rospy.logwarn("Service did not process request: " + str(exc))
-                rospy.logwarn('Timeout for service that sets controller')
-                self._widget.Success.setChecked(False) 
-                self._widget.Failure.setChecked(True) 
-                # print "Service not available ..."        
-                pass
+                    # print "Service not available ..."        
+                    pass
         else:
             # print message on GUI
             self._widget.JsonableDescription.setText('<b>Service cannot be completed: finish choosing </b>')                         

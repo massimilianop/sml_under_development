@@ -16,6 +16,8 @@
           <!-- <arg name="hoge" value="fuga" /> -->
         </include>
 
+        <node pkg="quad_control" name="service_time_sequencer" type="service_time_sequencer.py"  output="screen"/>
+
     </group>
 
     <group if="$(arg mocap)">

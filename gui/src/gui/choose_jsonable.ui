@@ -38,13 +38,6 @@
           <string>Setting</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_2">
-          <item row="1" column="0">
-           <widget class="QLabel" name="labelJsonableAvailable">
-            <property name="text">
-             <string>Available</string>
-            </property>
-           </widget>
-          </item>
           <item row="0" column="0" colspan="2">
            <widget class="QPushButton" name="SetJsonableButton">
             <property name="text">
@@ -52,28 +45,49 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="1" colspan="2">
+          <item row="1" column="4">
+           <widget class="QLabel" name="labelJsonableParameters">
+            <property name="text">
+             <string>Parameters</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="4">
+           <widget class="QPlainTextEdit" name="JsonableMessageInput"/>
+          </item>
+          <item row="0" column="3">
+           <widget class="QRadioButton" name="Success">
+            <property name="text">
+             <string>Success</string>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="0" colspan="5">
+           <widget class="QTextEdit" name="JsonableDescription"/>
+          </item>
+          <item row="1" column="1" colspan="3">
            <widget class="QPushButton" name="ResetListJsonable">
             <property name="text">
              <string>Reset List</string>
             </property>
            </widget>
           </item>
-          <item row="6" column="0" colspan="4">
-           <widget class="QTextEdit" name="JsonableDescription"/>
-          </item>
-          <item row="2" column="0" colspan="3">
+          <item row="2" column="0" colspan="4">
            <widget class="QListWidget" name="ListJsonableWidget"/>
           </item>
-          <item row="0" column="3">
+          <item row="1" column="0">
+           <widget class="QLabel" name="labelJsonableAvailable">
+            <property name="text">
+             <string>Available</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="4">
            <widget class="QRadioButton" name="Failure">
             <property name="text">
              <string>Failure</string>
             </property>
            </widget>
-          </item>
-          <item row="2" column="3">
-           <widget class="QPlainTextEdit" name="JsonableMessageInput"/>
           </item>
           <item row="5" column="0" colspan="2">
            <widget class="QLabel" name="labelJsonableParameters_2">
@@ -83,18 +97,7 @@
            </widget>
           </item>
           <item row="0" column="2">
-           <widget class="QRadioButton" name="Success">
-            <property name="text">
-             <string>Success</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="3">
-           <widget class="QLabel" name="labelJsonableParameters">
-            <property name="text">
-             <string>Parameters</string>
-            </property>
-           </widget>
+           <widget class="QSpinBox" name="TriggerInstant"/>
           </item>
          </layout>
         </widget>

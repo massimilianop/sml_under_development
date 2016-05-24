@@ -76,6 +76,7 @@ add_service_files(
   TradeLandmarks.srv
   PlotService.srv
   ReceiveToken.srv
+  ServiceSequence.srv
 )
 
 ## Generate actions in the 'action' folder

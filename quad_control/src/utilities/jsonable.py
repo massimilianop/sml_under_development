@@ -5,10 +5,6 @@ import json
 import inspect
 import numpy as np
 
-import rospy
-
-
-
 # dictionary = {
 #     'bed'   :['Bed1', {'pillow':[],'doll':[]}],
 #     'lamp'  :['Lamp1', {}]
@@ -147,6 +143,49 @@ class Jsonable:
         #string = string.replace('"','')
         return string
         
+    def from_object_to_string(self):
+        """Returns a string that can be used to REconstruct the object.
+        Unlike the to_string method, no inner is neccessary
+        """
+        
+        spec = inspect.getargspec(self.__init__)
+        args = spec.args 
+        defs = spec.defaults
+
+        if defs is None:
+            defs = []
+        arg_dic = dict()
+        
+        for i in range(len(defs)):
+            arg = args[i+1]
+            if arg in self.inner.keys():
+                inner_key   = inner[arg][0]
+                inner_inner = inner[arg][1]
+                val         = (inner_key, json.loads(self.inner[arg][inner_key].from_object_to_string(inner_inner)))
+            elif type(defs[i]) is np.ndarray:
+                val = str(list(defs[i]))
+            else:
+                val = defs[i]
+            arg_dic[arg] = val
+
+        string = json.dumps(arg_dic)
+
+        return string
+
+        
+    # @classmethod
+    # def from_string(cls, string=""):
+    #     """Returns an object of this class constructed from the json string
+    #     `string`.
+    #     """
+        
+    #     arg_dic = json.loads(string)
+    #     for key, value in arg_dic.items():
+    #         if key in cls.inner.keys():
+    #             InnerObjType = cls.inner[key][value[0]]
+    #             inner_obj = InnerObjType.from_string(json.dumps(value[1]))
+    #             arg_dic[key] = inner_obj
+    #     return cls(**arg_dic)
         
     @classmethod
     def from_string(cls, string=""):
@@ -158,11 +197,31 @@ class Jsonable:
         for key, value in arg_dic.items():
             if key in cls.inner.keys():
                 InnerObjType = cls.inner[key][value[0]]
-                inner_obj = InnerObjType.from_string(json.dumps(value[1]))
+                inner_obj            = InnerObjType.from_string(json.dumps(value[1]))
                 arg_dic[key] = inner_obj
-        return cls(**arg_dic)
+
+        obj = cls(**arg_dic)
+        obj.constructing_string = string
+        return obj        
+
+    def get_constructing_string(self):
+        """Returns string that constructs object.
+        """
         
-        
+        constructing_string     = self.constructing_string
+        constructing_string_dic = json.loads(constructing_string)
+
+        for key in self.inner.keys():
+            if hasattr(self,key):
+                print(key)
+                print(getattr(self,key).get_constructing_string())
+                constructing_string_dic[key] = getattr(self,key).get_constructing_string()
+            else:
+                print(self.__class__.__name__+" has no attribute "+key)
+
+        constructing_string     = json.dumps(constructing_string_dic)   
+
+        return constructing_string
     
     def get_parameters(self):
         """Child classes redefine this
@@ -212,7 +271,8 @@ class Jsonable:
     def parametric_description(self,name):
         string  = self.UNIQUE_STRING+"\n"
         string += name+"\n"
-        string += self.parameters_to_string()
+        # string += self.parameters_to_string()
+        string += self.get_constructing_string()
         string += self.UNIQUE_STRING
         return string
 
@@ -222,10 +282,60 @@ class Jsonable:
         string = string.splitlines() 
         name   = string[1]
         parametric_description = string[2:]
+        parametric_description = str.join("",parametric_description)
+        print('11111111111111')
+        print(string)
+        print(name)
+        print(parametric_description)
         return name, parametric_description
      
         
+    @classmethod
+    def combined_description(cls, inner=dict()):
+        """Returns a string of the combined description of all jsonable classes (class + its inners)"""
+        
+        spec = inspect.getargspec(cls.__init__)
+        args = spec.args
+        defs = spec.defaults
 
+        if defs is None:
+            defs = []
+        arg_dic = dict()
+
+        string = "<p>"+cls.description()+"<\p>"
+
+        if len(defs) != 0:
+            # start list
+            string += "<ul>"
+            # for every inner we have a item list, and a description, since an inner is a jsonable object
+            for i in range(len(defs)):
+                arg = args[i+1]
+                if arg in cls.inner.keys():
+                    inner_key   = inner[arg][0]
+                    inner_inner = inner[arg][1]
+                    string += "<li>"+arg+"="+inner_key+":"+cls.inner[arg][inner_key].combined_description(inner_inner)+"</li>"
+            # end list
+            string += "</ul>"
+
+        return string
+
+    
+    def object_combined_description(self):
+        """Returns a string of the combined description of all jsonable objects (class + its inners)"""
+        
+        string = "<p>"+self.description()+"<\p>"
+
+        string += "<ul>"
+        for arg in self.inner.keys():
+            if hasattr(self,arg):
+                print(arg)
+                string += "<li>"+getattr(self, arg).object_combined_description()+"</li>"
+            else:
+                print(self.__class__.__name__+" has no attribute "+arg)
+        # end list
+        string += "</ul>"
+
+        return string
 
 
 ###############
