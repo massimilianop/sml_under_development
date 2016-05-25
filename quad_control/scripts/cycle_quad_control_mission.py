@@ -27,6 +27,8 @@ from numpy import *
 
 import missions.missions_database
 
+import json
+
 class QuadController():
 
     def __init__(self):
@@ -70,10 +72,10 @@ class QuadController():
             # note that "_" is necessary because time_stamp is a number (and file name cannot start with numbers)
             self.file_handle  = file(self.package_save_path+'_'+time_stamp+'_'+file_name+namespace+'.txt', 'w')
 
+            self._add_header_mission(flag=True)
+
             # if GUI request data to be saved, set flag to true
             self.SaveDataFlag = True
-
-            self._add_header_mission()
 
         else:
             # if GUI request data NOT to be saved, set falg to False
@@ -101,65 +103,57 @@ class QuadController():
         self.mission_object.iris_plus_converter_object_mission.set_k_trottle_neutral(req.k_trottle_neutral)
         return IrisPlusSetNeutralResponse(True)
 
-
-    # callback for publishing state of controller (or stop publishing)
-    def handle_Controller_State_Srv(self,req):
-
-        # if controller belongs to list of controllers that have a state
-        if req.flag_controller in controllers_with_state:
-            # if GUI request for state of controller, parameters = 0
-            if int(req.parameters[0]) == 0:
-
-                    # if publishging already, stop publish
-                    # if not publishing, start publishing
-                    self.flagPublish_ctr_st = not self.flagPublish_ctr_st
-
-            # if GUI request for reseting state of controller, parameters = 1
-            elif int(req.parameters[0]) == 1:
-                self.ControllerObject.reset_estimate_xy()
-            elif int(req.parameters[0]) == 2:
-                self.ControllerObject.reset_estimate_z()
-
-        # return message to Gui, to let it know resquest has been fulfilled
-        return Controller_SrvResponse(True)
-
-
-    # callback for when changing controller is requested
-    def _handle_service_change_controller(self,req):
-        self.mission_object.change_controller(req.jsonable_name,req.string_parameters)
+    # # callback for when changing controller is requested
+    # def _handle_service_change_controller(self,req):
+    #     self.mission_object.change_controller(req.jsonable_name,req.string_parameters)
         
-        self._add_header_mission()
+    #     self._add_header_mission()
 
-        # return message to Gui, to let it know resquest has been fulfilled
-        return SrvCreateJsonableObjectByStrResponse(received = True)
+    #     # return message to Gui, to let it know resquest has been fulfilled
+    #     return SrvCreateJsonableObjectByStrResponse(received = True)
 
-    # callback for when changing controller is requested
-    def _handle_service_change_reference(self,req):
+    # # callback for when changing controller is requested
+    # def _handle_service_change_reference(self,req):
 
-        self.mission_object.change_reference(req.jsonable_name,req.string_parameters)
+    #     self.mission_object.change_reference(req.jsonable_name,req.string_parameters)
         
-        self._add_header_mission()
+    #     self._add_header_mission()
 
-        # return message to Gui, to let it know resquest has been fulfilled
-        return SrvCreateJsonableObjectByStrResponse(received = True)
+    #     # return message to Gui, to let it know resquest has been fulfilled
+    #     return SrvCreateJsonableObjectByStrResponse(received = True)
 
-    # callback for when changing controller is requested
-    def _handle_service_change_yaw_controller(self,req):
-        self.mission_object.change_yaw_controller(req.jsonable_name,req.string_parameters)
+    # # callback for when changing controller is requested
+    # def _handle_service_change_yaw_controller(self,req):
+    #     self.mission_object.change_yaw_controller(req.jsonable_name,req.string_parameters)
         
-        self._add_header_mission()
+    #     self._add_header_mission()
         
-        # return message to Gui, to let it know resquest has been fulfilled
-        return SrvCreateJsonableObjectByStrResponse(received = True)
+    #     # return message to Gui, to let it know resquest has been fulfilled
+    #     return SrvCreateJsonableObjectByStrResponse(received = True)
 
-    # callback for when changing controller is requested
-    def _handle_service_change_yaw_reference(self,req):
-        self.mission_object.change_yaw_reference(req.jsonable_name,req.string_parameters)
+    # # callback for when changing controller is requested
+    # def _handle_service_change_yaw_reference(self,req):
+
+    #     self.mission_object.change_yaw_reference(req.jsonable_name,req.string_parameters)
+
+    #     self._add_header_mission()
+
+    #     # return message to Gui, to let it know resquest has been fulfilled
+    #     return SrvCreateJsonableObjectByStrResponse(received = True)      
+
+    # callback for when changing mission inner_key
+    def _handle_service_change_mission_inner_key(self,req):
+
+        # dictionary = '{"inner_key":"","key":"","input_string":""}'
+        dictionary = json.loads(req.dictionary)
+
+        self.mission_object.change_inner_key(**dictionary)
 
         self._add_header_mission()
 
         # return message to Gui, to let it know resquest has been fulfilled
-        return SrvCreateJsonableObjectByStrResponse(received = True)      
+        return SrvChangeJsonableObjectByStrResponse(received = True)      
+
 
     # callback for when changing mission is requested
     def _handle_service_change_mission(self,req):
@@ -171,6 +165,7 @@ class QuadController():
         MissionClass = missions.missions_database.database[req.jsonable_name]
         
         self.mission_object = MissionClass.from_string(req.string_parameters)
+
         #rospy.logwarn(self.mission_object.__class__.__name__)
 
         self._add_header_mission()
@@ -179,119 +174,19 @@ class QuadController():
         return SrvCreateJsonableObjectByStrResponse(received = True)        
 
 
-    # callback for when changing desired trajectory is requested
-    def _handle_service_trajectory_des(self, req):
- 
-        # trajectory_class_name = req.trajectory
-        # update class for TrajectoryGenerator
-        self.mission_object.change_trajectory(req.trajectory,req.parameters)
+    def _add_header_mission(self,flag=False):
+        """Print string to file that may be used to reconstruct mission object.
+        Only print to file, if saving_mode is ON.
+        It might be the case that the mode is turned ON after the header, and for that use flag=True, but self.file_handle must be created before
+        """
+        
+        if self.SaveDataFlag == True or flag:
 
-        # return message to Gui, to let it know resquest has been fulfilled
-        return SrvTrajectoryDesiredResponse(True)
+            # parametric description is a method of jsonable
+            string = self.mission_object.parametric_description(self.mission_name)
 
-    def _add_header_mission(self):
-
-        # parametric description is a method of jsonable
-        string = self.mission_object.parametric_description(self.mission_name)
-
-        if self.SaveDataFlag == True:
-            rospy.logwarn(string)
             # if data is being saved, append mission header
             numpy.savetxt(self.file_handle, [string], fmt="%s")
-
-    #callback for turning ON/OFF Mocap and turning OFF/ON the subscription to the simulator
-    def handle_Mocap(self,req):
-        pass
-        # # if mocap is turned on
-        # if self.flagMOCAP_On == True:
-
-        #     # request to turn OFF Mocap, and turn on subscription to Simulator messages
-        #     if req.On == False:
-
-        #         # in case Qs is not defined yet
-        #         try: 
-        #             # close mocap connection
-        #             # self.Qs._stop_measurement()
-        #             del self.Qs
-
-        #             self.flagMOCAP_On = False
-
-        #             # set flag to OFF
-        #             self.flagMOCAP = False
-
-        #             # subscribe again to simultor messages
-        #             self.SubToSim = rospy.Subscriber("quad_state", quad_state, self.get_state_from_simulator) 
-
-        #             # service has been provided
-        #             return Mocap_IdResponse(True,True)
-        #         except:
-        #             # service was NOT provided
-        #             return Mocap_IdResponse(True,False) 
-
-        #     # if we are requested to change the body Id
-        #     if req.change_id == True:
-
-        #         # see list of available bodies
-        #         bodies = self.Qs.get_updated_bodies()
-
-        #         # check if body_id available
-        #         body_indice = -1
-
-        #         # Get the corresponding id of the body
-        #         if isinstance(bodies,list):
-        #             for i in range(0,len(bodies)):
-        #                 rospy.logwarn(bodies[i]['id'])
-        #                 if(bodies[i]['id']==req.id):
-        #                     body_indice=i
-
-        #         # save body id
-        #         self.body_id = req.id                        
-
-
-        #         if body_indice == -1:
-
-        #             # body does not exist
-        #             self.flagMOCAP = False
-
-        #             # body does not exist, but service was provided
-        #             return Mocap_IdResponse(False,True)
-        #         else:
-        #             # body exists
-                    
-        #             # set flag to on
-        #             self.flagMOCAP = True
-
-        #             # body EXISTS, and service was provided
-        #             return Mocap_IdResponse(True,True)
-
-        # else:
-        #     # if Mocap is turned off, and we are requested to turn it on
-        #     if req.On == True:
-        #         # establish connection to qualisys
-        #         self.Qs = mocap_source.Mocap(info=0)
-
-        #         # stop subscription to data from simulator
-        #         # unsubscribe to topic
-        #         self.SubToSim.unregister()
-
-        #         self.flagMOCAP_On = True
-
-        #         # service was provided
-        #         return Mocap_IdResponse(False,True)
-
-    # return list of bodies detected by mocap or numbers 1 to 99 if not available
-    def handle_available_bodies(self, dummy):
-        pass
-        # if self.flagMOCAP_On:
-        #     try: # sometimes mocap causes unpredictable errors
-        #         bodies = self.Qs.find_available_bodies(False)
-        #         if len(bodies) > 0:
-        #             return {"bodies": bodies[0]}
-        #     except:
-        #         pass
-
-        # return {"bodies": range(0,100)}
-
 
     def PublishToGui(self):
 
@@ -365,26 +260,14 @@ class QuadController():
         # Service is created, so that data is saved when GUI requests
         Save_data_service = rospy.Service('SaveDataFromGui', SaveData, self._handle_save_data)
 
-
-        #-----------------------------------------------------------------------#
-        # service for selecting desired trajectory
-        # by default, staying still in origin is desired trajectory
-        TrajDes_service = rospy.Service('ServiceTrajectoryDesired', SrvTrajectoryDesired, self._handle_service_trajectory_des)
-
-
-        #-----------------------------------------------------------------------#
-        # Service is created, so that Mocap is turned ON or OFF whenever we want
-        Save_MOCAP_service = rospy.Service('Mocap_Set_Id', Mocap_Id, self.handle_Mocap)
-
-        # Service for providing list of available mocap bodies to GUI
-        mocap_available_bodies = rospy.Service('MocapBodies', MocapBodies, self.handle_available_bodies)
-
         #-----------------------------------------------------------------------#
         # Services are created, so that user can change controller, reference, yaw_controller and yaw reference on GUI
-        rospy.Service('ServiceChangeController'   , SrvCreateJsonableObjectByStr, self._handle_service_change_controller)
-        rospy.Service('ServiceChangeReference'    , SrvCreateJsonableObjectByStr, self._handle_service_change_reference)
-        rospy.Service('ServiceChangeYawController', SrvCreateJsonableObjectByStr, self._handle_service_change_yaw_controller)
-        rospy.Service('ServiceChangeYawReference' , SrvCreateJsonableObjectByStr, self._handle_service_change_yaw_reference)
+        # rospy.Service('ServiceChangeController'   , SrvCreateJsonableObjectByStr, self._handle_service_change_controller)
+        # rospy.Service('ServiceChangeReference'    , SrvCreateJsonableObjectByStr, self._handle_service_change_reference)
+        # rospy.Service('ServiceChangeYawController', SrvCreateJsonableObjectByStr, self._handle_service_change_yaw_controller)
+        # rospy.Service('ServiceChangeYawReference' , SrvCreateJsonableObjectByStr, self._handle_service_change_yaw_reference)
+
+        rospy.Service('ServiceMissionChangeInner' , SrvChangeJsonableObjectByStr, self._handle_service_change_mission_inner_key)
 
         rospy.Service('ServiceChangeMission', SrvCreateJsonableObjectByStr, self._handle_service_change_mission)
 

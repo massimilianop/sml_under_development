@@ -49,6 +49,7 @@ class Jsonable:
     """
 
     UNIQUE_STRING = "##########"
+    UNIQUE_STRING_second = "$$$$$$$$$"
 
 
     @classmethod
@@ -194,34 +195,56 @@ class Jsonable:
         """
         
         arg_dic = json.loads(string)
+
         for key, value in arg_dic.items():
             if key in cls.inner.keys():
                 InnerObjType = cls.inner[key][value[0]]
-                inner_obj            = InnerObjType.from_string(json.dumps(value[1]))
+                inner_obj    = InnerObjType.from_string(json.dumps(value[1]))
                 arg_dic[key] = inner_obj
 
         obj = cls(**arg_dic)
-        obj.constructing_string = string
+        obj.constructing_dic = json.loads(string)
         return obj        
 
     def get_constructing_string(self):
         """Returns string that constructs object.
         """
+
+        if hasattr(self,"constructing_dic"):
         
-        constructing_string     = self.constructing_string
-        constructing_string_dic = json.loads(constructing_string)
+            constructing_dic = self.constructing_dic
 
-        for key in self.inner.keys():
-            if hasattr(self,key):
-                print(key)
-                print(getattr(self,key).get_constructing_string())
-                constructing_string_dic[key] = getattr(self,key).get_constructing_string()
-            else:
-                print(self.__class__.__name__+" has no attribute "+key)
+            # for key in self.inner.keys():
+            #     if hasattr(self,key):
+            #         # constructing_dic[key] is a list ['key_name',constructing_string for class]
+            #         # we only want to change the constructing string
+            #         key_name                 = 
+            #         constructing_dic[key][0] = key_name
+            #         constructing_dic[key][1] = getattr(self,key).get_constructing_string()
+            #     else:
+            #         print(self.__class__.__name__+" has no attribute "+key)
 
-        constructing_string     = json.dumps(constructing_string_dic)   
+            constructing_string     = json.dumps(constructing_dic)
+        else:
+            constructing_string = ""
 
         return constructing_string
+
+    def change_inner_key(self,inner_key,key,input_string):
+
+        if hasattr(self,inner_key):
+            # inner = {inner_key : dictionary_of_classes}
+            dictionary_of_classes = self.inner[inner_key]
+
+            if key in dictionary_of_classes.keys():
+                Class  = dictionary_of_classes[key]
+                class_object = Class.from_string(input_string)
+                setattr(self,inner_key,class_object)
+                self.constructing_dic[inner_key] = [key,json.loads(input_string)] 
+        else:
+            pass
+        return
+
     
     def get_parameters(self):
         """Child classes redefine this
@@ -269,24 +292,25 @@ class Jsonable:
         return string
     
     def parametric_description(self,name):
+
+        dictionary = {}
+        dictionary['name']      = name
+        dictionary['to_string'] = self.get_constructing_string()
+
         string  = self.UNIQUE_STRING+"\n"
-        string += name+"\n"
-        # string += self.parameters_to_string()
-        string += self.get_constructing_string()
+        string += json.dumps(dictionary)
         string += self.UNIQUE_STRING
         return string
 
     @classmethod
     def inverse_parametric_description(cls,string):
         """from a string withouth the unique string, get name"""
-        string = string.splitlines() 
-        name   = string[1]
-        parametric_description = string[2:]
-        parametric_description = str.join("",parametric_description)
-        print('11111111111111')
-        print(string)
-        print(name)
-        print(parametric_description)
+        
+        # print(string)
+        dictionary = json.loads(string)
+        name   = dictionary['name']
+        parametric_description = dictionary['to_string']
+        # print(parametric_description)
         return name, parametric_description
      
         

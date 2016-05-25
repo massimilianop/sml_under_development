@@ -22,6 +22,8 @@ sys.path.insert(0, rospack.get_path('quad_control'))
 # no need to get quad_control path, since it is package; import controllers dictionary
 from src.utilities import jsonable
 
+import json
+
 class ChooseJsonablePlugin(Plugin):
 
     def __init__(self, context,namespace = None, name_tab = "", dictionary_of_options = {}, service_name = "", ServiceClass = None):
@@ -246,7 +248,11 @@ class ChooseJsonablePlugin(Plugin):
                 self.dic_sequence_services['last_trigger_time'] = trigger_instant
 
                 new_service['service_name']    = self.service_name
-                new_service['inputs_service']  = {'jsonable_name':self.__head_class_key, 'string_parameters': parameters}
+                # new_service['inputs_service']  = {'jsonable_name':self.__head_class_key, 'string_parameters': parameters}
+                input_service = {"inner_key":self.name_tab,"key":self.__head_class_key,"input_string":parameters}
+                input_service = json.dumps(input_service) 
+                new_service['inputs_service']  = {'dictionary':input_service}
+
                 self.dic_sequence_services['list_sequence_services'].append(new_service)
 
             else:

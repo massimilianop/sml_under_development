@@ -4,7 +4,7 @@
 
 1. When service or topic is **added**, add it to **CMakeList.txt**
 2. When service or topic is **changed**, perform **catkin_make**
-
+2. When service or topic is **changed**, perform in workspace **source ./devel/setup.bash** or **./devel/setup.zsh**
 
 ## Description of Services
 

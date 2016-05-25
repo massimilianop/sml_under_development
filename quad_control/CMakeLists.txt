@@ -77,6 +77,7 @@ add_service_files(
   PlotService.srv
   ReceiveToken.srv
   ServiceSequence.srv
+  SrvChangeJsonableObjectByStr.srv
 )
 
 ## Generate actions in the 'action' folder

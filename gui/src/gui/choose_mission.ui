@@ -51,11 +51,52 @@
             </property>
            </widget>
           </item>
-          <item row="1" column="0">
+          <item row="2" column="0">
            <widget class="QTabWidget" name="tabWidget">
             <property name="currentIndex">
              <number>1</number>
             </property>
+            <widget class="QWidget" name="tab_2">
+             <attribute name="title">
+              <string>Mission Sequence</string>
+             </attribute>
+             <layout class="QVBoxLayout" name="verticalLayout">
+              <item>
+               <widget class="QLabel" name="label_5">
+                <property name="text">
+                 <string>Available Sequences</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QListWidget" name="available_mission_sequences"/>
+              </item>
+              <item>
+               <widget class="QPushButton" name="new_sequence">
+                <property name="text">
+                 <string>New</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="save_new_sequence">
+                <property name="text">
+                 <string>Save new sequence</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_6">
+                <property name="text">
+                 <string>Description</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QTextEdit" name="mission_sequence_description"/>
+              </item>
+             </layout>
+            </widget>
             <widget class="QWidget" name="tab">
              <attribute name="title">
               <string>Reset</string>
@@ -112,16 +153,6 @@
                <widget class="QSpinBox" name="TriggerInstantNeutral"/>
               </item>
              </layout>
-             <zorder>SetIrisNeutralValue</zorder>
-             <zorder>ThrottleNeutralValue</zorder>
-             <zorder>SetIrisNeutralValue</zorder>
-             <zorder>label_8</zorder>
-             <zorder>label_8</zorder>
-             <zorder>ThrottleNeutralValue</zorder>
-             <zorder>ThrottleNeutralValue</zorder>
-             <zorder>ResetIrisNeutralValue</zorder>
-             <zorder>label_4</zorder>
-             <zorder>TriggerInstantNeutral</zorder>
             </widget>
             <widget class="QWidget" name="tab_3">
              <attribute name="title">

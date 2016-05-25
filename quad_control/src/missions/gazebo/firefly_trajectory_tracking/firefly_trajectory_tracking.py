@@ -181,4 +181,10 @@ class FireflyTrajectoryTracking(mission.Mission):
         self.state_quad = self.RotorSObject.get_quad_state(odometry_rotor_s)
         
         
-        
+# string  = '{"controller": ["SimplePIDController", "{"quad_mass": 1.669, "bound_integral_xy": 0.0, "derivative_gain_z": 1.0, "derivative_gain_xy": 1.0, "proportional_gain_z": 1.0, "integral_gain_z": 0.5, "integral_gain_xy": 0.0, "proportional_gain_xy": 1.0, "bound_integral_z": 0.0}"], "yaw_controller": ["SimpleTrackingYawController", {"gain": 1.0}], "reference": ["StayAtRest", "{"point": [0.0, 0.0, 1.0]}"], "yaw_reference": ["FixedYaw", {"offset": 0.0}]}'
+# string  =
+ 
+# string = "{'controller': ['SimplePIDController', {'quad_mass': 1.669, 'bound_integral_xy': 0.0, 'derivative_gain_z': 1.0, 'derivative_gain_xy': 1.0, 'proportional_gain_z': 1.0, 'integral_gain_z': 0.5, 'integral_gain_xy': 0.0, 'proportional_gain_xy': 1.0, 'bound_integral_z': 0.0}], 'yaw_controller': ['SimpleTrackingYawController', {'gain': 1.0}], 'reference': ['StayAtRest', {'point': [0.0, 0.0, 1.0]}], 'yaw_reference': ['FixedYaw', {'offset': 0.0}]}"
+# print(string)
+# object_ = FireflyTrajectoryTracking.from_string(string)
+# print(object_.get_constructing_string())

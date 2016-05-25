@@ -12,6 +12,7 @@ services_database['ServiceChangeReference']     = SrvCreateJsonableObjectByStr
 services_database['ServiceChangeYawReference']  = SrvCreateJsonableObjectByStr
 services_database['ServiceChangeYawController'] = SrvCreateJsonableObjectByStr
 services_database['ServiceChangeController']    = SrvCreateJsonableObjectByStr
+services_database['ServiceMissionChangeInner']         = SrvChangeJsonableObjectByStr
 
 services_database['IrisPlusResetNeutral']    = IrisPlusResetNeutral
 services_database['IrisPlusSetNeutral']      = IrisPlusSetNeutral
@@ -45,10 +46,9 @@ class ServiceTimeSequencer():
     def __init__(self):
 
         # frequency of node (Hz)
-        self.frequency = 1.0
+        self.frequency = 2.0
 
     def _handle_service_sequence(self,data):
-        print('aaaaaaa')
         self.service_sequence = json.loads(data.service_sequence)
         self.initial_instant  = rospy.get_time()
 
