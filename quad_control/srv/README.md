@@ -8,6 +8,11 @@
 
 ## Description of Services
 
+1. SrvChangeJsonableObjectByStr: service to change inner_key of a jsonable object (example '{"inner_key":"reference","key":"StayAtRest","input_string":"{"offset":[0.0 0.0 1.0]}"}')
+```
+rosservice call ServiceName '{dictionary: {"inner_key":"","key":"","input_string":""}}'
+```
+
 1. IrisPlusResetNeutral: service for reseting the neutral value that guarantees that the iris+ stays at a desired altitude (no request data is necessary, i.e., requesting service is enough to know that reseting is required)
 ```
 rosservice call IrisPlusResetNeutral

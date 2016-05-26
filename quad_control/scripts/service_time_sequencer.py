@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Class ServiceTimeSequencer that is used in node that accepts a sequence of services with trigger instants and sends these services according to these trigger instants"""
 
 import rospy
@@ -48,19 +49,21 @@ class ServiceTimeSequencer():
         self.infinity  = infinity
 
     def handle_service_sequence(self,data):
+        """handle for when new sequence of services is received"""
+
+        # loads string with sequence of services (which is a list where each element is a dictionary)
+        # and each dictionary is of the form dictionary = {'trigger_instant':'','service_name':'','inputs_service':''}
+        # inputs to service is on its own also a dictionary
         self.service_sequence = json.loads(data.service_sequence)
         self.initial_instant  = rospy.get_time()
 
-        self.handle_service_sequence()
+        self.update()
 
         return ServiceSequenceResponse(received = True)
 
-    def update_and_request(self):
-        """Request for the current service, and update next_trigger_instant, service_name and inputs_to_service"""
-
-        print("asking for: "+self.service_name)
-        request_service(self.namespace,self.service_name,self.inputs_service)
-
+    def update(self):
+        """Update next_trigger_instant, service_name and inputs_to_service"""
+        
         # if service_sequence is non-empty
         if self.service_sequence:
             
@@ -74,6 +77,15 @@ class ServiceTimeSequencer():
         else:
             # next
             self.next_trigger_instant = self.infinity
+
+    def update_and_request(self):
+        """Request for the current service, and update next_trigger_instant, service_name and inputs_to_service"""
+
+        print("asking for: "+self.service_name)
+        request_service(self.namespace,self.service_name,self.inputs_service)
+
+        # update next service to be provided and corresponding trigger instant
+        self.update()
 
     def loop(self):
         """Sets up service that accepts sequence of services and provides services sequentially"""
