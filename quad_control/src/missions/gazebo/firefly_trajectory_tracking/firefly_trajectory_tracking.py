@@ -149,6 +149,11 @@ class FireflyTrajectoryTracking(mission.Mission):
     def get_state(self):
         return self.state_quad
 
+    def get_position(self):
+        return self.state_quad[0:3]
+
+    def get_velocity(self):
+        return self.state_quad[3:6]
 
     def get_pv(self):
         return self.state_quad[0:6]

@@ -245,7 +245,9 @@ class Jsonable:
                 Class  = dictionary_of_classes[key]
                 class_object = Class.from_string(input_string)
                 setattr(self,inner_key,class_object)
-                self.constructing_dic[inner_key] = [key,json.loads(input_string)] 
+                # TODO: there should always exist constructing_dic
+                if hasattr(self,"constructing_dic"):
+                    self.constructing_dic[inner_key] = [key,json.loads(input_string)] 
         else:
             pass
         return

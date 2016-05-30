@@ -36,6 +36,11 @@ class QuadController():
         # frequency of controlling action!!
         self.frequency = 35.0
 
+        self.box_center = numpy.array([0.0,0.0,1.0])
+        self.box_sides  = numpy.array([2.0,2.0,1.5])
+        # go down to z = ... in meters when emergency is triggered
+        self.position_z_before_land = 0.3
+
         # initialize counter for publishing to GUI
         # we only publish when self.PublishToGUI =1
         self.PublishToGUI = 1
@@ -102,44 +107,6 @@ class QuadController():
         # IrisPlusSetNeutral: service type
         self.mission_object.iris_plus_converter_object_mission.set_k_trottle_neutral(req.k_trottle_neutral)
         return IrisPlusSetNeutralResponse(True)
-
-    # # callback for when changing controller is requested
-    # def _handle_service_change_controller(self,req):
-    #     self.mission_object.change_controller(req.jsonable_name,req.string_parameters)
-        
-    #     self._add_header_mission()
-
-    #     # return message to Gui, to let it know resquest has been fulfilled
-    #     return SrvCreateJsonableObjectByStrResponse(received = True)
-
-    # # callback for when changing controller is requested
-    # def _handle_service_change_reference(self,req):
-
-    #     self.mission_object.change_reference(req.jsonable_name,req.string_parameters)
-        
-    #     self._add_header_mission()
-
-    #     # return message to Gui, to let it know resquest has been fulfilled
-    #     return SrvCreateJsonableObjectByStrResponse(received = True)
-
-    # # callback for when changing controller is requested
-    # def _handle_service_change_yaw_controller(self,req):
-    #     self.mission_object.change_yaw_controller(req.jsonable_name,req.string_parameters)
-        
-    #     self._add_header_mission()
-        
-    #     # return message to Gui, to let it know resquest has been fulfilled
-    #     return SrvCreateJsonableObjectByStrResponse(received = True)
-
-    # # callback for when changing controller is requested
-    # def _handle_service_change_yaw_reference(self,req):
-
-    #     self.mission_object.change_yaw_reference(req.jsonable_name,req.string_parameters)
-
-    #     self._add_header_mission()
-
-    #     # return message to Gui, to let it know resquest has been fulfilled
-    #     return SrvCreateJsonableObjectByStrResponse(received = True)      
 
     # callback for when changing mission inner_key
     def _handle_service_change_mission_inner_key(self,req):
@@ -237,6 +204,32 @@ class QuadController():
                 msg.d_est = self.ControllerObject.d_est
                 self.pub_ctr_st.publish(msg) 
 
+    def check_inside_limits(self,position,velocity):
+        if any(numpy.absolute(position - self.box_center) >= self.box_sides):
+            return False
+        else:
+            return True
+
+    def stop_and_land(self,position):
+
+        # Default Mission Class
+        MissionClass = missions.missions_database.database['Default']   
+        self.mission_object = MissionClass()
+
+        # change reference of default mission to hold in x and y
+        # and go down in z direction
+        request = SrvChangeJsonableObjectByStr()
+        position[2] = self.position_z_before_land
+
+        arg_dic = {'point': str(list(position))}
+        string = json.dumps(arg_dic, separators=(', \n', '\t: '))
+        string = string.replace('"[','[')
+        string = string.replace(']"',']')
+
+        dictionary = {"inner_key":'reference',"key":'StayAtRest',"input_string":string}
+        self.mission_object.change_inner_key(**dictionary)        
+
+
     def control_compute(self):
 
         # node will be named quad_control (see rqt_graph)
@@ -262,11 +255,6 @@ class QuadController():
 
         #-----------------------------------------------------------------------#
         # Services are created, so that user can change controller, reference, yaw_controller and yaw reference on GUI
-        # rospy.Service('ServiceChangeController'   , SrvCreateJsonableObjectByStr, self._handle_service_change_controller)
-        # rospy.Service('ServiceChangeReference'    , SrvCreateJsonableObjectByStr, self._handle_service_change_reference)
-        # rospy.Service('ServiceChangeYawController', SrvCreateJsonableObjectByStr, self._handle_service_change_yaw_controller)
-        # rospy.Service('ServiceChangeYawReference' , SrvCreateJsonableObjectByStr, self._handle_service_change_yaw_reference)
-
         rospy.Service('ServiceMissionChangeInner' , SrvChangeJsonableObjectByStr, self._handle_service_change_mission_inner_key)
 
         rospy.Service('ServiceChangeMission', SrvCreateJsonableObjectByStr, self._handle_service_change_mission)
@@ -285,7 +273,15 @@ class QuadController():
 
         rate = rospy.Rate(self.frequency)
 
+        self.emergency_triggered = False
+
         while not rospy.is_shutdown():
+
+            position = self.mission_object.get_position()
+            velocity = self.mission_object.get_velocity()
+            if (not self.check_inside_limits(position,velocity)) and (not self.emergency_triggered):
+                self.emergency_triggered  = True
+                self.stop_and_land(position)
 
             self.mission_object.publish()
 
