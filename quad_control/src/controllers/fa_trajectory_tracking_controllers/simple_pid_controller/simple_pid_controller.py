@@ -20,8 +20,7 @@ class SimplePIDController(controller.Controller):
     
     @classmethod
     def description(cls):
-        return "<p>PID Controller, with saturation on integral part</p>"
-
+        return "PID Controller, with saturation on integral part"
 
     def __init__(self,              \
         proportional_gain_xy = 1.0, \
@@ -51,7 +50,19 @@ class SimplePIDController(controller.Controller):
 
         self.disturbance_estimate   = numpy.array([0.0,0.0,0.0])
         self.t_old  = 0.0
-        
+
+    def object_description(self):
+        string =  "<p>PID Controller, with saturation on integral part</p>"
+        string += "<p>force(&#916t, p,pd) = " + str(self.__quad_mass) +"*( pd<sup>(2)</sup> + u(p<sup>(0)</sup> - pd<sup>(0)</sup>,p<sup>(1)</sup> - pd<sup>(1)</sup>) + g e<sub>3</sub> - d<sup>est</sup>), where</p>"
+        string +="<ul>"
+        string += "<li>u<sub>xy</sub>(p,v) = -"+str(self.__proportional_gain_xy)+"*p"+"-"+str(self.__derivative_gain_xy)+"*v"+"</li>"
+        string += "<li>u<sub>z</sub>(p,v) = -"+str(self.__proportional_gain_z)+"*p"+"-"+str(self.__derivative_gain_z)+"*v"+"</li>"
+        string += "<li>d<sub>xy</sub><sup>est(1)</sup> = "+str(self.__integral_gain_xy)+"*(kp/2*ep + ev)"+"</li>"
+        string += "<li>|d<sub>xy</sub><sup>est(0)</sup>| &#8804 "+str(self.__bound_integral_xy)+"</li>"        
+        string += "<li>d<sub>z</sub><sup>est(1)</sup> = "+str(self.__integral_gain_z)+"*(kp/2*ep + ev)"+"</li>"
+        string += "<li>|d<sub>z</sub><sup>est(0)</sup>| &#8804 "+str(self.__bound_integral_z)+"</li>"
+        string +="</ul>"
+        return string
         
         
     def __str__(self):

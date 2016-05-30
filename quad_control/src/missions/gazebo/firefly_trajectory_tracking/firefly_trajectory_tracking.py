@@ -20,29 +20,14 @@ from yaw_rate_controllers import yaw_controllers_database
 # import list of available yaw trajectories
 from yaw_trajectories import yaw_trajectories_database
 
-
 # import controllers dictionary
 from controllers.fa_trajectory_tracking_controllers import fa_trajectory_tracking_controllers_database
-
 
 import math
 import numpy
 
 # for subscribing to topics, and publishing
 import rospy
-
-description = """
-<p>
-<b>Firefly</b>, from RotorS, to track a desired trajectory. This mission depends on: 
-<ul>
-  <li>a trajectory tracking controller</li>
-  <li>a reference position trajectory to be tracked</li>
-  <li>a yaw controller</li>
-  <li>a yaw reference</li>
-</ul>
-</p>
-"""
-
 
 class FireflyTrajectoryTracking(mission.Mission):
 
@@ -55,8 +40,16 @@ class FireflyTrajectoryTracking(mission.Mission):
 
     @classmethod
     def description(cls):
+        description = """
+        <b>Firefly</b>, from RotorS, to track a desired trajectory. This mission depends on:
+        <ul>
+          <li>controller: a trajectory tracking controller</li>
+          <li>reference: a reference position trajectory to be tracked</li>
+          <li>yaw_controller: a yaw controller</li>
+          <li>yaw_reference: a yaw reference</li>
+        </ul>
+        """
         return description
-    
     
     def __init__(self,
             controller     = fa_trajectory_tracking_controllers_database.database["Default"](),
@@ -64,7 +57,7 @@ class FireflyTrajectoryTracking(mission.Mission):
             yaw_controller = yaw_controllers_database.database["Default"](),
             yaw_reference  = yaw_trajectories_database.database["Default"]()
             ):
-        # Copy the parameters into self variables
+        # Copy inner_keys into self variables
         # Subscribe to the necessary topics, if any
 
         # initialize time instant, and  state
@@ -74,31 +67,32 @@ class FireflyTrajectoryTracking(mission.Mission):
         self.RotorSObject = RotorSConverter()
 
         # subscriber to odometry from RotorS
-        self.sub_odometry = rospy.Subscriber(
-            "/firefly/ground_truth/odometry",
-            Odometry,
-            self.get_state_from_rotorS_simulator
-            )
+        dictionary = {}
+        dictionary['name'] = "/firefly/ground_truth/odometry"
+        dictionary['data_class'] = Odometry
+        dictionary['callback'] = self.get_state_from_rotorS_simulator
+        self.sub_odometry = rospy.Subscriber(**dictionary)
         
+
         # publisher: command firefly motor speeds 
-        self.pub_motor_speeds = rospy.Publisher(
-            '/firefly/command/motor_speed',
-            Actuators,
-            queue_size=10
-            )      
+        dictionary = {}
+        dictionary['name'] = "/firefly/command/motor_speed"
+        dictionary['data_class'] = Actuators
+        dictionary['queue_size'] = 1
+        self.pub_motor_speeds = rospy.Publisher(**dictionary)
 
         # dy default, desired trajectory is staying still in origin
         self.reference = reference
-        self.current_reference     = self.reference.output(self.time_instant_t0)
+        self.current_reference = self.reference.output(self.time_instant_t0)
 
         # controllers selected by default
         self.controller = controller
 
         # controllers selected by default
-        self.YawControllerObject = yaw_controller
+        self.yaw_controller = yaw_controller
 
         # controllers selected by default
-        self.yaw_reference_object = yaw_reference
+        self.yaw_reference = yaw_reference
 
     def initialize_state(self):
         # state of quad: position, velocity and attitude
@@ -108,24 +102,25 @@ class FireflyTrajectoryTracking(mission.Mission):
         self.yaw_desired = 0.0
 
 
-    def complete_description(self):
-        print("11111")
-        string  = self.description()
-        string += self.controller.description()
-        string += self.reference.description()
-        string += self.YawControllerObject.description()
-        string += self.yaw_reference_object.description()
-        return string
+    def object_description(self):
+        description = """
+        <b>Firefly</b>, from RotorS, to track a desired trajectory. This mission depends on:
+        <ul>
+          <li>controller: a trajectory tracking controller</li>
+          <li>reference: a reference position trajectory to be tracked</li>
+          <li>yaw_controller: a yaw controller</li>
+          <li>yaw_reference: a yaw reference</li>
+        </ul>
+        """
+        return description
         
     def __str__(self):
         string  = self.description()
         string += self.controller.description()
         string += self.reference.description()
-        string += self.YawControllerObject.description()
-        string += self.yaw_reference_object.description()
-        return string
-        # Add the self variables
-        
+        string += self.yaw_controller.description()
+        string += self.yaw_reference.description()
+        return string        
         
     def __del__(self):
         # Unsubscribe from all the subscribed topics
@@ -140,8 +135,8 @@ class FireflyTrajectoryTracking(mission.Mission):
     # overriding mission method
     def get_desired_yaw_rad(self,time_instant):
         '''Get desired yaw in radians, and its time derivative'''
-        self.yaw_desired = self.yaw_reference_object.output(time_instant)[0]
-        return self.yaw_reference_object.output(time_instant)
+        self.yaw_desired = self.yaw_reference.output(time_instant)[0]
+        return self.yaw_reference.output(time_instant)
     
     def get_ea_desired(self):
         return numpy.array([0.0,0.0,self.yaw_desired*180.0/math.pi]) 
@@ -172,19 +167,9 @@ class FireflyTrajectoryTracking(mission.Mission):
         self.pub_motor_speeds.publish(self.RotorSObject.rotor_s_message(desired_3d_force_quad,yaw_rate))
         pass
 
-
     # callback when ROTORS simulator publishes states
     def get_state_from_rotorS_simulator(self,odometry_rotor_s):        
         # RotorS has attitude inner loop that needs to known attitude of quad
         self.RotorSObject.rotor_s_attitude_for_control(odometry_rotor_s)
         # get state from rotorS simulator
         self.state_quad = self.RotorSObject.get_quad_state(odometry_rotor_s)
-        
-        
-# string  = '{"controller": ["SimplePIDController", "{"quad_mass": 1.669, "bound_integral_xy": 0.0, "derivative_gain_z": 1.0, "derivative_gain_xy": 1.0, "proportional_gain_z": 1.0, "integral_gain_z": 0.5, "integral_gain_xy": 0.0, "proportional_gain_xy": 1.0, "bound_integral_z": 0.0}"], "yaw_controller": ["SimpleTrackingYawController", {"gain": 1.0}], "reference": ["StayAtRest", "{"point": [0.0, 0.0, 1.0]}"], "yaw_reference": ["FixedYaw", {"offset": 0.0}]}'
-# string  =
- 
-# string = "{'controller': ['SimplePIDController', {'quad_mass': 1.669, 'bound_integral_xy': 0.0, 'derivative_gain_z': 1.0, 'derivative_gain_xy': 1.0, 'proportional_gain_z': 1.0, 'integral_gain_z': 0.5, 'integral_gain_xy': 0.0, 'proportional_gain_xy': 1.0, 'bound_integral_z': 0.0}], 'yaw_controller': ['SimpleTrackingYawController', {'gain': 1.0}], 'reference': ['StayAtRest', {'point': [0.0, 0.0, 1.0]}], 'yaw_reference': ['FixedYaw', {'offset': 0.0}]}"
-# print(string)
-# object_ = FireflyTrajectoryTracking.from_string(string)
-# print(object_.get_constructing_string())

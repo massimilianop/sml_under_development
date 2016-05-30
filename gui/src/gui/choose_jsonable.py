@@ -95,6 +95,9 @@ class ChooseJsonablePlugin(Plugin):
 
         self.__reset_jsonable_widget()
 
+        # description window to display html formatted text
+        self._widget.JsonableDescription.setAcceptRichText(True)
+
     # PUBLIC FUNCTION:
     def change_dictionary_of_options(self,dictionary_of_options):
         self.dictionary_of_options = dictionary_of_options
@@ -133,7 +136,7 @@ class ChooseJsonablePlugin(Plugin):
             string = ClassSelected.description()
 
             # print message on GUI
-            self._widget.JsonableDescription.setPlainText(string)
+            self._widget.JsonableDescription.setText(string)
         else:
             key_class_name_selected = self._widget.ListJsonableWidget.currentItem().text()
             ClassSelected           = self.dic_to_print[key_class_name_selected]
@@ -142,7 +145,7 @@ class ChooseJsonablePlugin(Plugin):
             string = ClassSelected.description() 
 
             # print message on GUI
-            self._widget.JsonableDescription.setPlainText(string)
+            self._widget.JsonableDescription.setText(string)
 
         pass 
         
@@ -223,9 +226,9 @@ class ChooseJsonablePlugin(Plugin):
         self._widget.ListJsonableWidget.clear()
 
         # print message on GUI
-        self._widget.JsonableDescription.setPlainText('Selected ' + self.name_tab + ' : ' + self.__HeadClass.description())        
+        self._widget.JsonableDescription.setText('Selected ' + self.name_tab + ' : ' + self.__HeadClass.description())        
 
-        return 
+        return         
 
     def __service_jsonable_object(self):
         """Request service for new jsonable object with parameters chosen by user"""
@@ -295,7 +298,7 @@ class ChooseJsonablePlugin(Plugin):
             # print message on GUI
             self._widget.JsonableDescription.setText('<b>Service cannot be completed: finish choosing </b>')                         
 
-        pass       
+        pass
 
     def _parse_args(self, argv):
 

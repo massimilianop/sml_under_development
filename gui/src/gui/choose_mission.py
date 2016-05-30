@@ -383,7 +383,6 @@ class ChooseMissionPlugin(Plugin):
 
         pass            
 
-
     def __reset_controllers_widget(self):
         """ Clear widget with missions list and print it again """
 
@@ -533,8 +532,6 @@ class ChooseMissionPlugin(Plugin):
         #self._widget.ItemClickedMessage.setText('Selected Mission: '+self.__HeadClass.description())
         self._widget.ItemClickedMessage.setText('<p>Selected Mission:</p>'+self.__HeadClass.combined_description(self.__head_class_input_dic))
 
-        self.__add_tab()
-
         return 
 
     def __get_new_controller_parameters(self):
@@ -562,6 +559,9 @@ class ChooseMissionPlugin(Plugin):
                 new_service['service_name']    = 'ServiceChangeMission'
                 new_service['inputs_service']  = {'jsonable_name':self.__head_class_key, 'string_parameters': parameters}
                 self.dic_sequence_services['list_sequence_services'].append(new_service)
+
+                self.__add_tab()
+
 
             else:
 

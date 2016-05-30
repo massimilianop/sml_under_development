@@ -49,8 +49,6 @@ class Jsonable:
     """
 
     UNIQUE_STRING = "##########"
-    UNIQUE_STRING_second = "$$$$$$$$$"
-
 
     @classmethod
     def get_dic_recursive(cls, dictionary, list_of_keys):
@@ -193,17 +191,24 @@ class Jsonable:
         """Returns an object of this class constructed from the json string
         `string`.
         """
+
+        if not string == "":
+            arg_dic = json.loads(string)
+
+            for key, value in arg_dic.items():
+                if key in cls.inner.keys():
+                    InnerObjType = cls.inner[key][value[0]]
+                    inner_obj    = InnerObjType.from_string(json.dumps(value[1]))
+                    arg_dic[key] = inner_obj
+
+            obj = cls(**arg_dic)
+            obj.constructing_dic = json.loads(string)
         
-        arg_dic = json.loads(string)
+        else:
+            "if string is empty, construct default object"
+            print("\nYou are constructing a default object of class :" + cls.__name__+'\n')
+            obj = cls()
 
-        for key, value in arg_dic.items():
-            if key in cls.inner.keys():
-                InnerObjType = cls.inner[key][value[0]]
-                inner_obj    = InnerObjType.from_string(json.dumps(value[1]))
-                arg_dic[key] = inner_obj
-
-        obj = cls(**arg_dic)
-        obj.constructing_dic = json.loads(string)
         return obj        
 
     def get_constructing_string(self):
@@ -326,7 +331,7 @@ class Jsonable:
             defs = []
         arg_dic = dict()
 
-        string = "<p>"+cls.description()+"<\p>"
+        string = "<p>"+cls.description()+"</p>"
 
         if len(defs) != 0:
             # start list
@@ -337,7 +342,7 @@ class Jsonable:
                 if arg in cls.inner.keys():
                     inner_key   = inner[arg][0]
                     inner_inner = inner[arg][1]
-                    string += "<li>"+arg+"="+inner_key+":"+cls.inner[arg][inner_key].combined_description(inner_inner)+"</li>"
+                    string += "<li>"+arg+"="+inner_key+": "+cls.inner[arg][inner_key].combined_description(inner_inner)+"</li>"
             # end list
             string += "</ul>"
 
@@ -347,17 +352,22 @@ class Jsonable:
     def object_combined_description(self):
         """Returns a string of the combined description of all jsonable objects (class + its inners)"""
         
-        string = "<p>"+self.description()+"<\p>"
+        if hasattr(self,"object_description"):
+            string = "<p>"+self.object_description()+"</p>"
 
-        string += "<ul>"
-        for arg in self.inner.keys():
-            if hasattr(self,arg):
-                print(arg)
-                string += "<li>"+getattr(self, arg).object_combined_description()+"</li>"
-            else:
-                print(self.__class__.__name__+" has no attribute "+arg)
-        # end list
-        string += "</ul>"
+            string += "<ul>"
+            for arg in self.inner.keys():
+                if hasattr(self,arg):
+                    print(arg)
+                    string += "<li>"+arg+"="+getattr(self, arg).__class__.__name__+": "+getattr(self, arg).object_combined_description()+"</li>"
+                else:
+                    print(self.__class__.__name__+" has no attribute "+arg)
+            # end list
+            string += "</ul>"
+        else:
+            string = self.__class__.__name__+" has no method object_description()"
+            print(string)
+            print("Please implement it\n")
 
         return string
 

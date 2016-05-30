@@ -327,7 +327,7 @@ class Mission(js.Jsonable):
         state_for_yaw_controller = self.get_quad_ea_rad()
         input_for_yaw_controller = self.get_desired_yaw_rad(time_instant)
 
-        yaw_rate = self.YawControllerObject.output(state_for_yaw_controller,
+        yaw_rate = self.yaw_controller.output(state_for_yaw_controller,
             input_for_yaw_controller)
 
         return yaw_rate
