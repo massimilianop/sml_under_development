@@ -6,24 +6,14 @@ import rospy
 # controller node publishes message of this type so that GUI can plot stuff
 from quad_control.msg import quad_state_and_cmd
 
-# node will publish controller state if requested
-from quad_control.msg import Controller_State
-
 # import services defined in quad_control
-# Four SERVICES ARE BEING USED: SaveData, ServiceTrajectoryDesired, Mocap_Id, StartSim
 # SaveData is for saving data in txt file
-# TrajDes is for selecting trajectory
-# Mocap_Id for body detection from QUALISYS
-# StartSim stop simulator
 from quad_control.srv import *
 
 # to work with directories relative to ROS packages
 from rospkg import RosPack
 
-
-
 import numpy
-from numpy import *
 
 import missions.missions_database
 
@@ -89,56 +79,45 @@ class QuadController():
         # return message to Gui, to let it know resquest has been fulfilled
         return SaveDataResponse(True)
 
-    # callback for when "reseting iris plus neutral value" is requested
-    def _handle_iris_plus_reset_neutral(self,req):
-        # return message to GUI, to let it know resquest has been fulfilled
-        # IrisPlusResetNeutral: service type
-        median_force = self.mission_object.DesiredZForceMedian.output()
-        rospy.logwarn('median force = '+ str(median_force))
-        self.mission_object.iris_plus_converter_object_mission.reset_k_trottle_neutral(median_force)
-
-        # new neutral value
-        k_trottle_neutral = self.mission_object.iris_plus_converter_object_mission.get_k_throttle_neutral()
-        return IrisPlusResetNeutralResponse(received = True, k_trottle_neutral = k_trottle_neutral)
-
-    # callback for when "seting iris plus neutral value" is requested
-    def _handle_iris_plus_set_neutral(self,req):
-        # return message to GUI, to let it know resquest has been fulfilled
-        # IrisPlusSetNeutral: service type
-        self.mission_object.iris_plus_converter_object_mission.set_k_trottle_neutral(req.k_trottle_neutral)
-        return IrisPlusSetNeutralResponse(True)
-
-    # callback for when changing mission inner_key
-    def _handle_service_change_mission_inner_key(self,req):
-
-        # dictionary = '{"inner_key":"","key":"","input_string":""}'
-        dictionary = json.loads(req.dictionary)
-
-        self.mission_object.change_inner_key(**dictionary)
-
-        self._add_header_mission()
-
-        # return message to Gui, to let it know resquest has been fulfilled
-        return SrvChangeJsonableObjectByStrResponse(received = True)      
-
-
-    # callback for when changing mission is requested
+    # callback for when changing mission
     def _handle_service_change_mission(self,req):
 
-        self.mission_name = req.jsonable_name
+        # dictionary = '{"sequence_inner_key":"","key":"","input_string":""}'
+        dictionary = json.loads(req.dictionary)
 
-        # class_name = req.jsonable_name
-        # chosen class taken from dictionary
-        MissionClass = missions.missions_database.database[req.jsonable_name]
+        sequence_of_inners = dictionary["sequence_inner_key"]
+        print(sequence_of_inners)
+
+        if sequence_of_inners:
+            self.mission_object.change_inner_of_inner(**dictionary)
+        else:
+            # change mission, if sequence is empty
+            
+            # mission name
+            self.mission_name = dictionary["key"]
+
+            # chosen class taken from dictionary
+            MissionClass = missions.missions_database.database[dictionary["key"]]
         
-        self.mission_object = MissionClass.from_string(req.string_parameters)
+            self.mission_object = MissionClass.from_string(dictionary["input_string"])            
 
-        #rospy.logwarn(self.mission_object.__class__.__name__)
 
         self._add_header_mission()
 
         # return message to Gui, to let it know resquest has been fulfilled
-        return SrvCreateJsonableObjectByStrResponse(received = True)        
+        return SrvChangeJsonableObjectByStrResponse(received = True)   
+
+
+    # callback for when changing mission
+    def _handle_service_call_mission_method(self,req):
+
+        # dictionary = '{"sequence_inner_key":"","func_name":"","input_to_func":""}'
+        dictionary = json.loads(req.dictionary)
+
+        self.mission_object.call_method_inner_of_inner(**dictionary)
+
+        # return message to Gui, to let it know resquest has been fulfilled
+        return SrvChangeJsonableObjectByStrResponse(received = True)     
 
 
     def _add_header_mission(self,flag=False):
@@ -196,14 +175,6 @@ class QuadController():
 
             self.pub.publish(st_cmd)
 
-            # controller state is supposed to be published
-            if self.flagPublish_ctr_st:
-                # publish controller state
-                msg       = Controller_State()
-                msg.time  = rospy.get_time()
-                msg.d_est = self.ControllerObject.d_est
-                self.pub_ctr_st.publish(msg) 
-
     def check_inside_limits(self,position,velocity):
         if any(numpy.absolute(position - self.box_center) >= self.box_sides):
             return False
@@ -238,11 +209,6 @@ class QuadController():
         # message published by quad_control to GUI 
         self.pub = rospy.Publisher('quad_state_and_cmd', quad_state_and_cmd, queue_size=10)
 
-        # for publishing state of the controller
-        self.pub_ctr_st = rospy.Publisher('ctr_state', Controller_State, queue_size=10)
-        # initialize flag for publishing controller state at false
-        self.flagPublish_ctr_st = False
-
         #-----------------------------------------------------------------------#
         # TO SAVE DATA FLAG
         # by default, NO data is saved
@@ -254,17 +220,10 @@ class QuadController():
         Save_data_service = rospy.Service('SaveDataFromGui', SaveData, self._handle_save_data)
 
         #-----------------------------------------------------------------------#
-        # Services are created, so that user can change controller, reference, yaw_controller and yaw reference on GUI
-        rospy.Service('ServiceMissionChangeInner' , SrvChangeJsonableObjectByStr, self._handle_service_change_mission_inner_key)
-
-        rospy.Service('ServiceChangeMission', SrvCreateJsonableObjectByStr, self._handle_service_change_mission)
-
+        rospy.Service('ServiceChangeMission', SrvChangeJsonableObjectByStr, self._handle_service_change_mission)
+        rospy.Service('ServiceChangeMissionCallMethod', SrvChangeJsonableObjectByStr, self._handle_service_call_mission_method)
+        
         #-----------------------------------------------------------------------#
-        # Service: change neutral value that guarantees that a quad remains at a desired altitude
-        rospy.Service('IrisPlusResetNeutral', IrisPlusResetNeutral, self._handle_iris_plus_reset_neutral)
-        rospy.Service('IrisPlusSetNeutral', IrisPlusSetNeutral, self._handle_iris_plus_set_neutral)
-        #-----------------------------------------------------------------------#
-
         self.mission_name  = 'Default'
         # Default Mission Class
         MissionClass = missions.missions_database.database['Default']        
@@ -295,11 +254,9 @@ class QuadController():
             # go to sleep
             rate.sleep()
 
-
 if __name__ == '__main__':
     AQuadController = QuadController()
     try:
         AQuadController.control_compute()
     except rospy.ROSInterruptException:
         pass
- 

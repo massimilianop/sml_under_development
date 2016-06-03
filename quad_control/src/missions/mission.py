@@ -36,6 +36,8 @@ from matplotlib import pyplot as plt
 # import converter from 3d_force and yaw rate into iris rc standard 
 from converters.iris_plus_converter import IrisPlusConverter
 
+from utilities.jsonable import Jsonable
+
 class Mission(js.Jsonable):
 
     inner = {
@@ -208,8 +210,7 @@ class Mission(js.Jsonable):
         A reference might not exist
         """
         return None
-
-
+  
     def get_state(self):
         """
         Get state that is accepted by controller.
@@ -219,6 +220,7 @@ class Mission(js.Jsonable):
         return NotImplementedError()
 
 
+    #TODO: error here somewhere
     def get_state_string(self):
         """In the main cycle, call this function to get a line that can be
         written on a file:

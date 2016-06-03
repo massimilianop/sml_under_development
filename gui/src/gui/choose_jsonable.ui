@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>634</width>
-    <height>603</height>
+    <width>792</width>
+    <height>617</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -27,83 +27,94 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>614</width>
-        <height>583</height>
+        <width>772</width>
+        <height>597</height>
        </rect>
       </property>
       <layout class="QGridLayout" name="gridLayout_3">
        <item row="0" column="0">
-        <widget class="QGroupBox" name="groupBox_8">
-         <property name="title">
-          <string>Setting</string>
+        <widget class="QTabWidget" name="tabWidget">
+         <property name="currentIndex">
+          <number>0</number>
          </property>
-         <layout class="QGridLayout" name="gridLayout_2">
-          <item row="0" column="0" colspan="2">
-           <widget class="QPushButton" name="SetJsonableButton">
-            <property name="text">
-             <string>Set</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="4">
-           <widget class="QLabel" name="labelJsonableParameters">
-            <property name="text">
-             <string>Parameters</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="4">
-           <widget class="QPlainTextEdit" name="JsonableMessageInput"/>
-          </item>
-          <item row="0" column="3">
-           <widget class="QRadioButton" name="Success">
-            <property name="text">
-             <string>Success</string>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="0" colspan="5">
-           <widget class="QTextEdit" name="JsonableDescription">
-            <property name="acceptRichText">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1" colspan="3">
-           <widget class="QPushButton" name="ResetListJsonable">
-            <property name="text">
-             <string>Reset List</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0" colspan="4">
-           <widget class="QListWidget" name="ListJsonableWidget"/>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="labelJsonableAvailable">
-            <property name="text">
-             <string>Available</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="4">
-           <widget class="QRadioButton" name="Failure">
-            <property name="text">
-             <string>Failure</string>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="0" colspan="2">
-           <widget class="QLabel" name="labelJsonableParameters_2">
-            <property name="text">
-             <string>Description</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="2">
-           <widget class="QSpinBox" name="TriggerInstant"/>
-          </item>
-         </layout>
+         <widget class="QWidget" name="JsonableName">
+          <attribute name="title">
+           <string>JsonableName</string>
+          </attribute>
+          <layout class="QGridLayout" name="gridLayout_2">
+           <item row="8" column="2">
+            <widget class="QPlainTextEdit" name="JsonableMessageInput"/>
+           </item>
+           <item row="8" column="3">
+            <widget class="QTextEdit" name="JsonableDescription">
+             <property name="acceptRichText">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="2">
+            <widget class="QLabel" name="labelJsonableParameters">
+             <property name="text">
+              <string>Parameters</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <widget class="QSpinBox" name="TriggerInstant"/>
+           </item>
+           <item row="7" column="3">
+            <widget class="QLabel" name="labelJsonableParameters_2">
+             <property name="text">
+              <string>Description</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QPushButton" name="SetJsonableButton">
+             <property name="text">
+              <string>Set</string>
+             </property>
+            </widget>
+           </item>
+           <item row="8" column="0">
+            <widget class="QListWidget" name="ListJsonableWidget"/>
+           </item>
+           <item row="4" column="0">
+            <widget class="QRadioButton" name="radioButtonMethods">
+             <property name="text">
+              <string>Methods</string>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
+             <property name="autoExclusive">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>Trigger Instant</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QPushButton" name="ResetListJsonable">
+             <property name="text">
+              <string>Reset List</string>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="0">
+            <widget class="QLabel" name="labelJsonableAvailable">
+             <property name="text">
+              <string>Available</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
         </widget>
        </item>
       </layout>

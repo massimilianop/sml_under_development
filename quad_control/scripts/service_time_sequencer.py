@@ -7,11 +7,8 @@ import rospy
 from quad_control.srv import *
 
 services_database = {}
-services_database['ServiceChangeMission']      = SrvCreateJsonableObjectByStr
-services_database['ServiceMissionChangeInner'] = SrvChangeJsonableObjectByStr
-
-services_database['IrisPlusResetNeutral']    = IrisPlusResetNeutral
-services_database['IrisPlusSetNeutral']      = IrisPlusSetNeutral
+services_database['ServiceChangeMission'] = SrvChangeJsonableObjectByStr
+services_database['ServiceChangeMissionCallMethod'] = SrvChangeJsonableObjectByStr
 
 import json
 

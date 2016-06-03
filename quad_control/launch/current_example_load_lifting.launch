@@ -6,6 +6,7 @@
     <arg name="mocap" default="False"/>
     <arg name="rviz" default="False"/>
 
+    <node pkg="quad_control" name="service_time_sequencer" type="service_time_sequencer.py"  output="screen"/>
 
     <group if="$(arg gazebo)">
         <!-- define mission_type parameter: used to define mission database -->
@@ -15,8 +16,6 @@
           <!-- all vars that included.launch requires must be set -->
           <!-- <arg name="hoge" value="fuga" /> -->
         </include>
-
-        <node pkg="quad_control" name="service_time_sequencer" type="service_time_sequencer.py"  output="screen"/>
 
     </group>
 

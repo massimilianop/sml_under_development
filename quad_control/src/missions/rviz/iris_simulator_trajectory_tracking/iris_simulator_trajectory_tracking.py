@@ -58,20 +58,21 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
         self.pub_cmd = rospy.Publisher('quad_cmd', quad_cmd, queue_size=10)
         
         # by default, desired reference is staying still in origin
-        self.TrajGenerator = reference
-        self.reference     = self.TrajGenerator.output(self.time_instant_t0)
+        self.reference = reference
+        self.current_reference     = self.reference.output(self.time_instant_t0)
 
         # controllers selected by default
-        self.ControllerObject = controller
+        self.controller = controller
 
-        self.YawControllerObject = yaw_controller
+        self.yaw_controller = yaw_controller
 
         # # converting our controlller standard into iris+ standard
         # self.IrisPlusConverterObject = IrisPlusConverter()
         # self.IrisPlusConverterObject.set_mass(self.ControllerObject.MASS)
 
-        self.iris_plus_converter_object_mission.set_mass(self.ControllerObject.MASS)
-        
+        self.iris_plus_converter_object_mission.set_mass(self.controller.MASS)
+
+        self.methods_list = ["set_iris_neutral_value","reset_iris_neutral_value"]
         pass
 
 
@@ -98,21 +99,26 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
 
 
     def get_reference(self,time_instant):
-        self.reference = self.TrajGenerator.output(time_instant)
-        return self.reference
+        self.current_reference = self.reference.output(time_instant)
+        return self.current_reference
         # return numpy.zeros(3*5)
 
 
     def get_state(self):
         return self.state_quad
 
+    def get_position(self):
+        return self.state_quad[0:3]
+
+    def get_velocity(self):
+        return self.state_quad[3:6]
 
     def get_pv(self):
         return self.state_quad[0:6]
 
 
     def get_pv_desired(self):
-        return self.reference[0:6]
+        return self.current_reference[0:6]
 
 
     def get_complementary_data(self):
@@ -125,6 +131,24 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
     def get_euler_angles(self):
         return self.state_quad[6:9]
 
+    def reset_iris_neutral_value(self):
+        """Reset k_trottle_neutral by checking current thrust (median over last thrust values)
+        Should only be applied once the uav stabilizes at fixed point"""
+
+        median_force = self.DesiredZForceMedian.output()
+        
+        rospy.logwarn('median force = '+ str(median_force))
+        self.iris_plus_converter_object_mission.reset_k_trottle_neutral(median_force)
+
+        # new neutral value
+        k_trottle_neutral = self.iris_plus_converter_object_mission.get_k_throttle_neutral()
+        print("new k_trottle_neutral: "+str(k_trottle_neutral))
+        return
+
+    def set_iris_neutral_value(self,k_trottle_neutral=1480):
+        """Set k_trottle_neutral in [1400 1600]"""
+        self.iris_plus_converter_object_mission.set_k_trottle_neutral(k_trottle_neutral)
+        return
 
     def real_publish(self,desired_3d_force_quad,yaw_rate,rc_output):
 

@@ -94,6 +94,21 @@ class FireflyTrajectoryTracking(mission.Mission):
         # controllers selected by default
         self.yaw_reference = yaw_reference
 
+        # global methods_list
+        self.methods_list  = ["print_test","junkjunk"] 
+
+    def print_test(self,a=2,b=3):
+        """descibe function here"""
+        print(a+b)
+        print("\n")
+        return
+
+    def junkjunk(self,aasasasasas=2,b=3):
+        """descibe function here"""
+        print(b)
+        print("\n")
+        return
+
     def initialize_state(self):
         # state of quad: position, velocity and attitude
         # ROLL, PITCH, AND YAW (EULER ANGLES IN DEGREES)

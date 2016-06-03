@@ -248,11 +248,43 @@ class Jsonable:
                 # TODO: there should always exist constructing_dic
                 if hasattr(self,"constructing_dic"):
                     self.constructing_dic[inner_key] = [key,json.loads(input_string)] 
-        else:
-            pass
-        return
+            return
 
+        else:
+            print("WARNING: " + self.__class__.__name__ + "has no" + inner_key)
+            return
+
+    def change_inner_of_inner(self,sequence_inner_key,key,input_string):
+        
+        inner_key = sequence_inner_key.pop(0)
+
+        if sequence_inner_key:
+            if hasattr(self,inner_key): 
+                getattr(self,inner_key).change_inner_of_inner(sequence_inner_key,key,input_string)
+            else:
+                print("WARNING: " + self.__class__.__name__ + "has no" + inner_key)
+            return
+        else:
+            self.change_inner_key(inner_key,key,input_string)
+            return
+
+
+    # methods_list = []
+    # @classmethod
+    # def decorator(cls,func):
+    #     cls.methods_list.append(func.__name__)
+    #     return func
     
+    def call_method_inner_of_inner(self,sequence_inner_key,func_name,input_to_func):
+        # dictionary = '{"sequence_inner_key":"","func_name":"","input_to_func":""}'
+
+        if sequence_inner_key:
+            inner_key = sequence_inner_key.pop(0)
+            getattr(self.inner_key).call_method_inner_of_inner(sequence_inner_key,func_name,input_to_func)
+        else:
+            # if sequence is empty, method is of self
+            getattr(self,func_name)(**input_to_func)
+
     def get_parameters(self):
         """Child classes redefine this
         and return a dictionary of their parameters,

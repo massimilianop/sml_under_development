@@ -47,8 +47,7 @@
     <param name="sigma_v" value="0.5"/> 
 
     <param name="throttle_neutral" value="1450"/> 
-    <!-- <param name="quadrotor_mass" value="1.442"/> -->
-    <param name="quadrotor_mass" value="1.669"/>
+    <param name="quadrotor_mass" value="1.442"/>
 
     <!-- load lifting: cable length in meters -->
     <param name="cable_length" value="0.6"/> 
