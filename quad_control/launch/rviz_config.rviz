@@ -50,7 +50,7 @@ Visualization Manager:
       Value: true
     - Class: rviz/Marker
       Enabled: true
-      Marker Topic: /visualization_marker
+      Marker Topic: /simulator/visualization_marker
       Name: Marker
       Namespaces:
         my_namespace: true

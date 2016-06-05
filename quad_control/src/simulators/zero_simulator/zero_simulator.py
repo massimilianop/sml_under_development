@@ -1,112 +1,169 @@
 import numpy as np
-import numpy
-import scipy.integrate as spi
-import json
+
 from utilities import utility_functions
+
 import rospy
 
 from .. import simulator as sim
 
+# simulator will publish quad state
+from quad_control.msg import quad_state
 
+from visualization_msgs.msg import Marker
 
 class ZeroSimulator(sim.Simulator):
 
-
     @classmethod
     def description(cls):
-        return """Quad simulator with zero dynamics.
+        string = """Quad simulator with zero dynamics.
             The quad stays where it is.
             The state is a 6d array,
             and corresponds to the position and velocity of the quad.
             There is no control.
             """
-        
-       
-    @classmethod
-    def get_state_size(cls):
-        return 15
-        
-        
-    @classmethod
-    def get_control_size(cls):
-        return 0
+        return string
 
-                
     def __init__(self,
-        initial_time        = 0.0,
-        position            = np.array([0.0, 0.0, 1.0])
+        initial_time = 0.0,
+        initial_position = np.array([0.0, 0.0, 1.0])
         ):
         
-        initial_state = np.concatenate([position, np.zeros(12)])
-        sim.Simulator.__init__(self, initial_time, initial_state)
+        self.initial_position = initial_position
+
+        sim.Simulator.__init__(self, initial_time = initial_time)
+
+        # this node is a simulator, thus it will publish the state of the quad
+        # it uses the commands -- that it is subscribed to -- to solve differential equations 
+        self.publisher = rospy.Publisher('quad_state', quad_state, queue_size=1)
+
+        self.publisher_rviz = rospy.Publisher("visualization_marker",Marker, queue_size=1)
+
+        self.marker_setup_rviz()
                 
-                
+    def __del__(self):
+
+        print("stop publishing uav state, and marker to rviz")
+        self.publisher.unregister()
+        self.publisher_rviz.unregister()
+
     def __str__(self):
         string = self.description()
         string += "\nTime: " + str(self.time)
         string += "\nPosition: " + str(self.state[0:3])
         return string
 
+    def marker_setup_rviz(self):
 
-    def stabilize_mode_command_to_thrust_and_yaw_rate(self,joysticks,current_psi):
-        """Convert joysticks inputs to 3D force (in newtons) + psi_rate (in rad/sec)"""
+        marker = Marker()
+        marker.header.frame_id = "map"
+        marker.header.stamp = rospy.Time()
+        # marker.ns = "/simulator"
+        marker.id = 0
+        # marker.type = Marker.SPHERE
+        # marker.action = Marker.ADD
+        marker.pose.position.x = self.state[0]
+        marker.pose.position.y = self.state[1]
+        marker.pose.position.z = self.state[2]
+        marker.pose.orientation.x = 0.0
+        marker.pose.orientation.y = 0.0
+        marker.pose.orientation.z = 0.0
+        marker.pose.orientation.w = 1.0
+        # marker.scale.x = 1
+        # marker.scale.y = 0.1
+        # marker.scale.z = 0.1
+        # marker.color.a = 1.0 #Don't forget to set the alpha!
+        # marker.color.r = 0.0
+        # marker.color.g = 1.0
+        # marker.color.b = 0.0
+        # //only if using a MESH_RESOURCE marker type:
 
-        # joysticks[3]: yaw angular speed
-        yaw_rate    = -(joysticks[3] - 1500.0)*self.MAX_PSI_SPEED_RAD/500.0
+        # marker.color.r = 1.0
+        # marker.color.g = 1.0
+        # marker.color.b = 1.0
 
+        marker.scale.x = 1
+        marker.scale.y = 1
+        marker.scale.z = 1
+        marker.type = Marker.MESH_RESOURCE
+        marker.mesh_use_embedded_materials = True
+        marker.mesh_resource = "package://rotors_description/meshes/firefly.dae"
+        # marker.mesh_resource = "package://pr2_description/meshes/base_v0/base.dae"
 
-        # desired roll and pitch. joysticks[0:1]
-        roll_des  =  (joysticks[0] - 1500.0)*self.MAX_ANGLE_RAD/500.0
-        # ATTENTTION TO PITCH: WHEN STICK IS FORWARD PITCH, pwm GOES TO 1000, AND PITCH IS POSITIVE 
-        pitch_des = -(joysticks[1] - 1500)*self.MAX_ANGLE_RAD/500.0
+        self.marker = marker
+
+    def update_rviz_marker(self):
+
+        self.marker.pose.position.x = self.state[0]
+        self.marker.pose.position.y = self.state[1]
+        self.marker.pose.position.z = self.state[2]
+
+        # quaternion
+        # marker.pose.orientation.x = simstate[0]
+        # marker.pose.orientation.y = simstate[1]
+        # marker.pose.orientation.z = simstate[2]
+        # marker.pose.orientation.w = simstate[2]
+
+    @classmethod
+    def get_state_size(cls):
+        return 3+3
         
-        # desired euler angles in (rad)
-        ee_des = numpy.array([roll_des,pitch_des,current_psi])
+    @classmethod
+    def get_control_size(cls):
+        return 0
 
-        rotation_matrix = utility_functions.GetRotFromEulerAngles(ee_des)
-        unit_vector_des = rotation_matrix.dot(utility_functions.E3_VERSOR)
-
-        # -----------------------------------------------------------------------------#
-        # STABILIZE MODE:APM COPTER
-        # The throttle sent to the motors is automatically adjusted based on the tilt angle
-        # of the vehicle (i.e increased as the vehicle tilts over more) to reduce the 
-        # compensation the pilot must fo as the vehicles attitude changes
-        # -----------------------------------------------------------------------------#
-        # throttle = joysticks[2]
-        # this increases the actual throtle
-        Throttle = joysticks[2]/unit_vector_des.dot(utility_functions.E3_VERSOR)
-        Throttle *= self.MASS*utility_functions.GRAVITY/self.THROTTLE_NEUTRAL
-        force_3d = Throttle*unit_vector_des
-
-        return (force_3d,yaw_rate)        
-        
-        
-    def get_time(self):
-        return self.time
-        
-    
     def get_state(self):
         return np.array(self.state)
-        
-        
+
+    def get_initial_state(self):
+        # inital position
+        p0 = self.initial_position
+        # initial velocity
+        v0 = np.zeros(3)
+
+        return np.concatenate([p0,v0])
+    
     def get_position(self):
         return self.state[0:3]
-        
-        
+
     def get_attitude(self):
         return None
-    
-    
-    def set_control(self, command):
-        pass
-                
-                
-    def vector_field(self, time, state, control):
-        return np.zeros(15)
-              
-  
+                                
+    def vector_field(self, time, state):
+        return np.zeros(self.get_state_size())
+
+    def create_message(self):
+
+        # create a message of type quad_state_and_cmd
+        state = quad_state()
         
+        # get current time
+        state.time = self.get_time()
+
+        state.x  = self.state[0]
+        state.y  = self.state[1]
+        state.z  = self.state[2]
+        state.vx = self.state[3]
+        state.vy = self.state[4]
+        state.vz = self.state[5]
+
+        state.roll  = 0.0
+        state.pitch = 0.0
+        state.yaw   = 0.0  
+
+        return state
+
+
         
+    def publish(self):
+
+        # create a message of type quad_state with current state
+        state = self.create_message()
+        # publish current state
+        self.publisher.publish(state)
+
+        self.update_rviz_marker()
+        self.publisher_rviz.publish(self.marker)
+
 #"""Test"""
 #my_sim = Simulator()
 #print my_sim

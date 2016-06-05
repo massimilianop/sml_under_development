@@ -10,6 +10,13 @@ from simulators import simulator
 import rospy
 import numpy as np
 
+# scipy.linalg.orthogonal_procrustes
+
+# # simulator will publish quad state
+# from quad_control.msg import quad_cmd
+
+# # simulator will publish quad state
+# from quad_control.msg import quad_state
 
 class AttitudeInnerLoopSimulator(simulator.Simulator):
 

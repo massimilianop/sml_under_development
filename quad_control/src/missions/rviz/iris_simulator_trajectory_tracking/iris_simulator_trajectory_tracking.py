@@ -52,10 +52,10 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
         mission.Mission.__init__(self)        
 
         # controller needs to have access to STATE: comes from simulator
-        self.SubToSim = rospy.Subscriber("quad_state", quad_state, self.get_state_from_simulator)
+        self.SubToSim = rospy.Subscriber("simulator/quad_state", quad_state, self.get_state_from_simulator)
 
         # message published by quad_control that simulator will subscribe to 
-        self.pub_cmd = rospy.Publisher('quad_cmd', quad_cmd, queue_size=10)
+        self.pub_cmd = rospy.Publisher('simulator/quad_cmd', quad_cmd, queue_size=10)
         
         # by default, desired reference is staying still in origin
         self.reference = reference

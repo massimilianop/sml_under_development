@@ -13,7 +13,6 @@ import pyqtgraph as pg
 # from python_qt_binding.QtCore import pyqtSlot
 
 # import services defined in quad_control
-# SERVICE BEING USED: Simulator_srv
 from quad_control.srv import *
 
 import argparse
@@ -27,6 +26,7 @@ import sys
 sys.path.insert(0, rospack.get_path('quad_control'))
 # no need to get quad_control path, since it is package; import controllers dictionary
 from src.simulators import simulators_dictionary
+DICTIONARY_OF_OPTIONS = simulators_dictionary.simulators_dictionary
 
 
 from choose_jsonable import ChooseJsonablePlugin
@@ -56,8 +56,6 @@ class ChooseSimulatorPlugin(Plugin):
             print 'arguments: ', args
             print 'unknowns: ', unknowns
         
-        
-        
         # Create QWidget
         self._widget = QWidget()
         # Get path to UI file which is a sibling of this file
@@ -80,16 +78,28 @@ class ChooseSimulatorPlugin(Plugin):
         # ---------------------------------------------- #
         # ---------------------------------------------- #
 
-        # BUTTON TO SET DESIRED SIMULATOR
+        # "global variables" in dictionary
+        self.dic_sequence_services = {}
+        self.dic_sequence_services['last_trigger_time']            = 0.0
+        self.dic_sequence_services['list_sequence_services']       = []
 
-        jsonableWidget = ChooseJsonablePlugin(context,\
-            self.namespace,\
-            name_tab = "Simulator",
-            dictionary_of_options = simulators_dictionary.simulators_dictionary,\
-            service_name = 'ServiceChangeSimulator',\
-            ServiceClass = SrvCreateJsonableObjectByStr)._widget
 
-        self._widget.tabWidgetSimulator.addTab(jsonableWidget,'Select Simulator')
+        self.name_main_tab = "simulator"
+        name_tab   = self.name_main_tab
+        dictionary = {}
+        dictionary["context"]  = context
+        dictionary["name_tab"] = name_tab
+        # dictionary["dictionary_of_options"] = missions_database.database
+        dictionary["dictionary_of_options"] = DICTIONARY_OF_OPTIONS
+        dictionary["service_name"]  = "ServiceChangeSimulator"
+        dictionary["ServiceClass"]  = SrvChangeJsonableObjectByStr
+        dictionary["sequence_tabs"] = []
+
+        setattr(self,name_tab,ChooseJsonablePlugin(**dictionary))
+        setattr(getattr(self,name_tab),"dic_sequence_services",self.dic_sequence_services)
+
+        #getattr(self,name_tab).change_dictionary_of_options(self.__HeadClass.inner[inner_key])
+        self._widget.tabWidgetSimulator.addTab(getattr(self,name_tab)._widget,name_tab)
 
 
         self._widget.start_radio_button.toggled.connect(self.__service_request_simulator)
