@@ -4,7 +4,7 @@
     <node pkg="quad_control" name="plot_nodeasas" type="plot_experiment.py"  output="screen"/>
 
     <!-- Default Mission -->
-    <param name="MissionDefault" type="str" value="IrisSimulatorTrajectoryTracking"/>
+    <param name="MissionDefaultIrisSimulator" type="str" value="IrisSimulatorTrajectoryTracking"/>
 
     <!-- Default Yaw Controller -->
     <param name="YawControllerDefault" type="str" value="SimpleTrackingYawController"/>

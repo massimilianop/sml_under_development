@@ -22,6 +22,9 @@ sys.path.insert(0, rospack.get_path('quad_control'))
 
 # no need to get quad_control path, since it is package; import missions dictionary
 from src.missions import missions_database
+from src.missions import type_uav_mission
+DICTIONARY_OF_OPTIONS = missions_database.database2
+# DICTIONARY_OF_OPTIONS = {"Mission":type_uav_mission.MissionGeneral}
 
 from src.utilities import jsonable
 
@@ -110,7 +113,8 @@ class ChooseMissionPlugin(Plugin):
         dictionary = {}
         dictionary["context"]  = self.context
         dictionary["name_tab"] = name_tab
-        dictionary["dictionary_of_options"] = missions_database.database
+        # dictionary["dictionary_of_options"] = missions_database.database
+        dictionary["dictionary_of_options"] = DICTIONARY_OF_OPTIONS
         dictionary["service_name"]  = "ServiceChangeMission"
         dictionary["ServiceClass"]  = SrvChangeJsonableObjectByStr
         dictionary["sequence_tabs"] = []

@@ -280,7 +280,7 @@ class Jsonable:
 
         if sequence_inner_key:
             inner_key = sequence_inner_key.pop(0)
-            getattr(self.inner_key).call_method_inner_of_inner(sequence_inner_key,func_name,input_to_func)
+            getattr(self,inner_key).call_method_inner_of_inner(sequence_inner_key,func_name,input_to_func)
         else:
             # if sequence is empty, method is of self
             getattr(self,func_name)(**input_to_func)

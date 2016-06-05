@@ -17,6 +17,8 @@ import numpy
 
 import missions.missions_database
 
+import missions.type_uav_mission
+
 import json
 
 class QuadController():
@@ -86,10 +88,9 @@ class QuadController():
         dictionary = json.loads(req.dictionary)
 
         sequence_of_inners = dictionary["sequence_inner_key"]
-        print(sequence_of_inners)
 
         if sequence_of_inners:
-            self.mission_object.change_inner_of_inner(**dictionary)
+            self.mission.change_inner_of_inner(**dictionary)
         else:
             # change mission, if sequence is empty
             
@@ -97,9 +98,9 @@ class QuadController():
             self.mission_name = dictionary["key"]
 
             # chosen class taken from dictionary
-            MissionClass = missions.missions_database.database[dictionary["key"]]
+            MissionClass = missions.missions_database.database2[dictionary["key"]]
         
-            self.mission_object = MissionClass.from_string(dictionary["input_string"])            
+            self.mission = MissionClass.from_string(dictionary["input_string"])            
 
 
         self._add_header_mission()
@@ -114,7 +115,7 @@ class QuadController():
         # dictionary = '{"sequence_inner_key":"","func_name":"","input_to_func":""}'
         dictionary = json.loads(req.dictionary)
 
-        self.mission_object.call_method_inner_of_inner(**dictionary)
+        self.mission.call_method_inner_of_inner(**dictionary)
 
         # return message to Gui, to let it know resquest has been fulfilled
         return SrvChangeJsonableObjectByStrResponse(received = True)     
@@ -129,7 +130,7 @@ class QuadController():
         if self.SaveDataFlag == True or flag:
 
             # parametric description is a method of jsonable
-            string = self.mission_object.parametric_description(self.mission_name)
+            string = self.mission.parametric_description(self.mission_name)
 
             # if data is being saved, append mission header
             numpy.savetxt(self.file_handle, [string], fmt="%s")
@@ -151,24 +152,24 @@ class QuadController():
             # get current time
             st_cmd.time  = rospy.get_time()
 
-            position_velocity = self.mission_object.get_pv()
+            position_velocity = self.mission.mission_object.get_pv()
 
             # state of quad comes from QUALISYS, or other sensor
             st_cmd.x     = position_velocity[0]; st_cmd.y     = position_velocity[1]; st_cmd.z     = position_velocity[2]
             st_cmd.vx    = position_velocity[3]; st_cmd.vy    = position_velocity[4]; st_cmd.vz    = position_velocity[5]
 
-            euler_angle  = self.mission_object.get_euler_angles()
+            euler_angle  = self.mission.mission_object.get_euler_angles()
 
             st_cmd.roll  = euler_angle[0]; st_cmd.pitch = euler_angle[1]; st_cmd.yaw   = euler_angle[2]
-            ea_desired = self.mission_object.get_ea_desired()            
+            ea_desired = self.mission.mission_object.get_ea_desired()            
             st_cmd.roll_d  = ea_desired[0]; st_cmd.pitch_d = ea_desired[1]; st_cmd.yaw_d   = ea_desired[2]
 
-            position_velocity_desired = self.mission_object.get_pv_desired()
+            position_velocity_desired = self.mission.mission_object.get_pv_desired()
 
             st_cmd.xd    = position_velocity_desired[0]; st_cmd.yd    = position_velocity_desired[1]; st_cmd.zd    = position_velocity_desired[2]
             st_cmd.vxd   = position_velocity_desired[3]; st_cmd.vyd   = position_velocity_desired[4]; st_cmd.vzd   = position_velocity_desired[5]
 
-            rc_input_to_quad = self.mission_object.rc_output
+            rc_input_to_quad = self.mission.mission_object.rc_output
             st_cmd.cmd_1 = rc_input_to_quad[0]; st_cmd.cmd_2 = rc_input_to_quad[1]; st_cmd.cmd_3 = rc_input_to_quad[2]; st_cmd.cmd_4 = rc_input_to_quad[3]
 
             st_cmd.cmd_5 = 1500.0; st_cmd.cmd_6 = 1500.0; st_cmd.cmd_7 = 1500.0; st_cmd.cmd_8 = 1500.0
@@ -185,7 +186,7 @@ class QuadController():
 
         # Default Mission Class
         MissionClass = missions.missions_database.database['Default']   
-        self.mission_object = MissionClass()
+        self.mission = MissionClass()
 
         # change reference of default mission to hold in x and y
         # and go down in z direction
@@ -198,7 +199,7 @@ class QuadController():
         string = string.replace(']"',']')
 
         dictionary = {"inner_key":'reference',"key":'StayAtRest',"input_string":string}
-        self.mission_object.change_inner_key(**dictionary)        
+        self.mission.mission_object.change_inner_key(**dictionary)        
 
 
     def control_compute(self):
@@ -226,9 +227,11 @@ class QuadController():
         #-----------------------------------------------------------------------#
         self.mission_name  = 'Default'
         # Default Mission Class
-        MissionClass = missions.missions_database.database['Default']        
+        MissionClass = missions.missions_database.database2['Default']        
         # construct a default object
-        self.mission_object = MissionClass()
+        self.mission = MissionClass()
+
+        # self.mission = missions.type_uav_mission.MissionGeneral().get_mission()
 
         rate = rospy.Rate(self.frequency)
 
@@ -236,20 +239,20 @@ class QuadController():
 
         while not rospy.is_shutdown():
 
-            position = self.mission_object.get_position()
-            velocity = self.mission_object.get_velocity()
+            position = self.mission.mission_object.get_position()
+            velocity = self.mission.mission_object.get_velocity()
             if (not self.check_inside_limits(position,velocity)) and (not self.emergency_triggered):
                 self.emergency_triggered  = True
                 self.stop_and_land(position)
 
-            self.mission_object.publish()
+            self.mission.mission_object.publish()
 
             # publish to GUI (it also contains publish state of Control to GUI)
             self.PublishToGui()
 
             if self.SaveDataFlag == True:
                 # if we want to save data
-                numpy.savetxt(self.file_handle, [self.mission_object.get_complete_data()], delimiter=' ')
+                numpy.savetxt(self.file_handle, [self.mission.mission_object.get_complete_data()], delimiter=' ')
             
             # go to sleep
             rate.sleep()
