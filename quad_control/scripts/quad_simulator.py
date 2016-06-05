@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # this is just to define file type
 
+import numpy
+
 import rospy
 
 import json
@@ -28,6 +30,12 @@ class SimulatorNode():
         SimulatorClass = SIMULATORS_DATABASE['Default']        
         # construct a default object
         self.simulator = SimulatorClass()
+
+        # stop simulator when emergency is True
+        self.emergency_triggered = False
+        # emergency is set to True when position outside of box
+        self.box_center = numpy.array([0.0,0.0,1.0])
+        self.box_sides  = numpy.array([2.0,2.0,1.5])        
 
     # callback used for changing simulator
     def __handle_simulator_change_service(self,req):
@@ -86,6 +94,20 @@ class SimulatorNode():
             self.publish_counter = 1
             self.simulator.publish()
 
+    def check_inside_limits(self,position):
+        if any(numpy.absolute(position - self.box_center) >= self.box_sides):
+            return False
+        else:
+            return True
+
+    def stop_simulator(self):
+
+        self.simulator_name  = 'Default'
+        # Default Simulator Class
+        SimulatorClass = SIMULATORS_DATABASE['Default']        
+        # construct a default object
+        self.simulator = SimulatorClass()
+
     def simulate_quad(self):
 
         # simulator node 
@@ -105,6 +127,11 @@ class SimulatorNode():
         while not rospy.is_shutdown():
 
             self.simulator.run(1.0/self.frequency)
+
+            position = self.simulator.get_position()
+            if (not self.check_inside_limits(position)) and (not self.emergency_triggered):
+                self.emergency_triggered  = True
+                self.stop_simulator()
 
             self.publish()
 
