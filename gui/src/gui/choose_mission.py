@@ -22,7 +22,7 @@ sys.path.insert(0, rospack.get_path('quad_control'))
 
 # no need to get quad_control path, since it is package; import missions dictionary
 from src.missions import missions_database
-from src.missions import type_uav_mission
+# from src.missions import type_uav_mission
 DICTIONARY_OF_OPTIONS = missions_database.database2
 # DICTIONARY_OF_OPTIONS = {"Mission":type_uav_mission.MissionGeneral}
 
@@ -32,15 +32,22 @@ from choose_jsonable import ChooseJsonablePlugin
 
 import json
 
+EXAMPLE_DICTIONARY = {}
+EXAMPLE_DICTIONARY["name_main_tab"] = "mission"
+EXAMPLE_DICTIONARY["strServiceChangeName"] = "ServiceChangeMission"
+EXAMPLE_DICTIONARY["DICTIONARY_OF_OPTIONS"] = missions_database.database2
+EXAMPLE_DICTIONARY["name_service_sequence_provider"] = 'ServiceSequencer'
 
 class ChooseMissionPlugin(Plugin):
 
-    def __init__(self, context,namespace = None):
+    def __init__(self, context,namespace = None, dictionary_options = EXAMPLE_DICTIONARY):
+
+        for (key,item) in dictionary_options.items():
+            setattr(self,key,item)
 
         # "global variables" in dictionary
         self.dic_sequence_services = {}
         self.dic_sequence_services['last_trigger_time']            = 0.0
-        self.dic_sequence_services['checked_sequence_of_missions'] = True
         self.dic_sequence_services['list_sequence_services']       = []
 
         # it is either "" or the input given at creation of plugin
@@ -108,14 +115,14 @@ class ChooseMissionPlugin(Plugin):
         self.reset_sequence_missions()
 
 
-        self.name_main_tab = "mission"
         name_tab   = self.name_main_tab
         dictionary = {}
         dictionary["context"]  = self.context
         dictionary["name_tab"] = name_tab
         # dictionary["dictionary_of_options"] = missions_database.database
-        dictionary["dictionary_of_options"] = DICTIONARY_OF_OPTIONS
-        dictionary["service_name"]  = "ServiceChangeMission"
+        dictionary["dictionary_of_options"] = self.DICTIONARY_OF_OPTIONS
+        # dictionary["service_name"]  = "ServiceChangeMission"
+        dictionary["service_name"]  = self.strServiceChangeName
         dictionary["ServiceClass"]  = SrvChangeJsonableObjectByStr
         dictionary["sequence_tabs"] = []
 
@@ -281,10 +288,10 @@ class ChooseMissionPlugin(Plugin):
         # request service
         try: 
             # time out of one second for waiting for service
-            rospy.wait_for_service(self.namespace+'ServiceSequencer',1.0)
+            rospy.wait_for_service(self.namespace+self.name_service_sequence_provider,1.0)
             
             try:
-                request = rospy.ServiceProxy(self.namespace+'ServiceSequencer', ServiceSequence)
+                request = rospy.ServiceProxy(self.namespace+self.name_service_sequence_provider, ServiceSequence)
 
                 reply = request(service_sequence = service_sequence_str)
 
@@ -312,10 +319,10 @@ class ChooseMissionPlugin(Plugin):
         # request service
         try: 
             # time out of one second for waiting for service
-            rospy.wait_for_service(self.namespace+'ServiceSequencer',1.0)
+            rospy.wait_for_service(self.namespace+self.name_service_sequence_provider,1.0)
             
             try:
-                request = rospy.ServiceProxy(self.namespace+'ServiceSequencer', ServiceSequence)
+                request = rospy.ServiceProxy(self.namespace+self.name_service_sequence_provider, ServiceSequence)
 
                 service_sequence = json.dumps(self.dic_sequence_services['list_sequence_services'])
                 reply = request(service_sequence = service_sequence)

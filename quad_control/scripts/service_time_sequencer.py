@@ -10,19 +10,23 @@ services_database = {}
 services_database['ServiceChangeMission'] = SrvChangeJsonableObjectByStr
 services_database['ServiceChangeMissionCallMethod'] = SrvChangeJsonableObjectByStr
 
+services_database['ServiceChangeSimulator'] = SrvChangeJsonableObjectByStr
+services_database['ServiceChangeSimulatorCallMethod'] = SrvChangeJsonableObjectByStr
+
 import json
 
 # TODO: reply may have other fields
 def request_service(namespace,service_name_str,service_inputs_dic):
     """Sets up a service based on service name, and dictionary with inputs to service"""
 
-    ServiceClass = services_database[service_name_str]
+    ServiceClass     = services_database[service_name_str]
+    service_name_str = namespace+service_name_str
     try: 
         # time out of one second for waiting for service
-        rospy.wait_for_service(namespace+service_name_str,1.0)
+        rospy.wait_for_service(service_name_str,1.0)
         try:
             # request service
-            request = rospy.ServiceProxy(namespace+service_name_str, ServiceClass)
+            request = rospy.ServiceProxy(service_name_str, ServiceClass)
             reply   = request(**service_inputs_dic)
 
             if reply.received == True:
@@ -122,4 +126,3 @@ if __name__ == '__main__':
         service_sequencer.loop()
     except rospy.ROSInterruptException:
         pass
-

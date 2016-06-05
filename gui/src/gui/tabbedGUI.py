@@ -32,6 +32,15 @@ from choose_mocap import ChooseMocapPlugin
 import argparse
 
 
+import rospkg
+# get an instance of RosPack with the default search paths
+rospack = rospkg.RosPack()
+# get the file path for rospy_tutorials
+import sys
+sys.path.insert(0, rospack.get_path('quad_control'))
+
+from src.simulators import simulators_dictionary
+
 class tabbedGUIPlugin(Plugin):
 
     def __init__(self, context,namespace = None, system_type = 'gazebo'):
@@ -86,9 +95,19 @@ class tabbedGUIPlugin(Plugin):
         if system_type == 'gazebo':
             self.ChooseSystem    = ChooseGazeboPlugin(context,self.namespace)
         if system_type == 'rviz':
-            self.ChooseSystem    = ChooseSimulatorPlugin(context,self.namespace)            
+            # self.ChooseSystem    = ChooseSimulatorPlugin(context,self.namespace)            
+            
+            EXAMPLE_DICTIONARY = {}
+            EXAMPLE_DICTIONARY["name_main_tab"] = "simulator"
+            EXAMPLE_DICTIONARY["strServiceChangeName"] = "ServiceChangeSimulator"
+            EXAMPLE_DICTIONARY["DICTIONARY_OF_OPTIONS"] = simulators_dictionary.simulators_dictionary
+            EXAMPLE_DICTIONARY["name_service_sequence_provider"] = 'simulator/ServiceSequencer'
+
+            self.ChooseSystem  = ChooseMissionPlugin(context,self.namespace,dictionary_options = EXAMPLE_DICTIONARY)
+        
         if system_type == 'mocap':
             self.ChooseSystem    = ChooseMocapPlugin(context,self.namespace)
+
 
         self._widget.tabWidget.addTab(self.ChooseMission._widget  ,'Select Mission')
         # if system_type == 'gazebo' or system_type == 'rviz':

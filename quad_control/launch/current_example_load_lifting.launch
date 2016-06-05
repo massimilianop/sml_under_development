@@ -8,6 +8,7 @@
 
     <node pkg="quad_control" name="service_time_sequencer" type="service_time_sequencer.py"  output="screen"/>
 
+
     <group if="$(arg gazebo)">
         <!-- define mission_type parameter: used to define mission database -->
         <param name="mission_type" type="str" value="gazebo"/>
@@ -38,6 +39,39 @@
           <!-- all vars that included.launch requires must be set -->
           <!-- <arg name="hoge" value="fuga" /> -->
         </include>
+
+        <!-- GUI -->
+        <!-- <node name="rqt_gui" pkg="gui" type="tabbedGUI"/> -->
+        <!-- <node name="rqt_gui" pkg="gui" type="tabPlugin"/> -->
+
+        <!-- This runs rqt and we have to select plugin manually -->
+        <!-- similar to rosrun rqt_gui rqt_gui -->
+        <!-- <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui"/> -->
+        <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" args="--standalone  tabbedGUI --args '' 'rviz' " output="screen"/>
+
+        <node name="rviz" pkg="rviz" type="rviz" args="-d $(find quad_control)/launch/rviz_config.rviz"/>
+
+        <group ns="simulator">
+
+          <node pkg="quad_control" name="service_time_sequencer" type="service_time_sequencer.py"  output="screen"/>
+
+          <!-- Simulator Node -->
+          <node pkg="quad_control" name="Simulator_Iris1" type="quad_simulator.py" output="screen"/>
+
+          <!-- Simulator parameters -->
+          <param name="gravity_sim" value="9.81"/>
+          <param name="mass_quad_sim" value="1.442"/>
+          <param name="Throttle_neutral_sim" value="1484.0"/>  
+          <param name="ACRO_RP_P_sim" value="4.5"/> 
+          <param name="ktt_inner_loop" value="10.0"/> 
+
+
+          <!-- PARAMETERS THAT ARE COMMOM BETWEEN CONTROLLER AND SIMULATOR -->
+          <!-- see WEB: ARDUCOPTER DIFFERENT MODES PARAMETERS -->
+          <param name="MAX_ANGLE_DEG" value="45.0"/> 
+          <param name="MAX_PSI_SPEED_Deg" value="200.0"/> 
+        
+        </group>  
 
     </group>        
 

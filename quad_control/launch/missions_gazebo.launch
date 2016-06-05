@@ -1,7 +1,7 @@
 <launch>
 
     <!-- Controller Node -->
-    <node pkg="quad_control" name="plot_nodeasas" type="plot_experiment.py"  output="screen"/>
+    <!-- <node pkg="quad_control" name="plot_nodeasas" type="plot_experiment.py"  output="screen"/> -->
 
     <!-- Default Mission -->
     <param name="MissionDefault" type="str" value="FireflyTrajectoryTracking"/>

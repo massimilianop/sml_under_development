@@ -360,98 +360,59 @@ class ChooseJsonablePlugin(Plugin):
 
         if self.__head_class_completed == True:
 
-            if self.dic_sequence_services['checked_sequence_of_missions'] == True:
+            if not self._widget.radioButtonMethods.isChecked():
 
-                if not self._widget.radioButtonMethods.isChecked():
-
-                    # get string that user modified with new parameters
-                    string              = self._widget.JsonableMessageInput.toPlainText()
-                    # get new parameters from string
-                    parameters          = string
-
-                    # new_service = {'trigger_instant':...,"service_name":...,"","input_service":...}
-                    new_service = {}
-
-                    trigger_instant = self._widget.TriggerInstant.value()
-                    new_service['trigger_instant'] = trigger_instant
-
-                    # we are changing the last_trigger_time for all objects that share dictionary
-                    self.dic_sequence_services['last_trigger_time'] = trigger_instant
-
-                    new_service['service_name']    = self.service_name
-                    # new_service['inputs_service']  = {'jsonable_name':self.__head_class_key, 'string_parameters': parameters}
-                    # input_service = {"inner_key":self.name_tab,"key":self.__head_class_key,"input_string":parameters}
-                    input_service = {"sequence_inner_key":self.sequence_tabs,"key":self.__head_class_key,"input_string":parameters}
-                    input_service = json.dumps(input_service) 
-                    print(input_service)
-                    new_service['inputs_service']  = {'dictionary':input_service}
-
-                    self.dic_sequence_services['list_sequence_services'].append(new_service)
-
-                    self.__add_tab()
-                    self._widget.radioButtonMethods.setEnabled(True) 
-                else:
-
-                    # get string that user modified with new parameters
-                    func_string_input = self._widget.JsonableMessageInput.toPlainText()
-                    func_input        = json.loads(func_string_input)
-
-                    # new_service = {'trigger_instant':...,"service_name":...,"","input_service":...}
-                    new_service = {}
-
-                    trigger_instant = self._widget.TriggerInstant.value()
-                    new_service['trigger_instant'] = trigger_instant
-
-                    # we are changing the last_trigger_time for all objects that share dictionary
-                    self.dic_sequence_services['last_trigger_time'] = trigger_instant
-
-                    new_service['service_name']    = self.service_name+"CallMethod"
-                    # new_service['inputs_service']  = {'jsonable_name':self.__head_class_key, 'string_parameters': parameters}
-                    # dictionary = '{"sequence_inner_key":"","func_name":"","input_string":""}'
-                    input_service = {"sequence_inner_key":self.sequence_tabs,"func_name":self.func_name_selected,"input_to_func":func_input}
-                    input_service = json.dumps(input_service) 
-                    print(input_service)
-                    new_service['inputs_service']  = {'dictionary':input_service}
-
-                    self.dic_sequence_services['list_sequence_services'].append(new_service)                    
-
-
-            else:
                 # get string that user modified with new parameters
                 string              = self._widget.JsonableMessageInput.toPlainText()
                 # get new parameters from string
                 parameters          = string
 
-                # request service
-                try: 
-                    # time out of one second for waiting for service
-                    rospy.wait_for_service("/"+self.namespace+self.service_name,2.0)
-                    
-                    try:
-                        Requesting = rospy.ServiceProxy("/"+self.namespace+self.service_name, self.ServiceClass)
+                # new_service = {'trigger_instant':...,"service_name":...,"","input_service":...}
+                new_service = {}
 
-                        reply = Requesting(jsonable_name = self.__head_class_key, string_parameters = parameters)
+                trigger_instant = self._widget.TriggerInstant.value()
+                new_service['trigger_instant'] = trigger_instant
 
-                        if reply.received == True:
-                            # if controller receives message
-                            self._widget.Success.setChecked(True) 
-                            self._widget.Failure.setChecked(False) 
+                # we are changing the last_trigger_time for all objects that share dictionary
+                self.dic_sequence_services['last_trigger_time'] = trigger_instant
 
+                new_service['service_name']    = self.service_name
+                # new_service['inputs_service']  = {'jsonable_name':self.__head_class_key, 'string_parameters': parameters}
+                # input_service = {"inner_key":self.name_tab,"key":self.__head_class_key,"input_string":parameters}
+                input_service = {"sequence_inner_key":self.sequence_tabs,"key":self.__head_class_key,"input_string":parameters}
+                input_service = json.dumps(input_service) 
+                print(input_service)
+                new_service['inputs_service']  = {'dictionary':input_service}
 
-                    except rospy.ServiceException as exc:
-                        rospy.logwarn("Service did not process request: " + str(exc))
-                        rospy.logwarn('Proxy for service that sets controller FAILED')
-                        self._widget.Success.setChecked(False) 
-                        self._widget.Failure.setChecked(True) 
-                        # print "Service call failed: %s"%e
-                    
-                except rospy.ServiceException as exc:
-                    rospy.logwarn("Service did not process request: " + str(exc))
-                    rospy.logwarn('Timeout for service that sets controller')
-                    self._widget.Success.setChecked(False) 
-                    self._widget.Failure.setChecked(True) 
-                    # print "Service not available ..."        
-                    pass
+                self.dic_sequence_services['list_sequence_services'].append(new_service)
+
+                self.__add_tab()
+                self._widget.radioButtonMethods.setEnabled(True) 
+            else:
+
+                # get string that user modified with new parameters
+                func_string_input = self._widget.JsonableMessageInput.toPlainText()
+                func_input        = json.loads(func_string_input)
+
+                # new_service = {'trigger_instant':...,"service_name":...,"","input_service":...}
+                new_service = {}
+
+                trigger_instant = self._widget.TriggerInstant.value()
+                new_service['trigger_instant'] = trigger_instant
+
+                # we are changing the last_trigger_time for all objects that share dictionary
+                self.dic_sequence_services['last_trigger_time'] = trigger_instant
+
+                new_service['service_name']    = self.service_name+"CallMethod"
+                # new_service['inputs_service']  = {'jsonable_name':self.__head_class_key, 'string_parameters': parameters}
+                # dictionary = '{"sequence_inner_key":"","func_name":"","input_string":""}'
+                input_service = {"sequence_inner_key":self.sequence_tabs,"func_name":self.func_name_selected,"input_to_func":func_input}
+                input_service = json.dumps(input_service) 
+                print(input_service)
+                new_service['inputs_service']  = {'dictionary':input_service}
+
+                self.dic_sequence_services['list_sequence_services'].append(new_service)                    
+
         else:
             # print message on GUI
             self._widget.JsonableDescription.setText('<b>Service cannot be completed: finish choosing </b>')                         
