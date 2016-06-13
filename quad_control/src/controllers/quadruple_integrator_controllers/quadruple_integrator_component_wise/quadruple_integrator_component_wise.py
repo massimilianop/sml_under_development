@@ -16,7 +16,8 @@ class LinearQuadrupleIntegratorController(quadruple_integrator_controller.Quadru
     #     q_matrix_lyapunov = numpy.identity(4)
     #     ):
     def __init__(self, 
-        controller_gains  = numpy.array([-2.0, -6.0, -7.0, -4.0])
+        controller_gains  = numpy.array([-2.0, -6.0, -7.0, -4.0]),
+        controller_gains_factor = 1.0
         ):
 
         state_dimension = 2
@@ -24,6 +25,7 @@ class LinearQuadrupleIntegratorController(quadruple_integrator_controller.Quadru
 
         # K  = numpy.array([-2.0, -6.0, -7.0, -4.0])
         # KK = numpy.kron(K,Id)
+        controller_gains = numpy.dot(controller_gains_factor,controller_gains)
         self.KK = numpy.kron(controller_gains,Id)
 
         # TODO: P is solution to P*A + A'*P = - q_matrix_lyapunov       
