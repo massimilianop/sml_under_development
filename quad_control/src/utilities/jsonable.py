@@ -128,6 +128,7 @@ class Jsonable:
         string = string.replace('}','\n}')
         for i in range(10):
             string = string.replace(', \n'+str(i),', '+str(i))
+            string = string.replace(', \n'+str(-i),', '+str(-i))
         # string = string.replace(', \n0',', 0')
         # string = string.replace(', \n1',', 1')
         # string = string.replace(', \n2',', 2')
