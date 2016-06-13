@@ -81,24 +81,24 @@ class FireflyLoadLifting(mission.Mission):
 
 
         # publisher: command firefly motor speeds 
-        self.pub_motor_speeds = rospy.Publisher(
-            '/firefly/command/motor_speed',
-            Actuators,
-            queue_size=10
-            )
+        dictionary = {}
+        dictionary['name'] = "/firefly/command/motor_speed"
+        dictionary['data_class'] = Actuators
+        dictionary['queue_size'] = 1
+        self.pub_motor_speeds = rospy.Publisher(**dictionary)
 
         self.load_velocity_estimator = VelocityFilter(3,numpy.zeros(3),0.0)
         # self.quad_velocity_estimator = VelocityFilter(3,numpy.zeros(3),0.0)
 
         # dy default, desired trajectory is staying still in origin
-        self.TrajGenerator = reference
-        self.reference     = self.TrajGenerator.output(self.time_instant_t0)
+        self.reference = reference
+        self.current_reference     = self.reference.output(self.time_instant_t0)
 
         # controllers selected by default
-        self.ControllerObject = controller
+        self.controller = controller
 
         # controllers selected by default
-        self.YawControllerObject = yaw_controller
+        self.yaw_controller = yaw_controller
 
     def initialize_state(self):
         # state of quad: position, velocity and attitude
@@ -125,8 +125,8 @@ class FireflyLoadLifting(mission.Mission):
 
 
     def get_reference(self,time_instant):
-        self.reference = self.TrajGenerator.output(time_instant)
-        return self.reference
+        self.current_reference = self.reference.output(time_instant)
+        return self.current_reference
 
 
     def get_state(self):
@@ -148,12 +148,18 @@ class FireflyLoadLifting(mission.Mission):
 
         return state
 
+    def get_position(self):
+        return self.state_quad[0:3]
+
+    def get_velocity(self):
+        return self.state_quad[3:6]        
+
     def get_pv(self):
         return self.state_quad[0:6]
 
 
     def get_pv_desired(self):
-        return self.reference[0:6]
+        return self.current_reference[0:6]
 
 
     def get_euler_angles(self):
