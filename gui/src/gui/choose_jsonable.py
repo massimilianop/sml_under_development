@@ -77,9 +77,10 @@ class ChooseJsonablePlugin(Plugin):
         # tell from pane to pane.
         if context.serial_number() > 1:
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
+        
+        # If this is uncomment, a form in opened everytime I add an object of class ChooseJsonablePlugin 
         # Add widget to the user interface
-        context.add_widget(self._widget)
-
+        # context.add_widget(self._widget)
 
         # ---------------------------------------------- #
 
@@ -412,6 +413,9 @@ class ChooseJsonablePlugin(Plugin):
                 new_service['inputs_service']  = {'dictionary':input_service}
 
                 self.dic_sequence_services['list_sequence_services'].append(new_service)                    
+
+
+            self.dic_sequence_services["set_jsonable_extra_callback"]()
 
         else:
             # print message on GUI
