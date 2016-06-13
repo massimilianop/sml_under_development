@@ -185,21 +185,10 @@ class QuadController():
     def stop_and_land(self,position):
 
         # Default Mission Class
-        MissionClass = missions.missions_database.database['Default']   
+        MissionClass = missions.missions_database.database2['Default']   
         self.mission = MissionClass()
 
-        # change reference of default mission to hold in x and y
-        # and go down in z direction
-        request = SrvChangeJsonableObjectByStr()
-        position[2] = self.position_z_before_land
-
-        arg_dic = {'point': str(list(position))}
-        string = json.dumps(arg_dic, separators=(', \n', '\t: '))
-        string = string.replace('"[','[')
-        string = string.replace(']"',']')
-
-        dictionary = {"inner_key":'reference',"key":'StayAtRest',"input_string":string}
-        self.mission.mission_object.change_inner_key(**dictionary)        
+        self.mission.mission_object.hold_position(position)
 
 
     def control_compute(self):

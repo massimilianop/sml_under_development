@@ -141,6 +141,12 @@ class FireflyTrajectoryTracking(mission.Mission):
         # Unsubscribe from all the subscribed topics
         self.sub_odometry.unregister()
 
+    def hold_position(self,position=numpy.zeros(3)):
+        # dy default, desired trajectory is staying still in origin
+        reference      = trajectories_database.database["Default"]()
+        self.reference = reference
+        self.reference.set_offset(offset=numpy.concatenate([position[0:2],[0.0]]))
+        return 
 
     def get_quad_ea_rad(self):
     	euler_rad     = self.state_quad[6:9]*math.pi/180
