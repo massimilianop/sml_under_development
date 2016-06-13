@@ -49,6 +49,7 @@ class ChooseMissionPlugin(Plugin):
         self.dic_sequence_services = {}
         self.dic_sequence_services['last_trigger_time']            = 0.0
         self.dic_sequence_services['list_sequence_services']       = []
+        self.dic_sequence_services['set_jsonable_extra_callback']  = self.update_detailed_description
 
         # it is either "" or the input given at creation of plugin
         self.namespace = self._parse_args(context.argv())
@@ -148,18 +149,38 @@ class ChooseMissionPlugin(Plugin):
             # item is a dictionary
             item = json.loads(item)
             if item["name"] == sequence_selected:
-                sequence_description = item["description"]
+                item_selected        = item
+                sequence_description = item_selected["description"]
                 sequence_description = json.dumps(sequence_description)
                 self._widget.mission_sequence_description.setText(sequence_description)
 
 
-        self.dic_sequence_services['list_sequence_services'] = item["sequence_of_missions"]
-        last_service = item["sequence_of_missions"][-1]
+        self.dic_sequence_services['list_sequence_services'] = item_selected["sequence_of_missions"]
+        last_service = item_selected["sequence_of_missions"][-1]
         self.dic_sequence_services['last_trigger_time']      = last_service["trigger_instant"]
 
         # TODO: this does not update trigger if tabs inside main tab are open
         # update last trigger_instant in main_tab
         getattr(self,self.name_main_tab)._widget.TriggerInstant.setValue(last_service["trigger_instant"])
+
+        self.update_detailed_description()        
+
+    def update_detailed_description(self):
+
+        # print detailed description
+        self._widget.textEdit_detailed_description.clear()
+        detailed_description = ""
+        for item in self.dic_sequence_services['list_sequence_services']:
+            detailed_description += str(item['trigger_instant'])+": "
+            dictionary = item['inputs_service']['dictionary']
+            dictionary = json.loads(dictionary)
+            if 'key' in dictionary.keys():
+                detailed_description += dictionary['key'] +'\n'
+            if 'func_name' in dictionary.keys():
+                detailed_description += dictionary['func_name'] +'\n'
+
+        self._widget.textEdit_detailed_description.setText(detailed_description)
+
 
     def new_sequence(self):
 
