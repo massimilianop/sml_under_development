@@ -29,6 +29,9 @@ import numpy
 # for subscribing to topics, and publishing
 import rospy
 
+import utilities.jsonable as js
+
+@js.inherit_methods_list_from_parents
 class FireflyTrajectoryTracking(mission.Mission):
 
     inner = {}
@@ -94,15 +97,15 @@ class FireflyTrajectoryTracking(mission.Mission):
         # controllers selected by default
         self.yaw_reference = yaw_reference
 
-        # global methods_list
-        self.methods_list  = ["print_test","junkjunk"] 
 
+    @js.add_to_methods_list
     def print_test(self,a=2,b=3):
         """descibe function here"""
         print(a+b)
         print("\n")
         return
 
+    @js.add_to_methods_list
     def junkjunk(self,aasasasasas=2,b=3):
         """descibe function here"""
         print(b)
