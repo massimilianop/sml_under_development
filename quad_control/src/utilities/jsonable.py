@@ -268,13 +268,6 @@ class Jsonable:
         else:
             self.change_inner_key(inner_key,key,input_string)
             return
-
-
-    # methods_list = []
-    # @classmethod
-    # def decorator(cls,func):
-    #     cls.methods_list.append(func.__name__)
-    #     return func
     
     def call_method_inner_of_inner(self,sequence_inner_key,func_name,input_to_func):
         # dictionary = '{"sequence_inner_key":"","func_name":"","input_to_func":""}'
@@ -407,6 +400,8 @@ class Jsonable:
         return string
 
 
+
+
 ###############
 # TESTING
 ###############
@@ -485,3 +480,61 @@ class Jsonable:
 #print string
 #my_room = Room.from_string(string)
 #print my_room
+
+
+
+import inspect
+
+def inherit_methods_list_from_parents(Class):
+    """This is a decorator that takes a Class, it returns the same class
+    and it appends the parents methods_list to the child methods_list
+    """
+
+    frame = inspect.currentframe()
+    local_variables = frame.f_back.f_locals
+ 
+    ParentClasses = Class.__bases__
+
+    for ParentClass in ParentClasses:
+        if hasattr(ParentClass,"methods_list"):
+            if "methods_list" in local_variables.keys():
+                local_variables['methods_list'] += ParentClass.methods_list
+            else:
+                local_variables['methods_list'] = ParentClass.methods_list
+
+    # return Class
+    return Class
+
+# def inherit_methods_list_from_parent(ParentClass,local_variables = locals()):
+#     """function that given parent class, it either
+#         1) creates methods_list key in locals
+#         2) appends methods_list key to already existing methods_list in locals
+#     """
+
+#     frame = inspect.currentframe()
+#     local_variables = frame.f_back.f_locals
+ 
+#     if hasattr(ParentClass,"methods_list"):
+#         if "methods_list" in local_variables.keys():
+#             local_variables['methods_list'] += ParentClass.methods_list
+#         else:
+#             local_variables['methods_list'] = ParentClass.methods_list
+
+
+def add_to_methods_list(func):
+    """This is a decorator that takes a function name and it 
+    appends this name to the list methods_list in locals
+    """
+
+    frame = inspect.currentframe()
+    local_variables = frame.f_back.f_locals
+
+    if 'methods_list' in local_variables.keys():
+        # if methods_list already exists in locals, append function name
+        local_variables['methods_list'].append(func.__name__)
+    else:
+        # if methods_list does not exist, create it and add function name
+        local_variables['methods_list'] = [func.__name__]
+
+    # return function
+    return func
