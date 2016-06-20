@@ -10,40 +10,30 @@ from numpy import *
 from .. import vector_thrust_controller
 
 from controllers.double_integrator_controllers import double_integrator_controller_database
+DI_CONTROLLERS_DATABASE = double_integrator_controller_database.database
 
 from controllers.quadruple_integrator_controllers import quadruple_integrator_controllers_database
-
+QI_CONTROLLERS_DATABASE = quadruple_integrator_controllers_database.database
 
 # import orthogonal projection operator
 from utilities.utility_functions import OP as OP
 # import skew symmetric matrix
 from utilities.utility_functions import skew as skew
 
+import utilities.jsonable as js
+
 
 class VectorThrustController(vector_thrust_controller.VectorThrustController):
 
-    inner = {}
-    # import dictionary with different double integrator controller classes
-    inner["double_integrator_z"]     = double_integrator_controller_database.database
-    # import dictionary with different quadruple integrator controller classes
-    inner["quadruple_integrator_xy"] = quadruple_integrator_controllers_database.database
+    js.Jsonable.add_inner('double_integrator_z',DI_CONTROLLERS_DATABASE)
+    js.Jsonable.add_inner('quadruple_integrator_xy',QI_CONTROLLERS_DATABASE)
 
     @classmethod
     def description(cls):
         return "Controller for a vector thrusted system, based on (static) feedback linearization: linearization for z component, which requires a double integrator; and linearization for planar components (x and y), which rquires a quadruple integrator"
 
-
-    # def __init__(self,   \
-    #     double_integrator_z      = double_integrator_controller_database.database["Default"]()
-    #     ):
-    def __init__(self,   \
-        double_integrator_z      = double_integrator_controller_database.database["Default"](), \
-        quadruple_integrator_xy  = quadruple_integrator_controllers_database.database["Default"]()
-        ):
-
-        self.double_integrator_z     = double_integrator_z
-        # self.quadruple_integrator_xy = quadruple_integrator_controllers_database.database["Default"]()
-        self.quadruple_integrator_xy = quadruple_integrator_xy
+    def __init__(self):
+        self.add_inner_defaults()
 
     def output(self,x,gravity):
         return self._VectorThrustController(x,gravity)

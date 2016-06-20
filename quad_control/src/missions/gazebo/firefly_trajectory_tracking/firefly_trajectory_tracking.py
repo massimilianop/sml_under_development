@@ -13,15 +13,19 @@ from nav_msgs.msg import Odometry
 
 # import list of available trajectories
 from trajectories import trajectories_database
+TRAJECTORIES_DATABASE = trajectories_database.database
 
 # import yaw controllers dictionary
 from yaw_rate_controllers import yaw_controllers_database
+YAW_CONTROLLERS_DATABASE = yaw_controllers_database.database
 
 # import list of available yaw trajectories
 from yaw_trajectories import yaw_trajectories_database
+YAW_TRAJECTORIES_DATABASE = yaw_trajectories_database.database
 
 # import controllers dictionary
 from controllers.fa_trajectory_tracking_controllers import fa_trajectory_tracking_controllers_database
+CONTROLLERS_DATABASE = fa_trajectory_tracking_controllers_database.database
 
 import math
 import numpy
@@ -34,12 +38,10 @@ import utilities.jsonable as js
 @js.inherit_methods_list_from_parents
 class FireflyTrajectoryTracking(mission.Mission):
 
-    inner = {}
-
-    inner['controller']     = fa_trajectory_tracking_controllers_database.database
-    inner['reference']      = trajectories_database.database
-    inner['yaw_controller'] = yaw_controllers_database.database
-    inner['yaw_reference']  = yaw_trajectories_database.database
+    js.Jsonable.add_inner('controller',CONTROLLERS_DATABASE)
+    js.Jsonable.add_inner('reference',TRAJECTORIES_DATABASE)
+    js.Jsonable.add_inner('yaw_controller',YAW_CONTROLLERS_DATABASE)
+    js.Jsonable.add_inner('yaw_reference',YAW_TRAJECTORIES_DATABASE)
 
     @classmethod
     def description(cls):
@@ -54,14 +56,11 @@ class FireflyTrajectoryTracking(mission.Mission):
         """
         return description
     
-    def __init__(self,
-            controller     = fa_trajectory_tracking_controllers_database.database["Default"](),
-            reference      = trajectories_database.database["Default"](),
-            yaw_controller = yaw_controllers_database.database["Default"](),
-            yaw_reference  = yaw_trajectories_database.database["Default"]()
-            ):
+    def __init__(self):
         # Copy inner_keys into self variables
         # Subscribe to the necessary topics, if any
+
+        self.add_inner_defaults()
 
         # initialize time instant, and  state
         mission.Mission.__init__(self)
@@ -85,17 +84,7 @@ class FireflyTrajectoryTracking(mission.Mission):
         self.pub_motor_speeds = rospy.Publisher(**dictionary)
 
         # dy default, desired trajectory is staying still in origin
-        self.reference = reference
         self.current_reference = self.reference.output(self.time_instant_t0)
-
-        # controllers selected by default
-        self.controller = controller
-
-        # controllers selected by default
-        self.yaw_controller = yaw_controller
-
-        # controllers selected by default
-        self.yaw_reference = yaw_reference
 
 
     @js.add_to_methods_list
@@ -189,7 +178,6 @@ class FireflyTrajectoryTracking(mission.Mission):
 
     def get_euler_angles(self):
         return self.state_quad[6:9]
-
 
     def real_publish(self,desired_3d_force_quad,yaw_rate,rc_output):
         # publish message

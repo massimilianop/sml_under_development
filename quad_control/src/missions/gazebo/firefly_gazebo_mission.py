@@ -1,19 +1,22 @@
 from .. import mission
 
 import missions_database
+MISSIONS_DATABASE = missions_database.database
+
+import utilities.jsonable as js
 
 class FireflyGazeboMission(mission.Mission):
     """docstring for FireflyGazeboMission"""
     
-    inner = {"mission_object":missions_database.database}
+    js.Jsonable.add_inner('mission_object',MISSIONS_DATABASE)
 
     @classmethod
     def description(cls):
         string = """Missions with firefly in gazebo"""
-        return string    	
+        return string
 
-    def __init__(self, mission_object=missions_database.database["Default"]()):
-        self.mission_object = mission_object
+    def __init__(self):
+        self.add_inner_defaults()
 
     def get_mission(self):
     	return self.mission_object

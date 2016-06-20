@@ -7,26 +7,26 @@ import numpy
 
 from utilities import utility_functions
 
+import utilities.jsonable as js
+
 from controllers import controller
 
 from controllers.double_integrator_controllers import double_integrator_controller_database
+CONTROLLERS_DATABASE = double_integrator_controller_database.database
 
 import rospy
 
 
+# @js.inherit_methods_list_from_parents
 class ThreeDPIDController(controller.Controller):
 
-    
-    inner = {"double_integrator_controller": double_integrator_controller_database.database}
-
+    js.Jsonable.add_inner('double_integrator_controller',CONTROLLERS_DATABASE)
 
     @classmethod
     def description(cls):
         return "PID Controller, with saturation on integral part"
         
-
     def __init__(self,\
-            double_integrator_controller = double_integrator_controller_database.database["Default"]() ,\
             integral_gain_xy     = 0.0        ,\
             bound_integral_xy    = 0.0        ,\
             integral_gain_z      = 0.5        ,\
@@ -34,14 +34,13 @@ class ThreeDPIDController(controller.Controller):
             quad_mass            = rospy.get_param("quadrotor_mass",1.442)
             ):
 
+        self.add_inner_defaults()
+
         self.__integral_gain_xy     = integral_gain_xy
         self.__bound_integral_xy    = bound_integral_xy
 
         self.__integral_gain_z      = integral_gain_z
         self.__bound_integral_z     = bound_integral_z
-
-        # di_controller_class_name = 'DefaultDIController'
-        self.DIControllerObject  = double_integrator_controller
 
         #TODO should these two be inherited by a parent instead?
         # Should the mass be passed as a parameter?
@@ -62,7 +61,7 @@ class ThreeDPIDController(controller.Controller):
     def __str__(self):
         #TODO add the remaining parameters
         string = controller.Controller.__str__(self)
-        string += "\nDouble-integrator controller: " + str(self.DIControllerObject)
+        string += "\nDouble-integrator controller: " + str(self.double_integrator_controller)
         return string
         
 
@@ -86,7 +85,7 @@ class ThreeDPIDController(controller.Controller):
         ep = x - xd
         ev = v - vd
 
-        u,u_p,u_v,u_p_p,u_v_v,u_p_v,Vpv,VpvD,V_p,V_v,V_v_p,V_v_v = self.DIControllerObject.output(ep,ev)
+        u,u_p,u_v,u_p_p,u_v_v,u_p_v,Vpv,VpvD,V_p,V_v,V_v_p,V_v_v = self.double_integrator_controller.output(ep,ev)
 
         Full_actuation = self.MASS*(ad + u + self.GRAVITY*e3 - self.d_est)
 
