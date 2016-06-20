@@ -11,18 +11,13 @@ import numpy as np
 #     }
 
 
-
 def check_completeness(dictionary):
     if any([len(value)==0 for value in dictionary.values()]):
         return False
     else:
         return all([check_completeness(value[1]) for value in dictionary.values()])
 
-
-
 # print check_completeness(dictionary)
-
-
 
 def update_input_dictionary(dictionary, list_of_keys, NestedClassName, nested_dictionary):
     inner_dictionary = dict(dictionary)
@@ -49,6 +44,10 @@ class Jsonable:
     """
 
     UNIQUE_STRING = "##########"
+
+    def __init__(self):
+        self.add_inner_defaults()
+        return
 
     @classmethod
     def get_dic_recursive(cls, dictionary, list_of_keys):
@@ -110,15 +109,18 @@ class Jsonable:
         max_length = 0
         for i in range(len(defs)):
             arg = args[i+1]
-            if arg in cls.inner.keys():
-                inner_key = inner[arg][0]
-                inner_inner = inner[arg][1]
-                val = (inner_key, json.loads(cls.inner[arg][inner_key].to_string(inner_inner)))
-            elif type(defs[i]) is np.ndarray:
+            if type(defs[i]) is np.ndarray:
                 val = str(list(defs[i]))
             else:
                 val = defs[i]
             arg_dic[arg] = val
+
+        for arg in cls.inner.keys():
+            inner_key = inner[arg][0]
+            inner_inner = inner[arg][1]
+            val = (inner_key, json.loads(cls.inner[arg][inner_key].to_string(inner_inner)))
+            arg_dic[arg] = val
+
         # string = json.dumps(arg_dic)
         # string = json.dumps(arg_dic, indent=4, separators=(', ', ':\n\t'))
         string = json.dumps(arg_dic, separators=(', \n', '\t: '))
@@ -196,13 +198,27 @@ class Jsonable:
         if not string == "":
             arg_dic = json.loads(string)
 
-            for key, value in arg_dic.items():
-                if key in cls.inner.keys():
-                    InnerObjType = cls.inner[key][value[0]]
-                    inner_obj    = InnerObjType.from_string(json.dumps(value[1]))
-                    arg_dic[key] = inner_obj
+            arg_dic_object = dict()
+            spec = inspect.getargspec(cls.__init__)
+            # first argument in __init__ is self: disregard this
+            for arg in spec.args[1:]:
+                # if init is changed, arguments may differ
+                if arg in arg_dic.keys():
+                    arg_dic_object[arg] = arg_dic[arg]
+                else:
+                    print('Using default value for '+str(arg)+' in class '+cls.__name__)
+                    # no need to populate arg_dic_object[arg], since default will be used
 
-            obj = cls(**arg_dic)
+            # construct object with default inner objects
+            obj = cls(**arg_dic_object)
+
+            # change inner objects
+            for inner_key in cls.inner.keys():
+                value = arg_dic[inner_key]
+                # signature change_inner_key(self,inner_key,key,input_string)
+                # from string is being used by change_inner_key: recursiveness
+                obj.change_inner_key(inner_key,value[0],json.dumps(value[1]))
+
             obj.constructing_dic = json.loads(string)
         
         else:
@@ -235,6 +251,29 @@ class Jsonable:
             constructing_string = ""
 
         return constructing_string
+
+    @classmethod
+    def add_inner(cls,key,dictionary):
+        """Add (key,dictionary) to locals"""
+
+        if isinstance(dictionary,dict):
+
+            frame = inspect.currentframe()
+            local_variables = frame.f_back.f_locals
+            if 'inner' in local_variables.keys(): 
+                local_variables['inner'][key] = dictionary
+            else:
+                local_variables['inner'] = {key:dictionary}
+        else:
+            print("ERROR: you must provide a dictionary")
+
+    def add_inner_defaults(self):
+        """Add key attribute, and the default object associated
+        to that attribute
+        """
+
+        for key,dictionary in self.inner.items():
+            setattr(self,key,dictionary['Default']())
 
     def change_inner_key(self,inner_key,key,input_string):
 
