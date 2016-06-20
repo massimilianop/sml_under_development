@@ -13,9 +13,11 @@ from nav_msgs.msg import Odometry
 
 # import list of available trajectories
 from trajectories import trajectories_database
+TRAJECTORIES_DATABASE = trajectories_database.database
 
 # import yaw controllers dictionary
 from yaw_rate_controllers import yaw_controllers_database
+YAW_CONTROLLERS_DATABASE = yaw_controllers_database.database
 
 # import controllers dictionary
 from controllers.fa_trajectory_tracking_controllers import fa_trajectory_tracking_controllers_database
@@ -30,16 +32,17 @@ from utilities.utility_functions import VelocityFilter
 import rospy
 
 from controllers.single_load_transportation_controllers import single_load_transportation_controllers_database
+CONTROLLERS_DATABASE = single_load_transportation_controllers_database.database
 
+import utilities.jsonable as js
 
 class FireflyLoadLifting(mission.Mission):
 
-    inner = {}
 
-    inner['controller']     = single_load_transportation_controllers_database.database
-    inner['reference']      = trajectories_database.database
-    inner['yaw_controller'] = yaw_controllers_database.database
-
+    js.Jsonable.add_inner('controller',CONTROLLERS_DATABASE)
+    js.Jsonable.add_inner('reference',TRAJECTORIES_DATABASE)
+    js.Jsonable.add_inner('yaw_controller',YAW_CONTROLLERS_DATABASE)
+    #js.Jsonable.add_inner('yaw_reference',YAW_TRAJECTORIES_DATABASE)
 
     @classmethod
     def description(cls):
@@ -52,13 +55,11 @@ class FireflyLoadLifting(mission.Mission):
         
         return string
         
-    def __init__(self,
-            controller     = single_load_transportation_controllers_database.database["Default"](),
-            reference      = trajectories_database.database["Default"](),
-            yaw_controller = yaw_controllers_database.database["Default"]()
-            ):
+    def __init__(self):
         # Copy the parameters into self variables
         # Subscribe to the necessary topics, if any
+
+        self.add_inner_defaults()
 
         # initialize time instant, and  state
         mission.Mission.__init__(self)
@@ -91,14 +92,8 @@ class FireflyLoadLifting(mission.Mission):
         # self.quad_velocity_estimator = VelocityFilter(3,numpy.zeros(3),0.0)
 
         # dy default, desired trajectory is staying still in origin
-        self.reference = reference
         self.current_reference     = self.reference.output(self.time_instant_t0)
 
-        # controllers selected by default
-        self.controller = controller
-
-        # controllers selected by default
-        self.yaw_controller = yaw_controller
 
     def initialize_state(self):
         # state of quad: position, velocity and attitude
