@@ -54,35 +54,67 @@ class Mission(js.Jsonable):
         'position_x',
         'position_y',
         'position_z',
-        'roll',
-        'pitch',
-        'yaw',
         'velocity_x',
         'velocity_y',
         'velocity_z',
-        'control_x',
-        'control_y',
-        'control_z'
+        'position_x_desired',
+        'position_y_desired',
+        'position_z_desired',
+        'velocity_x_desired',
+        'velocity_y_desired',
+        'velocity_z_desired',        
+        'roll',
+        'pitch',
+        'yaw',
+        'force_x',
+        'force_y',
+        'force_z'
     ]
+
+    def get_complete_data(self):
+        """Get all data relevant to the mission
+        from this data, mission should be able to do data post-analysis, 
+        like ploting or computing average errors
+        """        
+        default_array = numpy.concatenate([
+            [rospy.get_time()],
+            self.get_pv(),
+            self.get_pv_desired(),
+            self.get_euler_angles(),
+            self.desired_3d_force_quad])
+        
+        # default_array = numpy.concatenate([default_array,self.get_complementary_data()])
+        return default_array    
 
 
     @classmethod
     def plot_from_string(cls, string):
         
         times        = []
+        
         positions_x  = []
         positions_y  = []
         positions_z  = []
-        rolls        = []
-        pitches      = []
-        yaws         = []
+
         velocities_x = []
         velocities_y = []
         velocities_z = []
-        controls_x   = []
-        controls_y   = []
-        controls_z   = []
-        yaw_rates    = []
+
+        positions_x_d  = []
+        positions_y_d  = []
+        positions_z_d  = []
+
+        velocities_x_d = []
+        velocities_y_d = []
+        velocities_z_d = []
+
+        rolls        = []
+        pitches      = []
+        yaws         = []
+
+        forces_x   = []
+        forces_y   = []
+        forces_z   = []
         
 
         for line in string.split('\n'):
@@ -91,54 +123,69 @@ class Mission(js.Jsonable):
                 numbers = line.split(' ')
                 
                 times.append(float(numbers[0]))
+
                 positions_x.append(float(numbers[1]))
                 positions_y.append(float(numbers[2]))
                 positions_z.append(float(numbers[3]))
-                rolls.append(float(numbers[4]))
-                pitches.append(float(numbers[5]))
-                yaws.append(float(numbers[6]))
-                velocities_x.append(float(numbers[7]))
-                velocities_y.append(float(numbers[8]))
-                velocities_z.append(float(numbers[9]))
-                controls_x.append(float(numbers[10]))
-                controls_y.append(float(numbers[11]))
-                controls_z.append(float(numbers[12]))
-                yaw_rates.append(float(numbers[13]))
+                
+                velocities_x.append(float(numbers[4]))
+                velocities_y.append(float(numbers[5]))
+                velocities_z.append(float(numbers[6]))
+
+                positions_x_d.append(float(numbers[7]))
+                positions_y_d.append(float(numbers[8]))
+                positions_z_d.append(float(numbers[9]))
+                
+                velocities_x_d.append(float(numbers[10]))
+                velocities_y_d.append(float(numbers[11]))
+                velocities_z_d.append(float(numbers[12]))
+
+                rolls.append(float(numbers[13]))
+                pitches.append(float(numbers[14]))
+                yaws.append(float(numbers[15]))
+                
+                forces_x.append(float(numbers[16]))
+                forces_y.append(float(numbers[17]))
+                forces_z.append(float(numbers[18]))
+                
+                #yaw_rates.append(float(numbers[13]))
         
         fig1 = plt.figure()
-        plt.plot(times, positions_x, label=r'$x$')
-        plt.plot(times, positions_y, label=r'$y$')
-        plt.plot(times, positions_z, label=r'$z$')
-        plt.title('Positions')
+        plt.plot(times, positions_x, 'r-', label=r'$x$')
+        plt.plot(times, positions_y, 'g-', label=r'$y$')
+        plt.plot(times, positions_z, 'b-', label=r'$z$')
+        plt.plot(times, positions_x_d, 'r--', label=r'$x^{\star}$')
+        plt.plot(times, positions_y_d, 'g--', label=r'$y^{\star}$')
+        plt.plot(times, positions_z_d, 'b--', label=r'$z^{\star}$')        
+        plt.title('Positions (m)')
         plt.legend(loc='best')
         plt.grid()
-        # plt.draw()
-        # plt.savefig('.txt')
 
-        
         fig2 = plt.figure()
-        plt.plot(times, rolls, label=r'$\phi$')
-        plt.plot(times, pitches, label=r'$\theta$')
-        plt.plot(times, yaws, label=r'$\psi$')
-        plt.title('Attitudes')
+        plt.plot(times, velocities_x, 'r-', label=r'$v_x$')
+        plt.plot(times, velocities_y, 'g-', label=r'$v_y$')
+        plt.plot(times, velocities_z, 'b-', label=r'$v_z$')
+        plt.plot(times, velocities_x_d, 'r--', label=r'$v_x^{\star}$')
+        plt.plot(times, velocities_y_d, 'g--', label=r'$v_y^{\star}$')
+        plt.plot(times, velocities_z_d, 'b--', label=r'$v_z^{\star}$')        
+        plt.title('Velocities (m/s)')
         plt.legend(loc='best')
-        plt.grid()
-        # plt.draw()
+        plt.grid()        
         
         fig3 = plt.figure()
-        plt.plot(times, velocities_x, label=r'$x$')
-        plt.plot(times, velocities_y, label=r'$y$')
-        plt.plot(times, velocities_z, label=r'$z$')
-        plt.title('Velocities')
+        plt.plot(times, rolls, 'r-', label=r'$\phi$')
+        plt.plot(times, pitches, 'g-', label=r'$\theta$')
+        plt.plot(times, yaws, 'b-', label=r'$\psi$')
+        plt.title('Attitudes (deg)')
         plt.legend(loc='best')
         plt.grid()
         # plt.draw()
         
         fig4 = plt.figure()
-        plt.plot(times, controls_x, label=r'$x$')
-        plt.plot(times, controls_y, label=r'$y$')
-        plt.plot(times, controls_z, label=r'$z$')
-        plt.title('Controls')
+        plt.plot(times, forces_x, 'r-', label=r'$F_x$')
+        plt.plot(times, forces_y, 'g-', label=r'$F_y$')
+        plt.plot(times, forces_z, 'b-', label=r'$F_z$')
+        plt.title('Forces (N)')
         plt.legend(loc='best')
         plt.grid()
         # plt.draw()
@@ -167,6 +214,9 @@ class Mission(js.Jsonable):
 
         # converting our controlller standard into iris+ standard
         self.iris_plus_converter_object_mission = IrisPlusConverter()
+
+        # initialize desired_3d_force
+        self.desired_3d_force_quad = numpy.zeros(3)
 
         return
         
@@ -254,22 +304,6 @@ class Mission(js.Jsonable):
         # TODO: CHECK WHETHER IT SHOULD BE RAD OR NOT
         """Get euler angles of the quadrotor (rad)"""
         return NotImplementedError()
-
-    def get_complete_data(self):
-        """Get all data relevant to the mission
-        from this data, mission should be able to do data post-analysis, 
-        like ploting or computing average errors
-        """        
-        default_array = numpy.concatenate([
-            [rospy.get_time()],
-            self.get_pv(),
-            self.get_pv_desired(),
-            self.get_euler_angles(),
-            self.desired_3d_force_quad])
-        
-        # default_array = numpy.concatenate([default_array,self.get_complementary_data()])      
-
-        return default_array
 
     def get_complementary_data(self):
         """Get complementary data that is not included 
