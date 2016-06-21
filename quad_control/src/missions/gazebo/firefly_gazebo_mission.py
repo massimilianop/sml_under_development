@@ -15,6 +15,15 @@ class FireflyGazeboMission(mission.Mission):
         string = """Missions with firefly in gazebo"""
         return string
 
+    def object_description(self):
+        string = """
+        Mission with firefly in gazebo: chosen mission. This mission depends on:
+        <ul>
+          <li>mission_object: """ + self.mission_object.__class__.__name__ +"""</li>
+        </ul>
+        """
+        return string            
+
     def __init__(self):
         self.add_inner_defaults()
 

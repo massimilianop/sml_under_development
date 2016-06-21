@@ -87,6 +87,18 @@ class FireflyTrajectoryTracking(mission.Mission):
         self.current_reference = self.reference.output(self.time_instant_t0)
 
 
+    def object_description(self):
+        description = """
+        <b>Firefly</b>, from RotorS, to track a desired trajectory. This mission depends on:
+        <ul>
+          <li>controller: a trajectory tracking controller</li>
+          <li>reference: a reference position trajectory to be tracked</li>
+          <li>yaw_controller: a yaw controller</li>
+          <li>yaw_reference: a yaw reference</li>
+        </ul>
+        """
+        return description
+
     @js.add_to_methods_list
     def print_test(self,a=2,b=3):
         """descibe function here"""
@@ -107,19 +119,6 @@ class FireflyTrajectoryTracking(mission.Mission):
         self.state_quad  = numpy.zeros(3+3+3)
         
         self.yaw_desired = 0.0
-
-
-    def object_description(self):
-        description = """
-        <b>Firefly</b>, from RotorS, to track a desired trajectory. This mission depends on:
-        <ul>
-          <li>controller: a trajectory tracking controller</li>
-          <li>reference: a reference position trajectory to be tracked</li>
-          <li>yaw_controller: a yaw controller</li>
-          <li>yaw_reference: a yaw reference</li>
-        </ul>
-        """
-        return description
         
     def __str__(self):
         string  = self.description()
