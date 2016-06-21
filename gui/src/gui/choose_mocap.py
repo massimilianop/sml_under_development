@@ -67,7 +67,6 @@ class ChooseMocapPlugin(Plugin):
             print 'unknowns: ', unknowns
         
         
-        
         # Create QWidget
         self._widget = QWidget()
         # Get path to UI file which is a sibling of this file
