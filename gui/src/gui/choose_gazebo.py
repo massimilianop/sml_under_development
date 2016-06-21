@@ -84,8 +84,9 @@ class ChooseGazeboPlugin(Plugin):
         # tell from pane to pane.
         if context.serial_number() > 1:
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
+        
         # Add widget to the user interface
-        context.add_widget(self._widget)
+        #context.add_widget(self._widget)
 
 
         # Button to start gazebo
