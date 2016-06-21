@@ -13,11 +13,11 @@ class FixedPointTrajectory(tj.Trajectory):
         return "<b>Stay at rest at speficied point</b>"
         
     def __init__(self, point=np.array([0.0, 0.0, 1.0])):
+        self.point = point
         tj.Trajectory.__init__(self, offset=point, rotation=np.zeros(3))
         
-    def __str__(self):
-        string = self.description()
-        string += "\nPoint: " + str(self.get_offset())
+    def object_description(self):
+        string  = tj.Trajectory.object_description(self)+"\n"
         return string
         
     def desired_trajectory(self, time):

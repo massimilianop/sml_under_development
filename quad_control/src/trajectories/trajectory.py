@@ -26,34 +26,31 @@ class Trajectory(js.Jsonable):
 
     def __init__(self, offset=DEFAULT_OFFSET, rotation=np.zeros(3)):
 
-        self.__offset = np.array(offset)
-        self.__rotation = np.array(rotation)
-        self.__rotation_matrix = uts.rot_from_euler_rad(self.__rotation)
+        self.offset = np.array(offset)
+        self.rotation = np.array(rotation)
+        self.rotation_matrix = uts.rot_from_euler_rad(self.rotation)
         #TODO change the names in the utility_functions module
     
-    
-    def __str__(self):
-        string = self.description()
-        string += "\nOffset: " + str(self.__offset)
-        string += "\nRotation: " + str(self.__rotation)
-        return string
-        
+    def object_description(self):
+        string = "Trajectory with <b>offset = "+ str(self.offset) + "</b> in (m),"
+        string += "and <b>rotation = "+ str(self.rotation) + "</b> in (degrees?)"  
+        return string        
     
     def get_offset(self):
-        return np.array(self.__offset)
+        return np.array(self.offset)
         
         
     def get_rotation(self):
-        return np.array(self.__rotation)
+        return np.array(self.rotation)
         
         
     def set_offset(self, offset):
-        self.__offset = np.array(offset)
+        self.offset = np.array(offset)
         
         
     def set_rotation(self):
-        self.__rotation = numpy.array(rotation)
-        self.__rotation_matrix = uts.GetRotFromEulerAnglesDeg(rotation)
+        self.rotation = numpy.array(rotation)
+        self.rotation_matrix = uts.GetRotFromEulerAnglesDeg(rotation)
         
         
     def desired_trajectory(self, time):
@@ -62,8 +59,8 @@ class Trajectory(js.Jsonable):
         
     def __add_offset_and_rotation(self, pos, vel, acc, jrk, snp):
         
-        off = self.__offset
-        rot = self.__rotation_matrix
+        off = self.offset
+        rot = self.rotation_matrix
         
         pos_out = rot.dot(pos) + off
         vel_out = rot.dot(vel)
