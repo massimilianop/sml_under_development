@@ -16,6 +16,7 @@ from rospkg import RosPack
 import numpy
 
 import missions.missions_database
+MISSIONS_DATABASE = missions.missions_database.database2
 
 import missions.type_uav_mission
 
@@ -98,7 +99,7 @@ class QuadController():
             self.mission_name = dictionary["key"]
 
             # chosen class taken from dictionary
-            MissionClass = missions.missions_database.database2[dictionary["key"]]
+            MissionClass = MISSIONS_DATABASE[dictionary["key"]]
         
             self.mission = MissionClass.from_string(dictionary["input_string"])            
 
@@ -185,7 +186,7 @@ class QuadController():
     def stop_and_land(self,position):
 
         # Default Mission Class
-        MissionClass = missions.missions_database.database2['Default']   
+        MissionClass = MISSIONS_DATABASE['Default']   
         self.mission = MissionClass()
 
         self.mission.mission_object.hold_position(position)
@@ -216,7 +217,7 @@ class QuadController():
         #-----------------------------------------------------------------------#
         self.mission_name  = 'Default'
         # Default Mission Class
-        MissionClass = missions.missions_database.database2['Default']        
+        MissionClass = MISSIONS_DATABASE['Default']        
         # construct a default object
         self.mission = MissionClass()
 
