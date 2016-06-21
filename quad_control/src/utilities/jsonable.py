@@ -106,7 +106,7 @@ class Jsonable:
         if defs is None:
             defs = []
         arg_dic = dict()
-        max_length = 0
+        
         for i in range(len(defs)):
             arg = args[i+1]
             if type(defs[i]) is np.ndarray:
@@ -193,6 +193,8 @@ class Jsonable:
     def from_string(cls, string=""):
         """Returns an object of this class constructed from the json string
         `string`.
+
+        obj.constructing_dic is "global": if innner changes, this dictionary changes
         """
 
         if not string == "":
@@ -211,46 +213,117 @@ class Jsonable:
 
             # construct object with default inner objects
             obj = cls(**arg_dic_object)
+            obj.constructing_dic = obj.get_constructing_dic()
 
             # change inner objects
             for inner_key in cls.inner.keys():
-                value = arg_dic[inner_key]
+                [key,constructing_dic] = arg_dic[inner_key]
                 # signature change_inner_key(self,inner_key,key,input_string)
-                # from string is being used by change_inner_key: recursiveness
-                obj.change_inner_key(inner_key,value[0],json.dumps(value[1]))
+                dictionary_of_classes = cls.inner[inner_key]
+                Class  = dictionary_of_classes[key]
+                class_object = Class.from_string(json.dumps(constructing_dic))
+                setattr(obj,inner_key,class_object)
+                obj.constructing_dic[inner_key] = [key,class_object.constructing_dic]
 
-            obj.constructing_dic = json.loads(string)
-        
         else:
             "if string is empty, construct default object"
-            print("\nYou are constructing a default object of class :" + cls.__name__+'\n')
+            print("\nYou are constructing a default object of class: " + cls.__name__+'\n')
             obj = cls()
 
         return obj        
+
+    def get_constructing_dic(self):
+        
+        dictionary = dict()
+
+        spec = inspect.getargspec(self.__init__)
+        args = spec.args
+        defs = spec.defaults
+
+        if defs is None:
+            defs = []
+
+        dictionary = dict()
+        
+        for i in range(len(defs)):
+            arg = args[i+1]
+
+            if hasattr(self,arg):
+                dictionary[arg] = getattr(self,arg)
+            else:
+                print("BEWARE: "+arg+" is not attribute of "+self.__class__.__name__)
+                dictionary[arg] = defs[i]
+            
+        return dictionary
+
 
     def get_constructing_string(self):
         """Returns string that constructs object.
         """
 
         if hasattr(self,"constructing_dic"):
-        
-            constructing_dic = self.constructing_dic
 
-            # for key in self.inner.keys():
-            #     if hasattr(self,key):
-            #         # constructing_dic[key] is a list ['key_name',constructing_string for class]
-            #         # we only want to change the constructing string
-            #         key_name                 = 
-            #         constructing_dic[key][0] = key_name
-            #         constructing_dic[key][1] = getattr(self,key).get_constructing_string()
-            #     else:
-            #         print(self.__class__.__name__+" has no attribute "+key)
+            spec = inspect.getargspec(self.__init__)
 
-            constructing_string     = json.dumps(constructing_dic)
+            arg_dic = dict()
+            print()
+            print(self.constructing_dic)
+            for arg in spec.args[1:]:
+                if type(self.constructing_dic[arg]) is np.ndarray:
+                    val = str(list(self.constructing_dic[arg]))
+                else:
+                    val = self.constructing_dic[arg]
+                arg_dic[arg] = val
+
+            for arg in self.inner.keys():
+                val = (self.constructing_dic[arg][0], json.loads(getattr(self,arg).get_constructing_string()))
+                arg_dic[arg] = val
+
+            constructing_string = json.dumps(arg_dic, separators=(', \n', '\t: '))
+            constructing_string = constructing_string.replace('"[','[')
+            constructing_string = constructing_string.replace(']"',']')
+            constructing_string = constructing_string.replace('{','{\n')
+            constructing_string = constructing_string.replace('}','\n}')            
+
         else:
             constructing_string = ""
 
+        # print(constructing_string)
         return constructing_string
+
+    # def get_constructing_string(self):
+    #     """Returns string that constructs object.
+    #     """
+
+    #     spec = inspect.getargspec(self.__init__)
+    #     args = spec.args 
+    #     defs = spec.defaults
+
+    #     if defs is None:
+    #         defs = []
+    #     arg_dic = dict()
+        
+    #     for i in range(len(defs)):
+
+    #         arg = args[i+1]
+    #         if hasattr(self,arg):
+    #             val = self.arg
+    #         else:
+    #             print(str(arg)+" is not an attribute of "+self.__class__.__name__)
+    #             if type(defs[i]) is np.ndarray:
+    #                 val = str(list(defs[i]))
+    #             else:
+    #                 val = defs[i]
+
+    #         arg_dic[arg] = val
+
+    #     for arg in self.inner.keys():
+    #         inner_arg_string = getattr(self,arg).get_constructing_string()
+    #         inner_arg_dic    = json.loads(inner_arg_string)
+    #         class_name       = getattr(self,arg).__class__.__name__
+    #         arg_dic[arg] = [class_name,json.loads(inner_arg_dic)]
+
+    #     return json.dumps(arg_dic)        
 
     @classmethod
     def add_inner(cls,key,dictionary):
@@ -287,7 +360,7 @@ class Jsonable:
                 setattr(self,inner_key,class_object)
                 # TODO: there should always exist constructing_dic
                 if hasattr(self,"constructing_dic"):
-                    self.constructing_dic[inner_key] = [key,json.loads(input_string)] 
+                    self.constructing_dic[inner_key] = [key,class_object.get_constructing_dic()]
             return
 
         else:
@@ -421,20 +494,20 @@ class Jsonable:
         
         if hasattr(self,"object_description"):
             string = "<p>"+self.object_description()+"</p>"
-
-            string += "<ul>"
-            for arg in self.inner.keys():
-                if hasattr(self,arg):
-                    print(arg)
-                    string += "<li>"+arg+"="+getattr(self, arg).__class__.__name__+": "+getattr(self, arg).object_combined_description()+"</li>"
-                else:
-                    print(self.__class__.__name__+" has no attribute "+arg)
-            # end list
-            string += "</ul>"
         else:
-            string = self.__class__.__name__+" has no method object_description()"
+            string = self.__class__.__name__+" has no method object_description(). IMPLEMENT IT"
             print(string)
             print("Please implement it\n")
+
+        string += "<ul>"
+        for arg in self.inner.keys():
+            if hasattr(self,arg):
+                print(arg)
+                string += "<li>"+arg+"="+getattr(self, arg).__class__.__name__+": "+getattr(self, arg).object_combined_description()+"</li>"
+            else:
+                print(self.__class__.__name__+" has no attribute "+arg)
+        # end list
+        string += "</ul>"
 
         return string
 
