@@ -116,7 +116,7 @@ class positionPlotPlugin(Plugin):
         # window for channels
         channelplotwidget = pg.PlotWidget()
         channelplotwidget.getPlotItem().addLegend()
-        channelplotwidget.setYRange(1000,2000)
+        channelplotwidget.setYRange(-10,10)
 
 
         # ---------------------------------------------- #
