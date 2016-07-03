@@ -128,3 +128,15 @@ After having built the workspace, if the plugin doesn't show up in rqt, consider
 ```Bash
 run "rqt --force-discover"
 ```
+
+
+# Bugs
+
+If error 
+```
+QSpiAccessible::accessibleEvent not handled:  "8008"  obj:  QObject(0x0)  " invalid interface!"
+```
+appears when clicking on items in the GUI, do
+```
+sudo dpkg --purge qt-at-spi
+```
