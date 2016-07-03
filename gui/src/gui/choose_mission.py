@@ -333,6 +333,8 @@ class ChooseMissionPlugin(Plugin):
         self.dic_sequence_services['list_sequence_services'] = []
         self.dic_sequence_services['last_trigger_time'] = 0
 
+        self._widget.textEdit_detailed_description.clear()
+
     def send_list_of_services(self):
         # # debug
         # for service in self.dic_sequence_services['list_sequence_services']:
