@@ -43,6 +43,10 @@ def unskew(X):
 # def OP(x):
 #     return -skew(x).dot(skew(x))
 
+def ort_proj(x):
+    out = np.identity(3) - np.outer(x,x)
+    return out
+
 def OP(x):
     out = np.zeros((3,3))
     I   = np.identity(3)
@@ -154,7 +158,7 @@ def roll_and_pitch_from_full_actuation_and_yaw_rad(full_actuation, psi):
 
     # desired roll and pitch angles
     n_des     = full_actuation/np.linalg.norm(full_actuation)
-    n_des_rot = Rz(-psi).dot(n_des)
+    n_des_rot = rot_z(-psi).dot(n_des)
 
 
     sin_phi   = -n_des_rot[1]
