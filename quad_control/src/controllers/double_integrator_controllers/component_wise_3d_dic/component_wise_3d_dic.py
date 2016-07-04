@@ -16,30 +16,22 @@ class ComponentWise3DDIC(dic.DoubleIntegratorController):
 
     # The class "constructor" - It's actually an initializer
     def __init__(self,
-            natural_frequency       = 0.5,
+            natural_frequency       = 2.0,
             damping                 = numpy.sqrt(2.0)/2.0,
-            proportional_gain       = None,
-            derivative_gain         = None,
-            position_saturation     = 1.0,
-            velocity_saturation     = 1.0
+            position_saturation     = 0.5,
+            velocity_saturation     = 0.5
             ):
-        
-        if proportional_gain is None or derivative_gain is None:
             
-            dic.DoubleIntegratorController.__init__(self,
-                proportional_gain=natural_frequency**2,
-                derivative_gain=2.0*damping*natural_frequency
-                )
-        
-        else:
-        
-            dic.DoubleIntegratorController.__init__(self,
-                proportional_gain=proportional_gain,
-                derivative_gain=derivative_gain
-                )
+        dic.DoubleIntegratorController.__init__(self,
+            proportional_gain=natural_frequency**2,
+            derivative_gain=2.0*damping*natural_frequency
+            )
+
+        self.natural_frequency = natural_frequency
+        self.damping = damping
             
-        self.__position_saturation = position_saturation
-        self.__velocity_saturation = velocity_saturation
+        self.position_saturation = position_saturation
+        self.velocity_saturation = velocity_saturation
 
 
     def output(self, position, velocity):
@@ -48,8 +40,8 @@ class ComponentWise3DDIC(dic.DoubleIntegratorController):
 
     def __str__(self):
         string = dic.DoubleIntegratorController.__str__(self)
-        string += "\nPosition saturation: " + str(self.__position_saturation)
-        string += "\nVelocity saturation: " + str(self.__velocity_saturation)
+        string += "\nPosition saturation: " + str(self.position_saturation)
+        string += "\nVelocity saturation: " + str(self.velocity_saturation)
         return string
         
 #        description = "Bounded Double Integrator Controller u(p,v) = -sigma(p) - ro(v): simple control law, complicated Lyapunov function\n"
@@ -88,11 +80,11 @@ class ComponentWise3DDIC(dic.DoubleIntegratorController):
     def  _DI_Bounded_Component(self,p,v):
 
         # gains
-        kp = self.get_proportional_gain()
-        kv = self.get_derivative_gain()
+        kp = self.natural_frequency**2
+        kv = 2*self.damping*self.natural_frequency
 
-        sigma_p  = self.__position_saturation
-        sigma_v  = self.__velocity_saturation
+        sigma_p  = self.position_saturation
+        sigma_v  = self.velocity_saturation
 
 
         sat_p,Dsat_p,D2sat_p,sat_Int_p = self._sat(p/sigma_p)
