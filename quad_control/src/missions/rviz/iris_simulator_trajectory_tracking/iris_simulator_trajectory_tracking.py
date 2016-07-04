@@ -11,12 +11,15 @@ from quad_control.msg import quad_cmd, quad_state
 
 # import list of available trajectories
 from trajectories import trajectories_database
+TRAJECTORIES_DATABASE = trajectories_database.database
 
 # import yaw controllers dictionary
 from yaw_rate_controllers import yaw_controllers_database
+YAW_CONTROLLERS_DATABASE = yaw_controllers_database.database
 
 # import controllers dictionary
 from controllers.fa_trajectory_tracking_controllers import fa_trajectory_tracking_controllers_database
+CONTROLLERS_DATABASE = fa_trajectory_tracking_controllers_database.database
 
 import math
 import numpy
@@ -24,32 +27,29 @@ import numpy
 # for subscribing to topics, and publishing
 import rospy
 
+import utilities.jsonable as js
 
 
+@js.inherit_methods_list_from_parents
 class IrisSimulatorTrajectoryTracking(mission.Mission):
 
-    inner = {}
-
-    
-    inner['controller']     = fa_trajectory_tracking_controllers_database.database
-    inner['reference']      = trajectories_database.database
-    inner['yaw_controller'] = yaw_controllers_database.database
-
+    js.Jsonable.add_inner('controller',CONTROLLERS_DATABASE)
+    js.Jsonable.add_inner('reference',TRAJECTORIES_DATABASE)
+    js.Jsonable.add_inner('yaw_controller',YAW_CONTROLLERS_DATABASE)
+    # js.Jsonable.add_inner('yaw_reference',YAW_TRAJECTORIES_DATABASE)
 
     @classmethod
     def description(cls):
         return "Iris, simulated, to track a desired trajectory"
 
     
-    def __init__(self,
-            controller     = fa_trajectory_tracking_controllers_database.database["Default"](),
-            reference      = trajectories_database.database["Default"](),
-            yaw_controller = yaw_controllers_database.database["Default"]()
-            ):
+    def __init__(self):
         # Copy the parameters into self variables
         # Subscribe to the necessary topics, if any
 
-        mission.Mission.__init__(self)        
+        mission.Mission.__init__(self)     
+
+        self.add_inner_defaults()
 
         # controller needs to have access to STATE: comes from simulator
         self.SubToSim = rospy.Subscriber("simulator/quad_state", quad_state, self.get_state_from_simulator)
@@ -57,22 +57,14 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
         # message published by quad_control that simulator will subscribe to 
         self.pub_cmd = rospy.Publisher('simulator/quad_cmd', quad_cmd, queue_size=10)
         
-        # by default, desired reference is staying still in origin
-        self.reference = reference
+
         self.current_reference     = self.reference.output(self.time_instant_t0)
 
-        # controllers selected by default
-        self.controller = controller
-
-        self.yaw_controller = yaw_controller
-
-        # # converting our controlller standard into iris+ standard
-        # self.IrisPlusConverterObject = IrisPlusConverter()
-        # self.IrisPlusConverterObject.set_mass(self.ControllerObject.MASS)
-
+        self.iris_plus_converter_object_mission = IrisPlusConverter()
         self.iris_plus_converter_object_mission.set_mass(self.controller.MASS)
 
-        self.methods_list = ["set_iris_neutral_value","reset_iris_neutral_value"]
+        self.total_mass = self.controller.MASS
+        
         pass
 
 
@@ -103,7 +95,6 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
         return self.current_reference
         # return numpy.zeros(3*5)
 
-
     def get_state(self):
         return self.state_quad
 
@@ -131,26 +122,28 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
     def get_euler_angles(self):
         return self.state_quad[6:9]
 
+    def get_psi(self):
+        return self.state_quad[8]
+
+    @js.add_to_methods_list
     def reset_iris_neutral_value(self):
-        """Reset k_trottle_neutral by checking current thrust (median over last thrust values)
+        """
+        Reset k_trottle_neutral by checking current thrust 
+        (median over last thrust values)
         Should only be applied once the uav stabilizes at fixed point"""
 
-        median_force = self.DesiredZForceMedian.output()
-        
-        rospy.logwarn('median force = '+ str(median_force))
-        self.iris_plus_converter_object_mission.reset_k_trottle_neutral(median_force)
-
-        # new neutral value
-        k_trottle_neutral = self.iris_plus_converter_object_mission.get_k_throttle_neutral()
-        print("new k_trottle_neutral: "+str(k_trottle_neutral))
+        self.iris_plus_converter_object_mission.reset_k_trottle_neutral()
         return
 
+    @js.add_to_methods_list
     def set_iris_neutral_value(self,k_trottle_neutral=1480):
         """Set k_trottle_neutral in [1400 1600]"""
         self.iris_plus_converter_object_mission.set_k_trottle_neutral(k_trottle_neutral)
         return
 
-    def real_publish(self,desired_3d_force_quad,yaw_rate,rc_output):
+    def real_publish(self,desired_3d_force_quad,yaw_rate):
+
+        rc_output = self.rc_command(desired_3d_force_quad,yaw_rate)
 
         # create a message of the type quad_cmd, that the simulator subscribes to 
         cmd  = quad_cmd()
@@ -182,3 +175,10 @@ class IrisSimulatorTrajectoryTracking(mission.Mission):
         self.state_quad = numpy.concatenate([p,v,ee])  
 
 
+    def rc_command(self,desired_3d_force_quad,yaw_rate):
+        euler_rad          = self.get_euler_angles()*numpy.pi/180
+        self.iris_plus_converter_object_mission.set_rotation_matrix(euler_rad)
+        iris_plus_rc_input = self.iris_plus_converter_object_mission.input_conveter(desired_3d_force_quad,yaw_rate)
+        rc_output     = iris_plus_rc_input
+
+        return rc_output
