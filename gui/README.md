@@ -129,6 +129,10 @@ After having built the workspace, if the plugin doesn't show up in rqt, consider
 run "rqt --force-discover"
 ```
 
+# GUI: choose_jsonable
+
+"Methods" button is necessary, because we may want to select same jsonable object, but with different parameters, in which case, we must unselect "Methods" button
+
 
 # Bugs
 
