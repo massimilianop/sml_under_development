@@ -160,6 +160,8 @@ class FireflyLoadLifting(mission.Mission):
     def get_euler_angles(self):
         return self.state_quad[6:9]
 
+    def get_psi(self):
+        return self.state_quad[8]          
 
     def real_publish(self,desired_3d_force_quad,yaw_rate,rc_output):
 		# publish message

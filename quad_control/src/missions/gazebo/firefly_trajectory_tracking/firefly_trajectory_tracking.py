@@ -86,6 +86,12 @@ class FireflyTrajectoryTracking(mission.Mission):
         # dy default, desired trajectory is staying still in origin
         self.current_reference = self.reference.output(self.time_instant_t0)
 
+        self.total_mass = self.controller.MASS
+
+    @js.add_to_methods_list
+    def update_thrust_gain(self):
+        self.RotorSObject.update_thrust_gain()
+        return
 
     def object_description(self):
         description = """
@@ -178,7 +184,10 @@ class FireflyTrajectoryTracking(mission.Mission):
     def get_euler_angles(self):
         return self.state_quad[6:9]
 
-    def real_publish(self,desired_3d_force_quad,yaw_rate,rc_output):
+    def get_psi(self):
+        return self.state_quad[8]  
+
+    def real_publish(self,desired_3d_force_quad,yaw_rate):
         # publish message
         self.pub_motor_speeds.publish(self.RotorSObject.rotor_s_message(desired_3d_force_quad,yaw_rate))
         pass
