@@ -4,20 +4,6 @@
 import numpy
 
 
-# ----------------------------------------------------------------------------- #
-# ----------------------------------------------------------------------------- #
-# Load parameters
-
-# cable length meters
-cable_length = 0.6 
-# load mass kilograms
-load_mass = 0.100
-# gravity (meters/sec/sec)
-gravity = 9.81
-
-# ----------------------------------------------------------------------------- #
-# ----------------------------------------------------------------------------- #
-
 # Default vehicle parameters for Asctec Firefly.
 kDefaultRotor0Angle  =  0.52359877559
 kDefaultRotor1Angle  =  1.57079632679
