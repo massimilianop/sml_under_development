@@ -170,7 +170,7 @@ class QuadController():
             st_cmd.xd    = position_velocity_desired[0]; st_cmd.yd    = position_velocity_desired[1]; st_cmd.zd    = position_velocity_desired[2]
             st_cmd.vxd   = position_velocity_desired[3]; st_cmd.vyd   = position_velocity_desired[4]; st_cmd.vzd   = position_velocity_desired[5]
 
-            rc_input_to_quad = self.mission.mission_object.rc_output
+            rc_input_to_quad = self.mission.mission_object.get_input()
             st_cmd.cmd_1 = rc_input_to_quad[0]; st_cmd.cmd_2 = rc_input_to_quad[1]; st_cmd.cmd_3 = rc_input_to_quad[2]; st_cmd.cmd_4 = rc_input_to_quad[3]
 
             st_cmd.cmd_5 = 1500.0; st_cmd.cmd_6 = 1500.0; st_cmd.cmd_7 = 1500.0; st_cmd.cmd_8 = 1500.0

@@ -207,16 +207,9 @@ class Mission(js.Jsonable):
         # initialize state: ultimately defined by child class
         self.initialize_state()
 
-        # for reseting neutral value that makes iris+ stay at desired altitude
-        self.DesiredZForceMedian = utility_functions.MedianFilter(10)
-              
-        self.rc_output = numpy.zeros(4)
-
-        # converting our controlller standard into iris+ standard
-        self.iris_plus_converter_object_mission = IrisPlusConverter()
-
         # initialize desired_3d_force
         self.desired_3d_force_quad = numpy.zeros(3)
+        self.desired_yaw_rate      = 0.0
 
         return
         
@@ -235,9 +228,13 @@ class Mission(js.Jsonable):
         raise NotImplementedError()
 
 
-    def real_publish(self,desired_3d_force_quad,yaw_rate,rc_output):
+    def real_publish(self,desired_3d_force_quad,yaw_rate):
         return NotImplementedError()
 
+
+    def get_psi(self):
+        "Get psi angle in rad"
+        return NotImplementedError()
 
     def get_quad_ea_rad(self):
         '''Get euler angles (roll, pitch, yaw) in radians,
@@ -329,7 +326,7 @@ class Mission(js.Jsonable):
             self.time_instant_t0 = time_instant
 
    
-    def yaw_rate(self,time_instant):
+    def compute_desired_yaw_rate(self,time_instant):
 
         state_for_yaw_controller = self.get_quad_ea_rad()
         input_for_yaw_controller = self.get_desired_yaw_rad(time_instant)
@@ -344,36 +341,40 @@ class Mission(js.Jsonable):
 
         # reference
         reference = self.get_reference(time_instant)
-
         # state
         state = self.get_state()
-
         # compute input to send to QUAD
         desired_3d_force_quad = self.controller.output(time_instant,
             state, reference)
 
         return desired_3d_force_quad
 
+    def get_input(self):
+
+        out = numpy.zeros(4)
+
+        force_ratio = numpy.linalg.norm(self.desired_3d_force_quad)
+
+        out[0] = 100*(1 - force_ratio/(self.total_mass*utility_functions.GRAVITY))
+
+        out[1],out[2] = utility_functions.roll_and_pitch_from_full_actuation_and_yaw_rad(self.desired_3d_force_quad,self.get_psi())
+
+        out[1] *= 180/3.142
+        out[2] *= 180/3.142
+
+        self.desired_yaw_rate
+        out[3] = self.desired_yaw_rate
+
+        return out
 
     def publish(self):
 
         time_instant = rospy.get_time() - self.time_instant_t0
 
         desired_3d_force_quad = self.compute_desired_3d_force(time_instant)
-
+        desired_yaw_rate      = self.compute_desired_yaw_rate(time_instant)
+        
         self.desired_3d_force_quad = desired_3d_force_quad
+        self.desired_yaw_rate      = desired_yaw_rate
 
-        self.DesiredZForceMedian.update_data(desired_3d_force_quad[2])
-
-        yaw_rate = self.yaw_rate(time_instant)
-
-        self.rc_command(desired_3d_force_quad,yaw_rate)
-
-        self.real_publish(desired_3d_force_quad,yaw_rate,self.rc_output)
-
-
-    def rc_command(self,desired_3d_force_quad,yaw_rate):
-        euler_rad          = self.get_euler_angles()*numpy.pi/180
-        self.iris_plus_converter_object_mission.set_rotation_matrix(euler_rad)
-        iris_plus_rc_input = self.iris_plus_converter_object_mission.input_conveter(desired_3d_force_quad,yaw_rate)
-        self.rc_output     = iris_plus_rc_input
+        self.real_publish(desired_3d_force_quad,desired_yaw_rate)
