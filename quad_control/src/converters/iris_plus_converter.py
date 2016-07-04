@@ -39,6 +39,9 @@ class IrisPlusConverter(object):
     #     super(IrisPlusConverter, self).__init__()
     #     self.arg = arg
 
+    def __init__(self):
+        self.force_z_median = uts.MedianFilter(10)
+
     def set_mass(self,mass):
         self.__MASS = mass
         pass
@@ -46,11 +49,14 @@ class IrisPlusConverter(object):
     def get_k_throttle_neutral(self):
         return self.__THROTTLE_NEUTRAL
 
-    def reset_k_trottle_neutral(self,force):
+    def reset_k_trottle_neutral(self):
         # if force > m*gravity, decrease neutral value
         # if force < m*gravity, increase neutral value
 
-        self.__THROTTLE_NEUTRAL = self.__THROTTLE_NEUTRAL*force/(self.__MASS*self.__GRAVITY)
+        median_force = self.force_z_median.output()
+        rospy.logwarn('median force = '+ str(median_force))
+
+        self.__THROTTLE_NEUTRAL = self.__THROTTLE_NEUTRAL*median_force/(self.__MASS*self.__GRAVITY)
 
         # for safety better bound this value
         self.__THROTTLE_NEUTRAL = numpy.clip(self.__THROTTLE_NEUTRAL,1400,1600)
@@ -78,6 +84,8 @@ class IrisPlusConverter(object):
         return 
 
     def input_conveter(self,desired_3d_force,yaw_rate_desired):
+
+        self.force_z_median.update_data(desired_3d_force[2])
 
         #---------------------------------------------------------------------#
         # third canonical basis vector
