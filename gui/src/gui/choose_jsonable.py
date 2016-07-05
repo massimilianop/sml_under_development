@@ -115,8 +115,10 @@ class ChooseJsonablePlugin(Plugin):
         self._widget.radioButtonMethods.setEnabled(False)   
 
     def print_available_methods(self):
+        """This method is triggered only when user clicks on 'radioButtonMethods'"""
 
         if self._widget.radioButtonMethods.isChecked():
+            # when user clicks on button
 
             # get string that user modified with new parameters
             string              = self._widget.JsonableMessageInput.toPlainText()
@@ -134,9 +136,20 @@ class ChooseJsonablePlugin(Plugin):
                     self._widget.ListJsonableWidget.addItem(function_name)
             else:
                 print("IMPLEMENT")
+
+            # when user clicks on button for methods
+            # list with methods is present
+            # and label warns user to choose one of the available methods
+            self._widget.labelJsonableAvailable.setText('Choose Method')
         else:
+            # when user unclicks the button
+
+            # we print the message associated to the chosen jsonable
             self.__print_jsonable_message()
 
+            # jsonable class is already chosen 
+            # (user may want to change some parameters though)          
+            self._widget.labelJsonableAvailable.setText('Choosen!')
 
     # PUBLIC FUNCTION:
     def change_dictionary_of_options(self,dictionary_of_options):
@@ -164,6 +177,9 @@ class ChooseJsonablePlugin(Plugin):
         self._widget.radioButtonMethods.setEnabled(False)
         self._widget.radioButtonMethods.setChecked(False)        
         self._widget.SetJsonableButton.setEnabled(False)
+
+        # Warn user that it should choose one of the available jsonables classes
+        self._widget.labelJsonableAvailable.setText('Choose ' + self.name_tab)
 
     def __remove_tabs(self):
 
@@ -329,6 +345,10 @@ class ChooseJsonablePlugin(Plugin):
             # add item
             self._widget.ListJsonableWidget.addItem(key)
 
+        # warn user that he should choose between the available classes
+        # that are concernce with a specific inner, namely list_of_keys[-1]
+        self._widget.labelJsonableAvailable.setText('Choose '+list_of_keys[-1])
+
     def __print_jsonable_message(self):
         """Print message with parameters associated to chosen controller class"""
 
@@ -353,6 +373,10 @@ class ChooseJsonablePlugin(Plugin):
         self._widget.SetJsonableButton.setEnabled(True)
         #cannot make methods available yet since, class hasnt been chosen yet    
         #self._widget.radioButtonMethods.setEnabled(True) 
+
+        # jsonable class is completely chosen
+        # (now user may only change the parameters of that class)
+        self._widget.labelJsonableAvailable.setText('Choosen!')
 
         return         
 
