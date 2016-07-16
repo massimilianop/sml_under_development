@@ -43,8 +43,6 @@ class TypeUAV(js.Jsonable):
         raise NotImplementedError()
     def get_input(self):
         raise NotImplementedError()
-    def get_complete_data(self):
-        raise NotImplementedError() 
 
 #------------------------------------------------------------#
 #------------------------------------------------------------#

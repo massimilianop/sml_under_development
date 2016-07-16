@@ -563,7 +563,46 @@ class Jsonable:
 
         return string
 
+    def get_data(self):
+        '''return list of "numbers" that should be saved'''
+        # by default empty list is returned
+        # i.e., nothing is saved by default
+        return []
 
+    @classmethod
+    def get_data_size(self):
+        '''return how many numbers are saved: this must be static'''
+        return 0
+
+    def get_complete_data(self):
+        '''this get the data from object and all its inners'''
+        out = self.get_data()
+        for arg in self.inner.keys():
+            out+=getattr(self,arg).get_complete_data()
+
+        return out
+
+    def plot_from_string(self,string,starting_point=[0]):
+        '''Take saved data and return a tuple of figures from that data
+        starting point corresponds to point where data is specific to the object
+        '''
+        # empty tuple of figures
+        return ()
+
+    def complete_plot_from_string(self,string,starting_point=[0]):
+        '''Take saved data and return a tuple of figures 
+        from object and all its inners'''
+
+        # starting_point is list, thus is mutable: passed by reference!
+        figures = self.plot_from_string(string,starting_point=starting_point)
+        starting_point[0] += self.get_data_size()
+        # TODO: the order of the inners may be different from get_complete_data
+        # changed inner from dictionary to ordered dictionary
+        for arg in self.inner.keys():
+            figures+=getattr(self,arg).complete_plot_from_string(string,starting_point=starting_point)
+            starting_point[0] += getattr(self,arg).get_data_size()
+
+        return figures
 
 
 ###############

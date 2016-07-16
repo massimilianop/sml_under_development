@@ -246,7 +246,7 @@ class QuadController():
 
             if self.SaveDataFlag == True:
                 # if we want to save data
-                numpy.savetxt(self.file_handle, [self.mission.get_complete_data()], delimiter=' ')
+                numpy.savetxt(self.file_handle, [numpy.array(self.mission.get_complete_data())], delimiter=' ')
             
             # go to sleep
             rate.sleep()

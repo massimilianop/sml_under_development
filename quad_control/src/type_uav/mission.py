@@ -147,26 +147,29 @@ class Mission(js.Jsonable):
         'force_z'
     ]
 
-    def get_complete_data(self):
+    @classmethod
+    def get_data_size(self):
+        return 19
+
+    def get_data(self):
         """Get all data relevant to the mission
         from this data, mission should be able to do data post-analysis, 
         like ploting or computing average errors
         """        
-        default_array = np.concatenate([
-            [rospy.get_time()],
-            self.get_position(),
-            self.get_velocity(),
-            self.get_position_desired(),
-            self.get_velocity_desired(),
-            self.get_euler_angles(),
-            self.desired_3d_force])
+        default_array = [rospy.get_time()]
+        default_array+=self.get_position().tolist()
+        default_array+=self.get_velocity().tolist()
+        default_array+=self.get_position_desired().tolist()
+        default_array+=self.get_velocity_desired().tolist()
+        default_array+=self.get_euler_angles().tolist()
+        default_array+=self.desired_3d_force.tolist()
         
         # default_array = np.concatenate([default_array,self.get_complementary_data()])
-        return default_array    
+        return default_array
 
 
     @classmethod
-    def plot_from_string(cls, string):
+    def plot_from_string(cls, string,starting_point):
         
         times        = []
         
@@ -199,6 +202,8 @@ class Mission(js.Jsonable):
             # ignore empty lines           
             if line:
                 numbers = line.split(' ')
+
+                numbers = numbers[starting_point[0]:]
                 
                 times.append(float(numbers[0]))
 
