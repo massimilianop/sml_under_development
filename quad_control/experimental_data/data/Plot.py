@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
-import missions.missions_database
-MISSIONS_DATABASE = missions.missions_database.database2
+# import missions.missions_database
+# MISSIONS_DATABASE = missions.missions_database.database2
+
+import type_uav.type_uav
+MISSIONS_DATABASE = type_uav.type_uav.database
 
 from utilities import jsonable
 
@@ -16,8 +19,14 @@ import pdfkit
 
 from PyPDF2 import PdfFileMerger, PdfFileReader 
 
-DATA_FILE = "/home/pedrootao/SML_CODE/src/quad_control/experimental_data/data/_1467538364_untitled_file.txt"
+# get most recent txt file, and print figures for that file
+import os
+import glob
+DATA_FILE = max(glob.iglob('*.txt'), key=os.path.getctime)
+print(DATA_FILE)
 
+# is other file is to be run, use the code below instead
+# DATA_FILE = "/home/pedrootao/SML_CODE/src/quad_control/experimental_data/data/_1468688466_untitled_file.txt"
 
 def handle_plot_service():
 
@@ -50,7 +59,7 @@ def handle_plot_service():
         fig = plt.figure()
         pdf = matplotlib.backends.backend_pdf.PdfPages(data_file[:-4]+".pdf")
 
-        for fig in mission_active.plot_from_string(data):
+        for fig in mission_active.complete_plot_from_string(data,starting_point=[0]):
             pdf.savefig(fig)
 
         plt.close("all")
