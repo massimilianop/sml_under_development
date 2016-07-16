@@ -97,7 +97,7 @@ class FixedPointTrajectory(Trajectory):
         Trajectory.__init__(self, offset=point, rotation=np.zeros(3))
         
     def object_description(self):
-        string  = tj.Trajectory.object_description(self)+"\n"
+        string  = Trajectory.object_description(self)+"\n"
         return string
         
     def desired_trajectory(self, time):
@@ -136,7 +136,7 @@ class CircleTrajectory(Trajectory):
         self.speed = speed
     
     def object_description(self):
-        string  = tj.Trajectory.object_description(self)+"\n"
+        string  = Trajectory.object_description(self)+"\n"
         string += "Circle trajectory with <b>radius = "+ str(self.radius) + "</b> in (m),"
         string += "and <b>speed = "+ str(self.speed) + "</b> (linear velocity) in (m/s)"        
         return string
