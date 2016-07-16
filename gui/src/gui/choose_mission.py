@@ -20,11 +20,19 @@ rospack = rospkg.RosPack()
 import sys
 sys.path.insert(0, rospack.get_path('quad_control'))
 
+# # no need to get quad_control path, since it is package; import missions dictionary
+# from src.missions import missions_database
+# # from src.missions import type_uav_mission
+# DICTIONARY_OF_OPTIONS = missions_database.database2
+# # DICTIONARY_OF_OPTIONS = {"Mission":type_uav_mission.MissionGeneral}
+
 # no need to get quad_control path, since it is package; import missions dictionary
-from src.missions import missions_database
+from src.type_uav import type_uav
 # from src.missions import type_uav_mission
-DICTIONARY_OF_OPTIONS = missions_database.database2
+DICTIONARY_OF_OPTIONS = type_uav.database
 # DICTIONARY_OF_OPTIONS = {"Mission":type_uav_mission.MissionGeneral}
+
+
 
 from src.utilities import jsonable
 
@@ -33,9 +41,9 @@ from choose_jsonable import ChooseJsonablePlugin
 import json
 
 EXAMPLE_DICTIONARY = {}
-EXAMPLE_DICTIONARY["name_main_tab"] = "mission"
+EXAMPLE_DICTIONARY["name_main_tab"] = "type_uav"
 EXAMPLE_DICTIONARY["strServiceChangeName"] = "ServiceChangeMission"
-EXAMPLE_DICTIONARY["DICTIONARY_OF_OPTIONS"] = missions_database.database2
+EXAMPLE_DICTIONARY["DICTIONARY_OF_OPTIONS"] = DICTIONARY_OF_OPTIONS
 EXAMPLE_DICTIONARY["name_service_sequence_provider"] = 'ServiceSequencer'
 
 class ChooseMissionPlugin(Plugin):
@@ -102,7 +110,7 @@ class ChooseMissionPlugin(Plugin):
         
         # determine ROS workspace directory where data is saved
         package_path = rospkg.RosPack().get_path('quad_control')
-        self.data_file_path = package_path+'/src/missions/sequence_missions.txt' 
+        self.data_file_path = package_path+'/src/type_uav/sequence_missions.txt' 
 
         self._widget.save_new_sequence.clicked.connect(self.save_new_sequence)
         self._widget.new_sequence.clicked.connect(self.new_sequence)

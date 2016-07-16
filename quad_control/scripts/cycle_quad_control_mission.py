@@ -15,10 +15,11 @@ from rospkg import RosPack
 
 import numpy
 
-import missions.missions_database
-MISSIONS_DATABASE = missions.missions_database.database2
+# import missions.missions_database
+# MISSIONS_DATABASE = missions.missions_database.database2
 
-import missions.type_uav_mission
+import type_uav.type_uav
+MISSIONS_DATABASE = type_uav.type_uav.database
 
 import json
 
@@ -153,24 +154,27 @@ class QuadController():
             # get current time
             st_cmd.time  = rospy.get_time()
 
-            position_velocity = self.mission.mission_object.get_pv()
+            position = self.mission.get_position()
+            velocity = self.mission.get_velocity()
 
             # state of quad comes from QUALISYS, or other sensor
-            st_cmd.x     = position_velocity[0]; st_cmd.y     = position_velocity[1]; st_cmd.z     = position_velocity[2]
-            st_cmd.vx    = position_velocity[3]; st_cmd.vy    = position_velocity[4]; st_cmd.vz    = position_velocity[5]
+            st_cmd.x  = position[0]; st_cmd.y     = position[1]; st_cmd.z     = position[2]
+            st_cmd.vx = velocity[0]; st_cmd.vy    = velocity[1]; st_cmd.vz    = velocity[2]
 
-            euler_angle  = self.mission.mission_object.get_euler_angles()
+            euler_angle  = self.mission.get_euler_angles()
 
             st_cmd.roll  = euler_angle[0]; st_cmd.pitch = euler_angle[1]; st_cmd.yaw   = euler_angle[2]
-            ea_desired = self.mission.mission_object.get_ea_desired()            
+            
+            ea_desired = self.mission.get_euler_angles_desired()            
             st_cmd.roll_d  = ea_desired[0]; st_cmd.pitch_d = ea_desired[1]; st_cmd.yaw_d   = ea_desired[2]
 
-            position_velocity_desired = self.mission.mission_object.get_pv_desired()
+            position_desired = self.mission.get_position_desired()
+            velocity_desired = self.mission.get_velocity_desired()
 
-            st_cmd.xd    = position_velocity_desired[0]; st_cmd.yd    = position_velocity_desired[1]; st_cmd.zd    = position_velocity_desired[2]
-            st_cmd.vxd   = position_velocity_desired[3]; st_cmd.vyd   = position_velocity_desired[4]; st_cmd.vzd   = position_velocity_desired[5]
+            st_cmd.xd    = position_desired[0]; st_cmd.yd    = position_desired[1]; st_cmd.zd    = position_desired[2]
+            st_cmd.vxd   = velocity_desired[0]; st_cmd.vyd   = velocity_desired[1]; st_cmd.vzd   = velocity_desired[2]
 
-            rc_input_to_quad = self.mission.mission_object.get_input()
+            rc_input_to_quad = self.mission.get_input()
             st_cmd.cmd_1 = rc_input_to_quad[0]; st_cmd.cmd_2 = rc_input_to_quad[1]; st_cmd.cmd_3 = rc_input_to_quad[2]; st_cmd.cmd_4 = rc_input_to_quad[3]
 
             st_cmd.cmd_5 = 1500.0; st_cmd.cmd_6 = 1500.0; st_cmd.cmd_7 = 1500.0; st_cmd.cmd_8 = 1500.0
@@ -189,7 +193,7 @@ class QuadController():
         MissionClass = MISSIONS_DATABASE['Default']   
         self.mission = MissionClass()
 
-        self.mission.mission_object.hold_position(position)
+        self.mission.hold_position(position)
 
 
     def control_compute(self):
@@ -229,20 +233,20 @@ class QuadController():
 
         while not rospy.is_shutdown():
 
-            position = self.mission.mission_object.get_position()
-            velocity = self.mission.mission_object.get_velocity()
+            position = self.mission.get_position()
+            velocity = self.mission.get_velocity()
             if (not self.check_inside_limits(position,velocity)) and (not self.emergency_triggered):
                 self.emergency_triggered  = True
                 self.stop_and_land(position)
 
-            self.mission.mission_object.publish()
+            self.mission.publish()
 
             # publish to GUI (it also contains publish state of Control to GUI)
             self.PublishToGui()
 
             if self.SaveDataFlag == True:
                 # if we want to save data
-                numpy.savetxt(self.file_handle, [self.mission.mission_object.get_complete_data()], delimiter=' ')
+                numpy.savetxt(self.file_handle, [self.mission.get_complete_data()], delimiter=' ')
             
             # go to sleep
             rate.sleep()

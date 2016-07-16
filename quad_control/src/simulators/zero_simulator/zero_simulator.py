@@ -40,7 +40,7 @@ class ZeroSimulator(sim.Simulator):
 
         self.marker_setup_rviz()
                 
-    def __del__(self):
+    def unregister(self):
 
         print("stop publishing uav state, and marker to rviz")
         self.publisher.unregister()

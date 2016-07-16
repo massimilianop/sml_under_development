@@ -27,13 +27,65 @@ def update_input_dictionary(dictionary, list_of_keys, NestedClassName, nested_di
     empty_list.append(NestedClassName)
     empty_list.append(nested_dictionary)
     
-    
-    
-
 # update_input_dictionary(dictionary, ['bed', 'doll'], 'Doll1', {})
 #print dictionary 
 #print check_completeness(dictionary)
 
+def add_item_to_database(dic,Class,default=False):
+    dic[Class.__name__] = Class
+    if default:
+        dic["Default"] = Class
+
+
+# # this is a decorator
+# def add_to_database(Class):
+
+#     frame = inspect.currentframe()
+#     local_variables = frame.f_back.f_locals
+
+#     if 'database' in local_variables.keys():
+#         local_variables['database'][Class.__name__] = Class
+#     else:
+#         # create database
+#         local_variables['database'] = {Class.__name__:Class}
+    
+#     # return Class
+#     return Class
+# this is a decorator
+def add_to_database(database_name='database',default=False):
+
+    frame = inspect.currentframe()
+    local_variables = frame.f_back.f_locals
+
+    def decorator(Class):
+
+        if database_name in local_variables.keys():
+            local_variables[database_name][Class.__name__] = Class
+        else:
+            # create database
+            local_variables[database_name] = {Class.__name__:Class}
+        
+        if default:
+            local_variables[database_name]['Default'] = Class
+
+        # return Class
+        return Class
+
+    return decorator
+
+# this is a decorator
+def set_default_in_database(Class):
+
+    frame = inspect.currentframe()
+    local_variables = frame.f_back.f_locals
+
+    if 'database' in local_variables.keys():
+        local_variables['database']['Default'] = Class
+    else:
+        print('ERROR: NO DATABASE')
+    
+    # return Class
+    return Class
 
 class Jsonable:
     """A Jsonable object is an object that can be constructed

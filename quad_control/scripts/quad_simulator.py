@@ -65,8 +65,8 @@ class SimulatorNode():
 
             # chosen class taken from dictionary
             SimulatorClass = SIMULATORS_DATABASE[dictionary["key"]]
-        
-            del self.simulator 
+            
+            self.simulator.unregister()
             self.simulator = SimulatorClass.from_string(dictionary["input_string"])            
 
         # return message to Gui, to let it know resquest has been fulfilled

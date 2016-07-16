@@ -50,6 +50,8 @@ class SingleLoadTransportController(single_load_transportation_controller.Single
         # TODO import this later from utilities
         self.g            = 9.81
 
+    def get_total_weight(self):
+        return (self.quad_mass+self.load_mass)*self.g
 
     def output(self,time_instant,state,stated):
 
