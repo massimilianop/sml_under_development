@@ -403,6 +403,39 @@ class IrisRvizSubscriber():
 
 """Subscribers for Real Iris"""
 
+from utilities.utility_functions import rot_from_euler_rad,quaternion_from_rot
+
+def mocap_to_odometry(position,velocity,euler_angles,angular_velocities):
+
+    # create a message of type quad_state with current state
+    odometry = Odometry()
+
+    odometry.pose.pose.position.x = position[0]
+    odometry.pose.pose.position.y = position[1]
+    odometry.pose.pose.position.z = position[2]
+
+    VERIFY RAD OR DEGREE!!!!!
+    VERIFY BODY TO INERTIAL!!!!!
+    R_body_to_inertial = rot_from_euler_rad(euler_angles)
+
+    quaternion = quaternion_from_rot(R_body_to_inertial)
+    odometry.pose.pose.orientation.x = quaternion[0]
+    odometry.pose.pose.orientation.y = quaternion[1]
+    odometry.pose.pose.orientation.z = quaternion[2]
+    odometry.pose.pose.orientation.w = quaternion[3]       
+
+    v_body = numpy.dot(numpy.transpose(R_body_to_inertial),velocity)
+    odometry.twist.twist.linear.x = v_body[0]
+    odometry.twist.twist.linear.y = v_body[1]
+    odometry.twist.twist.linear.z = v_body[2]
+
+    omega_body = numpy.dot(numpy.transpose(R_body_to_inertial),angular_velocities)
+    odometry.twist.twist.angular.x = omega_body[0]
+    odometry.twist.twist.angular.y = omega_body[1]
+    odometry.twist.twist.angular.z = omega_body[2]
+
+    return odometry
+
 import utilities.mocap_source as mocap_source
 
 from utilities.utility_functions import VelocityFilter
@@ -481,35 +514,7 @@ class IrisSubscriber():
                 # collect all components of state
                 self.state_quad = numpy.concatenate([p,v,ee])
                 
-            else:
-            
-                # do nothing, keep previous state
-                self.flag_measurements = False
-
-            # create a message of type quad_state with current state
-            odometry = Odometry()
-
-            # THIS IS WRONG CORRECT
-            p = self.state_quad[0:3]
-            odometry.pose.pose.position.x = p[0]
-            odometry.pose.pose.position.y = p[1]
-            odometry.pose.pose.position.z = p[2]
-
-            quaternion = np.array([0.0,0.0,0.0,1.0])
-            odometry.pose.pose.orientation.x = quaternion[0]
-            odometry.pose.pose.orientation.y = quaternion[1]
-            odometry.pose.pose.orientation.z = quaternion[2]
-            odometry.pose.pose.orientation.w = quaternion[3]       
-
-            v_body = self.state_quad[3:6]
-            odometry.twist.twist.linear.x = v_body[0]
-            odometry.twist.twist.linear.y = v_body[1]
-            odometry.twist.twist.linear.z = v_body[2]
-
-            omega_body = np.array([0.0,0.0,0.0])
-            odometry.twist.twist.angular.x = omega_body[0]
-            odometry.twist.twist.angular.y = omega_body[1]
-            odometry.twist.twist.angular.z = omega_body[2]        
+                self.uav_odometry = mocap_to_odometry(position=p,velocity=v,euler_angles=ee,angular_velocities=numpy.zeros(3))
 
             return self.state_quad
 
@@ -549,22 +554,99 @@ class IrisSubscriber():
             # but median will take care of minimizing effects
             self.velocity_estimator = VelocityFilter(3,numpy.zeros(3),0.0)
 
+            self.load_velocity_estimator = VelocityFilter(3,numpy.zeros(3),0.0)
+
             self.uav_odometry =  Odometry()
             self.state_quad = np.zeros(3+3+3)
+
+            # initialize stuff
+            # state of quad: position, velocity and attitude
+            # ROLL, PITCH, AND YAW (EULER ANGLES IN DEGREES)
+            self.state_quad             = numpy.zeros(3+3+3)
+            #self.load_odometry_position = numpy.array([0.0,0.0,-self.cable_length]) 
+            self.load_odometry_position = numpy.array([0.0,0.0,-1.0]) 
+            self.load_odometry_velocity = numpy.zeros(3)
+
+            self.uav_odometry = Odometry()
              
         def __del__(self):
             # Unsubscribe from all the subscribed topics
             # self.sub_odometry.unregister()
             pass
 
+        def get_state(self):
+
+            bodies = self.Qs.get_body(self.body_id)
+
+            if bodies != 'off':  
+
+                self.flag_measurements = True
+
+                # position
+                x=bodies["x"]; y=bodies["y"]; z=bodies["z"]   
+                p = numpy.array([x,y,z])
+
+                # velocity
+                #v = numpy.array([data.vx,data.vy,data.vz])
+                v = self.velocity_estimator.out(p,rospy.get_time())
+
+                # attitude: euler angles THESE COME IN DEGREES
+                roll = bodies["roll"]
+                pitch=-bodies["pitch"]
+                yaw  = bodies["yaw"]
+
+                VERIFY RAD OR DEGREE!!!!!
+
+                ee = numpy.array([roll,pitch,yaw])
+                
+                # collect all components of state
+                self.state_quad = numpy.concatenate([p,v,ee])
+
+                self.uav_odometry = mocap_to_odometry(position=p,velocity=v,euler_angles=ee,angular_velocities=numpy.zeros(3))
+
+            #---------------------------------------#
+            # get load odometry
+
+            bodies = self.Qs.get_body(self.load_id)
+
+            if bodies != 'off':  
+
+                self.flag_measurements = True
+
+                # position
+                x=bodies["x"]; y=bodies["y"]; z=bodies["z"]   
+                p = numpy.array([x,y,z])
+                self.load_odometry_position  = p
+
+                # velocity
+                #v = numpy.array([data.vx,data.vy,data.vz])
+                v = self.load_velocity_estimator.out(p,rospy.get_time())
+                self.load_odometry_velocity = v
+
+
+                # self.uav_odometry = mocap_to_odometry(position=p,velocity=v,euler_angles=numpy.zeros(3),angular_velocities=numpy.zeros(3))
+
         # all subscribers must provide the functionalities below
         def get_controller_state(self):
-            return self.state_quad
+
+            position_load = self.load_odometry_position
+            velocity_load = self.load_odometry_velocity
+
+            position_quad = self.state_quad[0:3]
+            velocity_quad = self.state_quad[3:6]
+
+
+            state  = numpy.concatenate([position_load, \
+                                        velocity_load, \
+                                        position_quad, \
+                                        velocity_quad ])
+
+            return state
 
         def get_yaw_controller_state(self):
             euler_rad     = self.state_quad[6:9]*math.pi/180
-            euler_rad_dot = np.zeros(3)
-            return np.concatenate([euler_rad,euler_rad_dot]) 
+            euler_rad_dot = numpy.zeros(3)
+            return numpy.concatenate([euler_rad,euler_rad_dot]) 
 
         def get_uav_odometry(self):
             return self.uav_odometry
