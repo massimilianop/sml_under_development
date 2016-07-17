@@ -232,8 +232,16 @@ class Mission(js.Jsonable):
                 forces_z.append(float(numbers[18]))
                 
                 #yaw_rates.append(float(numbers[13]))
-        
+
+        # it is not bad to import it here, since plotting is done aposteriori
+        import operator
         fig1 = plt.figure()
+        plt.plot(times[1:], map(operator.sub,times[1:],times[0:-1]), 'r-', label=r'$\Delta t$')       
+        plt.title('Time Interval (s)')
+        plt.legend(loc='best')
+        plt.grid()
+        
+        fig2 = plt.figure()
         plt.plot(times, positions_x, 'r-', label=r'$x$')
         plt.plot(times, positions_y, 'g-', label=r'$y$')
         plt.plot(times, positions_z, 'b-', label=r'$z$')
@@ -244,7 +252,7 @@ class Mission(js.Jsonable):
         plt.legend(loc='best')
         plt.grid()
 
-        fig2 = plt.figure()
+        fig3 = plt.figure()
         plt.plot(times, velocities_x, 'r-', label=r'$v_x$')
         plt.plot(times, velocities_y, 'g-', label=r'$v_y$')
         plt.plot(times, velocities_z, 'b-', label=r'$v_z$')
@@ -255,7 +263,7 @@ class Mission(js.Jsonable):
         plt.legend(loc='best')
         plt.grid()        
         
-        fig3 = plt.figure()
+        fig4 = plt.figure()
         plt.plot(times, rolls, 'r-', label=r'$\phi$')
         plt.plot(times, pitches, 'g-', label=r'$\theta$')
         plt.plot(times, yaws, 'b-', label=r'$\psi$')
@@ -264,7 +272,7 @@ class Mission(js.Jsonable):
         plt.grid()
         # plt.draw()
         
-        fig4 = plt.figure()
+        fig5 = plt.figure()
         plt.plot(times, forces_x, 'r-', label=r'$F_x$')
         plt.plot(times, forces_y, 'g-', label=r'$F_y$')
         plt.plot(times, forces_z, 'b-', label=r'$F_z$')
@@ -273,7 +281,7 @@ class Mission(js.Jsonable):
         plt.grid()
         # plt.draw()
 
-        return fig1,fig2,fig3,fig4
+        return fig1,fig2,fig3,fig4,fig5
 
 
     def description(cls):
