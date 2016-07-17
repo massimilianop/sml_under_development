@@ -5,6 +5,8 @@ import json
 import inspect
 import numpy as np
 
+import collections
+
 # dictionary = {
 #     'bed'   :['Bed1', {'pillow':[],'doll':[]}],
 #     'lamp'  :['Lamp1', {}]
@@ -128,7 +130,7 @@ class Jsonable:
         return cls.inner
 
 
-    inner = dict()
+    inner = collections.OrderedDict()
     """This is the only object that needs to be redefined by the children.
     Each key is one of the arguments in the constructor that is itself a
     Jsonable. The corresponding value is a dictionary, which contains the
@@ -388,7 +390,8 @@ class Jsonable:
             if 'inner' in local_variables.keys(): 
                 local_variables['inner'][key] = dictionary
             else:
-                local_variables['inner'] = {key:dictionary}
+                local_variables['inner'] = collections.OrderedDict()
+                local_variables['inner'][key]  = dictionary
         else:
             print("ERROR: you must provide a dictionary")
 
