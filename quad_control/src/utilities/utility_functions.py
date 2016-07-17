@@ -120,7 +120,8 @@ def rot_from_euler_rad(ee_rad):
 def rot_from_euler_deg(ee_deg):
     return rot_from_euler_rad(ee_deg*np.pi/180.0)
 
-
+# test
+#print(euler_deg_from_rot(rot_from_euler_deg(np.array([11,-21,-13]))))
 
 # testing skew matrix    
 # print skew(np.array([1,2,3]))
@@ -136,6 +137,18 @@ def rot_from_quaternion(quaternion):
 
     return R
 
+def quaternion_from_rot(rotation_matrix):
+
+    q_n = np.sqrt(1 + np.trace(rotation_matrix))/2.0
+    q_v = unskew(rotation_matrix - np.transpose(rotation_matrix))/(4*q_n)
+
+    quaternion = np.concatenate([q_v,[q_n]])
+
+    return quaternion
+
+# test
+# print(np.array([0.5*(0.5),0.5*(0.5*np.sqrt(3)),0.5*(0.0),0.5*np.sqrt(3)]))
+# print(quaternion_from_rot(rot_from_quaternion(np.array([0.5*(0.5),0.5*(0.5*np.sqrt(3)),0.5*(0.0),0.5*np.sqrt(3)]))))
 
 def quaternion_from_unit_vector_and_yaw_rad(unit_vector, psi):
 
