@@ -28,6 +28,109 @@ class SingleLoadTransportationController(js.Jsonable):
         raise NotImplementedError()
 
 
+    @classmethod
+    def get_data_size(self):
+        return 3 + 3 + 2 + 2
+
+    def get_data(self):
+        """Get all data relevant to the mission
+        from this data, mission should be able to do data post-analysis, 
+        like ploting or computing average errors
+        """        
+        default_array = self.data['load_position'].tolist()
+        default_array+= self.data['load_velocity'].tolist()
+
+        # direction of cable
+        n = self.data['unit_vector']
+        phi   =  -numpy.arcsin(n[[1]])
+        theta =  numpy.arctan(n[[0]]/n[[2]])
+
+        # angular velocity of cable
+        w  = self.data['angular_velocity']
+        w_phi   = w[0]/numpy.cos(theta) - w[1]*numpy.tan(phi)*numpy.tan(theta)
+        w_theta = w[1]/(numpy.cos(theta)**2)
+
+        default_array+= [phi,theta]
+        default_array+= [w_phi,w_theta]      
+        
+        # default_array = np.concatenate([default_array,self.get_complementary_data()])
+        return default_array
+
+    def plot_from_string(cls, string,starting_point):
+        
+        times        = []
+        
+        positions_x  = []
+        positions_y  = []
+        positions_z  = []
+
+        velocities_x = []
+        velocities_y = []
+        velocities_z = []
+
+        phi   = []
+        theta = []
+
+        w_phi   = []
+        w_theta = []
+
+        import math
+
+        for line in string.split('\n'):
+            # ignore empty lines           
+            if line:
+                numbers = line.split(' ')
+
+                times.append(float(numbers[0]))
+
+                numbers = numbers[starting_point[0]:]
+
+                positions_x.append(float(numbers[0]))
+                positions_y.append(float(numbers[1]))
+                positions_z.append(float(numbers[2]))
+                
+                velocities_x.append(float(numbers[3]))
+                velocities_y.append(float(numbers[4]))
+                velocities_z.append(float(numbers[5]))
+
+                phi.append(float(numbers[6])*180/math.pi)
+                theta.append(float(numbers[7])*180/math.pi)
+
+                w_phi.append(float(numbers[8])*180/math.pi)
+                w_theta.append(float(numbers[9])*180/math.pi)               
+
+        
+        fig1 = plt.figure()
+        plt.plot(times, positions_x, 'r-', label=r'$x$')
+        plt.plot(times, positions_y, 'g-', label=r'$y$')
+        plt.plot(times, positions_z, 'b-', label=r'$z$')     
+        plt.title('Load position (m)')
+        plt.legend(loc='best')
+        plt.grid()
+
+        fig2 = plt.figure()
+        plt.plot(times, velocities_x, 'r-', label=r'$v_x$')
+        plt.plot(times, velocities_y, 'g-', label=r'$v_y$')
+        plt.plot(times, velocities_z, 'b-', label=r'$v_z$')       
+        plt.title('Load velocity (m/s)')
+        plt.legend(loc='best')
+        plt.grid()        
+
+        fig3 = plt.figure()
+        plt.plot(times, phi, 'r-', label=r'$\phi$')
+        plt.plot(times, theta, 'g-', label=r'$\theta$')    
+        plt.title(r'$\phi$ and $\theta$ of cable in degrees')
+        plt.legend(loc='best')
+        plt.grid()   
+
+        fig4 = plt.figure()
+        plt.plot(times, w_phi, 'r-', label=r'$\dot{\phi}$')
+        plt.plot(times, w_theta, 'g-', label=r'$\dot{\theta}$')       
+        plt.title(r'$\dot{\phi}$ and $\dot{\theta}$ of cable in degrees')
+        plt.legend(loc='best')
+        plt.grid()           
+
+        return fig1,fig2,fig3,fig4
 
 
 def skew(x):
@@ -46,11 +149,16 @@ import controllers.double_integrator_controllers.double_integrator_controller
 DIC_DATABASE       = controllers.double_integrator_controllers.double_integrator_controller.database
 ONE_D_DIC_DATABASE = controllers.double_integrator_controllers.double_integrator_controller.database_one_d
 
+
+import reference.plan_motion_load_lifting
+PLAN_XY_MOTION_DATABASE = reference.plan_motion_load_lifting.database
+
 def sat(x):
     return 0.1*x/numpy.sqrt(x**2 + 0.1**2)
 
 # def sat(x):
 #     return x
+
 
 @js.add_to_database(default=True)
 class LoadzUAVxy(SingleLoadTransportationController):   
@@ -66,6 +174,8 @@ class LoadzUAVxy(SingleLoadTransportationController):
     js.Jsonable.add_inner('z_double_integrator_ctr',ONE_D_DIC_DATABASE)    
     # double integrator controller for x and y component of load (position)
     js.Jsonable.add_inner('xy_double_integrator_ctr',DIC_DATABASE)
+    # planner for xy motion of uav
+    js.Jsonable.add_inner('xy_motion',PLAN_XY_MOTION_DATABASE)
 
     @classmethod
     def description(cls):
@@ -84,13 +194,10 @@ class LoadzUAVxy(SingleLoadTransportationController):
     def __init__(self, 
         load_mass    = rospy.get_param("load_mass",0.1),
         quad_mass    = rospy.get_param("quadrotor_mass",1.442),
-        cable_length = rospy.get_param("cable_length",0.6),
-        gains = numpy.array([-1, -6, 0, 1])
+        cable_length = rospy.get_param("cable_length",0.6)
         ):
 
         self.add_inner_defaults()
-
-        self.gains = gains
 
         self.quad_mass    = quad_mass
         self.load_mass    = load_mass
@@ -119,7 +226,7 @@ class LoadzUAVxy(SingleLoadTransportationController):
         reference = {}
         reference['position'] = stated[0:2]
         reference['velocity'] = stated[3:5]
-        uav_xy_reference = self.compute_xy_reference_initial(reference,1.0/35.0)
+        uav_xy_reference = self.xy_motion.output(self.data,reference,1.0/35.0)
         torque = self.compute_torque(uav_xy_reference,thrust)
 
         U = self._input_transform(thrust,torque)
@@ -242,99 +349,6 @@ class LoadzUAVxy(SingleLoadTransportationController):
         torque = numpy.dot(torque,u - n*(Thrust-L*numpy.dot(w,w)))
 
         return torque
-
-    def compute_xy_reference_initial(self,reference,Dt):
-
-        self.position_xy_desired = reference['position']
-        self.velocity_xy_desired = reference['velocity']
-        reference['acceleration'] = numpy.array([0.0,0.0])
-
-        self.compute_xy_reference_initial = self.compute_xy_reference
-
-        return reference
-
-    def compute_xy_reference(self,reference,Dt):
-
-        p_old = self.position_xy_desired
-        v_old = self.velocity_xy_desired
-
-        p_star_tilde = reference['position']
-        v_star_tilde = reference['velocity']
-
-        # if numpy.linalg.norm(p_old - p_star_tilde) + numpy.linalg.norm(v_old - v_star_tilde) < 0.3:
-        if numpy.linalg.norm(p_old - p_star_tilde) < 0.2:
-            
-            # direction of cable
-            n = self.data['unit_vector']
-            phi   =  -numpy.arcsin(n[[1]])
-            theta =  numpy.arctan(n[[0]]/n[[2]])
-
-            # angular velocity of cable
-            w  = self.data['angular_velocity']
-            w_phi   = w[0]/numpy.cos(theta) - w[1]*numpy.tan(phi)*numpy.tan(theta)
-            w_theta = w[1]/(numpy.cos(theta)**2)
-
-            p  = sat(p_old[0] - p_star_tilde[0])
-            v  = sat(v_old[0] - v_star_tilde[0])
-            tt = theta
-            w  = w_theta
-            ux = self.compute_one_d_acceleration(p,v,tt,w)
-
-            px_new = p_star_tilde[0] + p + v*Dt + 0.5*ux*(Dt**2)
-            vx_new = v_star_tilde[0] + v + ux*Dt
-
-            p  = -sat(p_old[1] - p_star_tilde[1])
-            v  = -sat(v_old[1] - v_star_tilde[1])
-            tt = phi
-            w  = w_phi
-            uy = -self.compute_one_d_acceleration(p,v,tt,w)
-
-            py_new = p_star_tilde[1] - (p + v*Dt + 0.5*(-uy)*(Dt**2))
-            vy_new = v_star_tilde[1] - (v + (-uy)*Dt)
-
-            p_new = numpy.array([px_new,py_new])
-            v_new = numpy.array([vx_new,vy_new])
-            u = numpy.array([ux,uy])
-
-            # p_new = p_star_tilde + p_old + v_old*Dt + 0.5*u*(Dt**2)
-            # v_new = v_star_tilde + u*Dt
-
-            reference = {}
-            # array is not mutable
-            reference['position'] = p_new
-            reference['velocity'] = v_new
-            reference['acceleration'] = 0.0*numpy.array([ux,uy])
-
-            # reference['position'] = p_new
-            # reference['velocity'] = v_new
-            # reference['acceleration'] = numpy.array([ux,uy])
-
-            self.position_xy_desired = p_new
-            self.velocity_xy_desired = v_new
-
-        else:
-            self.position_xy_desired = reference['position']
-            self.velocity_xy_desired = reference['velocity']
-            reference['acceleration'] = numpy.array([0.0,0.0])
-
-        return reference
-
-
-    def compute_one_d_acceleration(self,p,v,tt,w):
-        '''p = position'''
-
-        g  = self.gravity
-        L  = self.cable_length
-
-        xi = numpy.array([p - L*tt,v - L*w,g*tt,g*w])
-
-        #gains = numpy.array([-2.0,-6.0,-7.0,-4.0])
-        gains = self.gains
-        v     = numpy.dot(gains,xi)
-
-        acceleration = 0.0*xi[2] + L/g*v[0]
-
-        return acceleration[0]
 
     def _input_transform(self,Thrust,Tau):
 
