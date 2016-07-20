@@ -6,9 +6,13 @@ from utilities import jsonable as js
 
 import mission
 
+
 # Parent class for all types of UAV's
 class TypeUAV(js.Jsonable):
     """Class for each type of uav"""
+
+    # mission must be added
+    # js.Jsonable.add_inner('mission',MISSIONS_DATABASE)
 
     @classmethod
     def description(cls):
@@ -22,6 +26,13 @@ class TypeUAV(js.Jsonable):
         and appropriate publisher is also chosen
         """
         return string 
+
+    def test_emergency(self):
+        self.test_emergency = self.mission.test_emergency
+        return self.mission.test_emergency()
+
+    def trigger_emergency(self):
+        self.mission.trigger_emergency()
 
     # def __init__(self):
     #     self.add_inner_defaults()
@@ -66,9 +77,17 @@ class FireflyGazebo(TypeUAV):
     @classmethod
     def description(cls):
         string = """Missions with firefly in gazebo"""
+        string+= """
+        Mission with firefly in gazebo: chosen mission. This mission depends on:
+        <ul>
+          <li>mission: mission</li>
+        </ul>
+        """
         return string
 
-    def __init__(self):
+    def __init__(self,thrust_gain = 1.0):
+
+        self.thrust_gain = thrust_gain
 
         # TODO: correct this
         self.time_instant_t0 = 0.0
@@ -77,7 +96,7 @@ class FireflyGazebo(TypeUAV):
 
         # converting our controlller standard (3D force + yaw_rate)
         # into rotors standard
-        self.rotors_object = RotorSConverter()
+        self.rotors_object = RotorSConverter(thrust_gain = self.thrust_gain)
 
         # publisher: command firefly motor speeds
         dictionary = {}
@@ -88,9 +107,9 @@ class FireflyGazebo(TypeUAV):
 
     def object_description(self):
         string = """
-        Mission with firefly in gazebo: chosen mission. This mission depends on:
+        Parameters:
         <ul>
-          <li>mission: """ + self.mission.__class__.__name__ +"""</li>
+          <li>thrust_gain: """ + str(self.thrust_gain) + """</li>
         </ul>
         """
         return string
@@ -98,6 +117,7 @@ class FireflyGazebo(TypeUAV):
     @js.add_to_methods_list
     def update_thrust_gain(self):
         self.rotors_object.update_thrust_gain()
+        self.thrust_gain = self.rotors_object.get_thrust_gain()
         return
 
     def publish(self):
@@ -136,7 +156,6 @@ class FireflyGazebo(TypeUAV):
     def get_input(self):
         return self.mission.get_input()
 
-
 #------------------------------------------------------------#
 #------------------------------------------------------------#
 # For Iris
@@ -161,7 +180,13 @@ class IrisRviz(TypeUAV):
         string = """Missions with IRIS in Rviz"""
         return string
 
-    def __init__(self):
+    def __init__(self,
+    throttle_neutral = rospy.get_param("throttle_neutral",1450),
+    total_mass = rospy.get_param("total_mass",1.442)
+    ):
+
+        self.throttle_neutral = throttle_neutral
+        self.total_mass       = total_mass
 
         # TODO: correct this
         self.time_instant_t0 = 0.0
@@ -170,8 +195,8 @@ class IrisRviz(TypeUAV):
 
         # converting our controlller standard (3D force + yaw_rate)
         # into IRIS standard
-        self.iris_plus_converter_object_mission = IrisPlusConverter()
-        self.iris_plus_converter_object_mission.set_mass(self.mission.get_total_weight()/9.81)
+        self.iris_plus_converter_object_mission = IrisPlusConverter(throttle_neutral = throttle_neutral, total_mass = total_mass)
+        # self.iris_plus_converter_object_mission.set_mass(self.mission.get_total_weight()/9.81)
 
         # message published by quad_control that simulator will subscribe to 
         self.pub_cmd = rospy.Publisher('simulator/quad_cmd', quad_cmd, queue_size=1)
@@ -182,6 +207,11 @@ class IrisRviz(TypeUAV):
         <ul>
           <li>mission: """ + self.mission.__class__.__name__ +"""</li>
         </ul>
+        Mission parameters:
+        <ul>
+          <li>throttle_neutral: """ + str(self.throttle_neutral) +"""</li>
+          <li>total_mass: """ + str(self.total_mass) +"""</li>
+        </ul>        
         """
         return string
 
@@ -275,7 +305,13 @@ class Iris(TypeUAV):
         string = """Missions with real IRIS"""
         return string
 
-    def __init__(self):
+    def __init__(self,
+    throttle_neutral = rospy.get_param("throttle_neutral",1450),
+    total_mass = rospy.get_param("total_mass",1.442)
+    ):
+
+        self.throttle_neutral = throttle_neutral
+        self.total_mass       = total_mass
 
         # TODO: correct this
         self.time_instant_t0 = 0.0
@@ -284,17 +320,25 @@ class Iris(TypeUAV):
 
         # converting our controlller standard (3D force + yaw_rate)
         # into IRIS standard
-        self.iris_plus_converter_object_mission = IrisPlusConverter()
-        self.iris_plus_converter_object_mission.set_mass(self.mission.get_total_weight()/9.81)
+        self.iris_plus_converter_object_mission = IrisPlusConverter(throttle_neutral = throttle_neutral, total_mass = total_mass)
+        # self.iris_plus_converter_object_mission.set_mass(self.mission.get_total_weight()/9.81)
 
         # publisher: command firefly motor speeds    
         self.rc_override = rospy.Publisher('mavros/rc/override', OverrideRCIn, queue_size=1)
+
+        # initilize rc_output (which is being saved)
+        self.rc_output = numpy.zeros(4)
 
     def object_description(self):
         string = """
         Mission with real IRIS: chosen mission. This mission depends on:
         <ul>
           <li>mission: """ + self.mission.__class__.__name__ +"""</li>
+        </ul>
+        Mission parameters:
+        <ul>
+          <li>throttle_neutral: """ + str(self.throttle_neutral) +"""</li>
+          <li>total_mass: """ + str(self.total_mass) +"""</li>
         </ul>
         """
         return string
@@ -307,18 +351,24 @@ class Iris(TypeUAV):
         Should only be applied once the uav stabilizes at fixed point"""
 
         self.iris_plus_converter_object_mission.reset_k_trottle_neutral()
+        # update variable, so it can be saved later
+        self.throttle_neutral = self.iris_plus_converter_object_mission.get_k_throttle_neutral()
         return
 
     @js.add_to_methods_list
     def set_iris_neutral_value(self,k_trottle_neutral=1480):
         """Set k_trottle_neutral in [1400 1600]"""
         self.iris_plus_converter_object_mission.set_k_trottle_neutral(k_trottle_neutral)
+        # update variable, so it can be saved later
+        self.throttle_neutral = self.iris_plus_converter_object_mission.get_k_throttle_neutral()        
         return
 
     def publish(self):
 
         time_instant = rospy.get_time() - self.time_instant_t0
         
+        self.mission.get_sample()
+
         # it is the job of the mission to compute the 3d_force and yaw_rate
         desired_3d_force = self.mission.compute_3d_force(time_instant)
         desired_yaw_rate = self.mission.compute_yaw_rate(time_instant)
@@ -328,6 +378,7 @@ class Iris(TypeUAV):
         self.iris_plus_converter_object_mission.set_rotation_matrix(uav_odometry)
         iris_plus_rc_input = self.iris_plus_converter_object_mission.input_conveter(desired_3d_force,desired_yaw_rate)
         rc_output     = iris_plus_rc_input
+        self.rc_output = iris_plus_rc_input
 
         # ORDER OF INPUTS IS VERY IMPORTANT: roll, pitch, throttle,yaw_rate
         # create message of type OverrideRCIn
@@ -357,4 +408,64 @@ class Iris(TypeUAV):
     def get_euler_angles_desired(self):
         return self.mission.get_euler_angles_desired()
     def get_input(self):
-        return self.mission.get_input()        
+        return self.mission.get_input()
+
+    @classmethod
+    def get_data_size(self):
+        return 1+4
+
+    def get_data(self):
+        """Get all data relevant to the mission
+        from this data, mission should be able to do data post-analysis, 
+        like ploting or computing average errors
+        """        
+        default_array = [rospy.get_time()]
+        default_array+= self.rc_output.tolist()
+        
+        # default_array = np.concatenate([default_array,self.get_complementary_data()])
+        return default_array
+
+    # despite not saving anything, we can plot the rc commands
+    # based on info saving by mission
+    @classmethod
+    def plot_from_string(cls, string,starting_point):
+
+        #plots
+        # import matplotlib.pyplot as plt
+        import matplotlib
+        matplotlib.use('Agg')
+        from matplotlib import pyplot as plt
+
+        times       = []
+        
+        rc_roll     = []
+        rc_pitch    = []
+        rc_thrust   = []
+        rc_yaw_rate = []
+
+        for line in string.split('\n'):
+            # ignore empty lines 
+            if line:
+                numbers = line.split(' ')
+
+                numbers = numbers[starting_point[0]:]
+                
+                times.append(float(numbers[0]))
+                rc_roll.append(float(numbers[1]))
+                rc_pitch.append(float(numbers[2]))
+                rc_thrust.append(float(numbers[3]))
+                rc_yaw_rate.append(float(numbers[4]))
+                
+                #yaw_rates.append(float(numbers[13]))
+
+        fig1 = plt.figure()
+        plt.plot(times, rc_roll, 'r-', label=r'RC $\phi$')
+        plt.plot(times, rc_pitch, 'g-', label=r'RC $\theta$')
+        plt.plot(times, rc_thrust, 'b-', label=r'RC Thrust')
+        plt.plot(times, rc_yaw_rate, 'r--', label=r'RC $\dot{\psi}$')
+        plt.title('RC commands PWM [1000,2000]')
+        plt.legend(loc='best')
+        plt.grid()
+
+        # one element tuple
+        return fig1,
