@@ -75,13 +75,14 @@ class RotorSConverter(js.Jsonable):
 
 	attitude_z_derivative_gain = 5.0
 
-	thrust_gain = 1.0
-
 	@classmethod
 	def description(cls):
 		return "Converts 3D force and angular velocity into motor speeds, for a Firefly"
 
-	def __init__(self):
+	def __init__(self,thrust_gain = 1.0):
+
+		self.thrust_gain = thrust_gain
+
 		self.force_z_median = uts.MedianFilter(10)
 
 		# I need to initialize these, because control law depends on these, and they come from subscription
@@ -110,6 +111,9 @@ class RotorSConverter(js.Jsonable):
 		self.thrust_gain = np.clip(self.thrust_gain,0.9,1.1)
 		rospy.logwarn('new neutral value = ' + str(self.thrust_gain) + ' in [0.9,1.1]')	    	
 		return
+
+	def get_thrust_gain(self):
+		return self.thrust_gain
 
 	# TODO
 	@classmethod

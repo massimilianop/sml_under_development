@@ -4,7 +4,7 @@
 '''
     Purpose: converts a desired force (in NEWTONS) to IRIS+ standard
 
-    __THROTTLE_NEUTRAL is the most critical parameter, that needs to be reseted when an experiment is commenced
+    throttle_neutral is the most critical parameter, that needs to be reseted when an experiment is commenced
 
 '''
 
@@ -16,14 +16,9 @@ import utilities.utility_functions as uts
 
 class IrisPlusConverter(object):
 
-    # mass of IRIS+ (kg)
-    __MASS    = rospy.get_param("mass_quad_ctr",1.442)
-
     # acceleration due to gravity (m/s/s)
     __GRAVITY = rospy.get_param("gravity_ctr",9.81)
 
-    # Throttle neutral 
-    __THROTTLE_NEUTRAL = rospy.get_param("throttle_neutral",1450)
 
     # The default of 4.5 commands a 200 deg/sec rate
     # of rotation when the yaw stick is held fully left or right.
@@ -31,23 +26,30 @@ class IrisPlusConverter(object):
 
     MAX_ANGLE_DEG = 45.0 
 
-    # in RADIANS
-    euler_angles = numpy.array([0.0,0.0,0.0])
+    def __init__(self,
+    throttle_neutral = rospy.get_param("throttle_neutral",1450),
+    total_mass = rospy.get_param("total_mass",1.442)
+    ):
 
-    # """docstring for IrisPlusConverter"""
-    # def __init__(self, arg):
-    #     super(IrisPlusConverter, self).__init__()
-    #     self.arg = arg
-
-    def __init__(self):
         self.force_z_median = uts.MedianFilter(10)
+        
+        # Throttle neutral 
+        self.throttle_neutral = throttle_neutral
+
+        # total mass
+        self.total_mass = total_mass
+
+        # in RADIANS
+        self.euler_angles = numpy.array([0.0,0.0,0.0])
+        # rotation matrix initialization
+        self.rotation_matrix = numpy.identity(3)
 
     def set_mass(self,mass):
-        self.__MASS = mass
+        self.total_mass = mass
         pass
 
     def get_k_throttle_neutral(self):
-        return self.__THROTTLE_NEUTRAL
+        return self.throttle_neutral
 
     def reset_k_trottle_neutral(self):
         # if force > m*gravity, decrease neutral value
@@ -56,19 +58,19 @@ class IrisPlusConverter(object):
         median_force = self.force_z_median.output()
         rospy.logwarn('median force = '+ str(median_force))
 
-        self.__THROTTLE_NEUTRAL = self.__THROTTLE_NEUTRAL*median_force/(self.__MASS*self.__GRAVITY)
+        self.throttle_neutral = self.throttle_neutral*median_force/(self.total_mass*self.__GRAVITY)
 
         # for safety better bound this value
-        self.__THROTTLE_NEUTRAL = numpy.clip(self.__THROTTLE_NEUTRAL,1400,1600)
-        rospy.logwarn('new neutral value = ' + str(self.__THROTTLE_NEUTRAL) + ' in [1400,1600]')
+        self.throttle_neutral = numpy.clip(self.throttle_neutral,1400,1600)
+        rospy.logwarn('new neutral value = ' + str(self.throttle_neutral) + ' in [1400,1600]')
         return 
 
     def set_k_trottle_neutral(self,throttle_neutral):
         # setting throttle value
-        self.__THROTTLE_NEUTRAL = throttle_neutral
+        self.throttle_neutral = throttle_neutral
         # for safety better bound this value
-        self.__THROTTLE_NEUTRAL = numpy.clip(self.__THROTTLE_NEUTRAL,1400,1600)
-        rospy.logwarn('settting neutral value to = ' + str(self.__THROTTLE_NEUTRAL) + ' in [1400,1600]')
+        self.throttle_neutral = numpy.clip(self.throttle_neutral,1400,1600)
+        rospy.logwarn('settting neutral value to = ' + str(self.throttle_neutral) + ' in [1400,1600]')
         return 
 
     def reset_parameters(self):
@@ -76,7 +78,7 @@ class IrisPlusConverter(object):
 
     def descriptive_message(self):
         # needs to be corrected
-        return 'Converter for IRIS+ with parameters' + str(self.__THROTTLE_NEUTRAL)
+        return 'Converter for IRIS+ with parameters' + str(self.throttle_neutral)
 
     def set_rotation_matrix(self,odometry):
 
@@ -85,9 +87,9 @@ class IrisPlusConverter(object):
                                odometry.pose.pose.orientation.z,\
                                odometry.pose.pose.orientation.w])    
 
-        rotation_matrix  = uts.rot_from_quaternion(quaternion)
+        self.rotation_matrix  = uts.rot_from_quaternion(quaternion)
         # ee = np.array([roll,pitch,yaw]) in DEGREES
-        euler_angles     = uts.euler_deg_from_rot(rotation_matrix)        
+        euler_angles     = uts.euler_rad_from_rot(self.rotation_matrix)        
 
         # euler_angles must come in RADIANS
         self.euler_angles = euler_angles
@@ -100,8 +102,9 @@ class IrisPlusConverter(object):
         #---------------------------------------------------------------------#
         # third canonical basis vector
         e3 = numpy.array([0.0,0.0,1.0])
-        rotation_matrix      = uts.rot_from_euler_rad(self.euler_angles)
-        throttle_unit_vector = rotation_matrix.dot(e3) 
+        # rotation_matrix      = uts.rot_from_euler_rad(self.euler_angles)
+        rotation_matrix      = self.rotation_matrix
+        throttle_unit_vector = numpy.dot(rotation_matrix,e3) 
 
         # STABILIZE MODE:APM COPTER
         # The throttle sent to the motors is automatically adjusted based on the tilt angle
@@ -110,8 +113,10 @@ class IrisPlusConverter(object):
 
         # computing desired Throttle, desired roll angle, pitch angle, and desired yaw rate
         Throttle = numpy.dot(desired_3d_force,throttle_unit_vector)
-        # this decreases the throtle, which will be increased
-        Throttle = Throttle*numpy.dot(throttle_unit_vector,e3)
+
+        # this decreases the throtle, which will be increased (by internal controller)
+        # I commented this out, because throtlled was being clipped at minimum (1000)
+        # Throttle = Throttle*numpy.dot(throttle_unit_vector,e3)
 
 
         roll_desired,pitch_desired = self.roll_pitch(desired_3d_force)
@@ -143,7 +148,7 @@ class IrisPlusConverter(object):
         U[3]  =  1500.0 - yaw_rate_desired*500.0/MAX_PSI_SPEED_Rad;    
 
         # REMARK: the throtle comes between 1000 and 2000 PWM
-        U[2]  = Throttle*self.__THROTTLE_NEUTRAL/(self.__GRAVITY*self.__MASS);
+        U[2]  = Throttle*self.throttle_neutral/(self.__GRAVITY*self.total_mass);
 
         # need to bound between 1000 and 2000; element-wise operation
         U     = numpy.clip(U,1000,2000) 
@@ -157,8 +162,13 @@ class IrisPlusConverter(object):
         #--------------------------------------#
         # Rz(psi)*Ry(theta_des)*Rx(phi_des) = n_des
         # desired roll and pitch angles
-        n_des     = Full_actuation/numpy.linalg.norm(Full_actuation)
-        n_des_rot = uts.rot_z(-psi).dot(n_des)
+        norm = numpy.linalg.norm(Full_actuation)
+        if norm > 0.1*self.__GRAVITY*self.total_mass:
+            n_des     = Full_actuation/norm
+            n_des_rot = uts.rot_z(-psi).dot(n_des)
+        else:
+            n_des     = numpy.array([0.0,0.0,1.0])
+            n_des_rot = uts.rot_z(-psi).dot(n_des)
 
 
         sin_phi   = -n_des_rot[1]
