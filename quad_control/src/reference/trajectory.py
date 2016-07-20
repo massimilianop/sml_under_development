@@ -32,8 +32,13 @@ class Trajectory(js.Jsonable):
         #TODO change the names in the utility_functions module
     
     def object_description(self):
-        string = "Trajectory with <b>offset = "+ str(self.offset) + "</b> in (m),"
-        string += "and <b>rotation = "+ str(self.rotation) + "</b> in (degrees?)"  
+        string = """
+        Trajectory with:
+        <ul>
+          <li><b>offset = """+ str(self.offset) + """</b> in (m),</li>
+          <li><b>rotation = """+ str(self.rotation) + """</b> in (degrees).</li>
+        </ul>
+        """
         return string        
     
     def get_offset(self):

@@ -35,7 +35,15 @@ class PlanXYMotionLoadLiftingQI(PlanXYMotionLoadLifting):
     @classmethod
     def description(cls):
         return '''
-        Plan xy trajectory of uav that removes oscillations
+        Plan xy trajectory of uav that removes oscillations.
+        System
+        <ul>
+            <li>p<sup>(1)</sup> = v</li>
+            <li>v<sup>(1)</sup> = u</li>
+            <li>&#952<sup>(1)</sup> = &#969</li>
+            <li>&#969<sup>(1)</sup> = -g/L*&#952 + u/L</li>
+        </ul>
+        We choose u = gains'*[p v &#952 &#969] that steers p to 0.
         '''
 
 
@@ -51,9 +59,15 @@ class PlanXYMotionLoadLiftingQI(PlanXYMotionLoadLifting):
         self.position_xy_desired = numpy.array([0.0,0.0])
         self.velocity_xy_desired = numpy.array([0.0,0.0])
 
-    def object_descrition(self):
-        description = ''
-        return description
+    def object_description(self):
+        string = """
+        Parameters:
+        <ul>
+          <li>gains: """ + str(self.gains) +"""</li>
+          <li>cable_length: """ + str(self.cable_length) +"""</li>
+        </ul>
+        """
+        return string
 
     def output(self,state,reference,Dt):
 

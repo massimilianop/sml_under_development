@@ -19,26 +19,25 @@ class YawTrajectory(js.Jsonable):
     def __init__(self, offset=0.0):
 
         # convert from degrees to radians
-        self.__offset = offset*math.pi/180.0
+        self.offset = offset*math.pi/180.0
     
     def __str__(self):
         string = self.description()
-        string += "\nOffset: " + str(self.__offset)
+        string += "\nOffset: " + str(self.offset)
         return string
-        
-    
+
     def get_offset(self):
-        return np.array(self.__offset)
+        return np.array(self.offset)
         
     def set_offset(self, offset):
-        self.__offset = offset
+        self.offset = offset
 
     def desired_trajectory(self, time):
         raise NotImplementedError()
 
     def __add_offset(self, yaw_0dot, yaw_1dot):
 
-        yaw_0dot = yaw_0dot + self.__offset
+        yaw_0dot = yaw_0dot + self.offset
         # yaw_1dot = yaw_1dot
         
         return np.array([yaw_0dot, yaw_1dot])
@@ -59,7 +58,14 @@ class FixedYawTrajectory(YawTrajectory):
         
     def __init__(self, offset=0.0):
         YawTrajectory.__init__(self, offset=offset)
-        
+
+
+    def object_description(self):
+        string = """
+        Fixed yaw reference."""
+        string += "<li>&#968<sup>*</sup> = " + str(self.offset)+"</li>"
+        return string
+
     def __str__(self):
         string = self.description()
         string += "\nOffset: " + str(self.get_offset())
@@ -88,21 +94,28 @@ class SinusoidalYawTrajectory(YawTrajectory):
     ):
         YawTrajectory.__init__(self, offset=offset)
         # convert from degrees to radians
-        self.__amplitude     = amplitude*math.pi/180.0
-        self.__angular_speed = angular_speed*math.pi/180.0
+        self.amplitude     = amplitude*math.pi/180.0
+        self.angular_speed = angular_speed*math.pi/180.0
         
         
     def __str__(self):
         string = tj.Trajectory.__str__(self)
-        string += "\nAmplitude: " + str(self.__amplitude)
-        string += "\nAngular Speed: " + str(self.__angular_speed)
+        string += "\nAmplitude: " + str(self.amplitude)
+        string += "\nAngular Speed: " + str(self.angular_speed)
         return string
 
+    def object_description(self):
+        string = """
+        Sinusoidal yaw reference."""
+        string += "<li>&#968<sup>*</sup>(t) = a*w<sup>0</sup> sin(w*t)</li>"
+        string += "a = " + str(self.amplitude)+"</li>"
+        string += "w = " + str(self.angular_speed)+"</li>"
+        return string
         
     def desired_trajectory(self, time):
 
-        a = self.__amplitude
-        w = self.__angular_speed
+        a = self.amplitude
+        w = self.angular_speed
         
         yaw_0dot = a*w**0*np.sin(w*t)
         yaw_1dot = a*w**1*np.cos(w*t)

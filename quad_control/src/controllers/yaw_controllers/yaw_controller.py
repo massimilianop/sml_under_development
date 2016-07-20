@@ -35,14 +35,21 @@ class SimpleTrackingYawController(YawController):
         return "Simple yaw tracking controller, based on <b>feedback linearization of yaw rate equation</b>"
 
     def __init__(self, gain = 1.0):
-        self.__gain = gain
+        self.gain = gain
     
     
-    def __str__(self):
-        string = yc.YawController.__str__(self)
-        string += "\nGain: " + str(self.__gain)
+    def object_description(self):
+        string = """
+        Controller for yaw motion."""
+        string += "<li>&#968<sup>(1)</sup> = &#968<sup>*(1)</sup> - gain*sin(&#968 - &#968<sup>*</sup>)</li>"
+        string += "<li> yaw rate = cos(&#966)(cos(&#952)*&#968<sup>(1)</sup> - sin(&#966)*&#952<sup>(1)</sup> ) </li>"
+        string += """
+        Parameters:
+        <ul>
+          <li>gain: """ + str(self.gain) +"""</li>
+        </ul>
+        """
         return string
-
 
     def output(self, state, state_desired):
         # state = euler_angles in RAD + euler_angles_time_derivative in RAD/SEC
@@ -65,7 +72,7 @@ class SimpleTrackingYawController(YawController):
         #--------------------------------------#
         psi_star     = state_desired[0]
         psi_star_dot = state_desired[1]
-        psi_dot      = psi_star_dot - self.__gain*np.sin(psi - psi_star)
+        psi_dot      = psi_star_dot - self.gain*np.sin(psi - psi_star)
         yaw_rate     = 1.0/np.cos(phi)*(np.cos(theta)*psi_dot - np.sin(phi)*theta_dot)
         
         return yaw_rate
@@ -90,11 +97,8 @@ class NeutralYawController(YawController):
     def description(cls):
         return "<b>Zero yaw rate</b>"
 
-    # def __init__(self):
-    #     pass
-
-    def __str__(self):
-        string = yc.YawController.__str__(self)
+    def object_description(self):
+        string = """Zero yaw rate"""
         return string
 
     def output(self, state, state_desired):
