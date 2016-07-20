@@ -56,10 +56,10 @@ class ChooseJsonablePlugin(Plugin):
                       dest="quiet",
                       help="Put plugin in silent mode")
         args, unknowns = parser.parse_known_args(context.argv())
-        if not args.quiet:
-            print 'arguments: ', args
-            print 'unknowns: ', unknowns
-        
+        # TODO: I commented this out
+        # if not args.quiet:
+        #     print 'arguments: ', args
+        #     print 'unknowns: ', unknowns
                
         # Create QWidget
         self._widget = QWidget()
@@ -317,7 +317,9 @@ class ChooseJsonablePlugin(Plugin):
             input_dictionary  = self.__head_class_input_dic
             list_keys         = list_of_keys_appended.split(':')
             
-            rospy.logwarn(self.__head_class_input_dic)
+            # TODO: see if we want to print this
+            # rospy.logwarn(self.__head_class_input_dic)
+            
             jsonable.update_input_dictionary(input_dictionary,list_keys,chosen_class,nested_dictionary)
             self.__head_class_input_dic = input_dictionary
 
@@ -406,7 +408,10 @@ class ChooseJsonablePlugin(Plugin):
                 # input_service = {"inner_key":self.name_tab,"key":self.__head_class_key,"input_string":parameters}
                 input_service = {"sequence_inner_key":self.sequence_tabs,"key":self.__head_class_key,"input_string":parameters}
                 input_service = json.dumps(input_service) 
-                print(input_service)
+                
+                # TODO: see if we want to print this
+                # print(input_service)
+                
                 new_service['inputs_service']  = {'dictionary':input_service}
 
                 self.dic_sequence_services['list_sequence_services'].append(new_service)

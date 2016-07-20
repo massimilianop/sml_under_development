@@ -75,9 +75,10 @@ class ChooseMissionPlugin(Plugin):
                       dest="quiet",
                       help="Put plugin in silent mode")
         args, unknowns = parser.parse_known_args(context.argv())
-        if not args.quiet:
-            print 'arguments: ', args
-            print 'unknowns: ', unknowns
+        # TODO: I commented this out
+        # if not args.quiet:
+        #     print 'arguments: ', args
+        #     print 'unknowns: ', unknowns
         
                
         # Create QWidget
@@ -271,7 +272,8 @@ class ChooseMissionPlugin(Plugin):
 
             dictionary_string = json.dumps(dictionary)
 
-            print(dictionary_string)
+            # TODO: see if we want to print this
+            # print(dictionary_string)
 
             # read mode by default
             data_file = open(self.data_file_path, 'r+') 
@@ -328,7 +330,8 @@ class ChooseMissionPlugin(Plugin):
 
                 if reply.received == True:
                     # if controller receives message
-                    print('Success')
+                    # print('Success')
+                    pass
 
             except rospy.ServiceException as exc:
                 rospy.logwarn("Service did not process request: " + str(exc))
@@ -362,7 +365,8 @@ class ChooseMissionPlugin(Plugin):
 
                 if reply.received == True:
                     # if controller receives message
-                    print('Success')
+                    # print('Success')
+                    pass
 
             except rospy.ServiceException as exc:
                 rospy.logwarn("Service did not process request: " + str(exc))

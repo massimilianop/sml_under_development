@@ -62,10 +62,10 @@ class ChooseMocapPlugin(Plugin):
                       dest="quiet",
                       help="Put plugin in silent mode")
         args, unknowns = parser.parse_known_args(context.argv())
-        if not args.quiet:
-            print 'arguments: ', args
-            print 'unknowns: ', unknowns
-        
+        # TODO: I commented this out
+        # if not args.quiet:
+        #     print 'arguments: ', args
+        #     print 'unknowns: ', unknowns        
         
         # Create QWidget
         self._widget = QWidget()
