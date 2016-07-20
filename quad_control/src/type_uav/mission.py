@@ -112,6 +112,18 @@ class OdometryUts():
 
         return r3
 
+# class OdometryUts():
+#     """Utilities for Odometry message"""
+
+#     dictionary['position'] = [odometry.pose.pose.position.x,odometry.pose.pose.position.y,odometry.pose.pose.position.z]
+#     dictionary['velocity'] = [odometry.pose.pose.position.x,odometry.pose.pose.position.y,odometry.pose.pose.position.z]
+
+#     return dictionary
+
+
+# for emergency controller
+import controllers.fa_trajectory_tracking_controllers.fa_controller
+EMERGENCY_CONTROLLER = controllers.fa_trajectory_tracking_controllers.fa_controller.database['SimplePIDController']
 
 class Mission(js.Jsonable):
     """Any mission returns 3d_force and yaw_rate: this is the standard"""
@@ -123,6 +135,51 @@ class Mission(js.Jsonable):
     # js.Jsonable.add_inner('subscriber',SUBSCRIBERS_DATABASE)
 
     # time_instant_t0 = 0.0
+
+    def test_emergency(self):
+        return not self.check_inside_limits(self.get_position(),self.get_velocity())
+
+    def check_inside_limits(self,position,velocity):
+
+        if any(numpy.absolute(position - self.box_center) >= self.box_sides):
+            return False
+        else:
+            return True
+
+    def trigger_emergency(self):
+
+        self.emergency_time_instant = rospy.get_time()
+
+        self.odometry_at_emergency = self.uav_odometry
+        self.compute_3d_force = self.compute_3d_force_emergency
+        self.compute_yaw_rate = self.compute_yaw_rate_emergency
+
+    def compute_3d_force_emergency(self,time_instant):
+
+        # getting the uav_odometry is delegated to the susbscriber
+        self.uav_odometry = self.get_uav_odometry()  
+
+        position = OdometryUts.get_position(self.uav_odometry)
+        velocity = OdometryUts.get_velocity(self.uav_odometry)
+        controller_state = numpy.concatenate([position,velocity])
+        
+        old_position = OdometryUts.get_position(self.odometry_at_emergency)
+        if rospy.get_time() - self.emergency_time_instant < 5:
+            reference = numpy.concatenate([old_position,numpy.zeros(3+3)])
+        else:
+            reference = numpy.concatenate([old_position[0:2],[0.3],numpy.zeros(3+3)])
+
+        # compute 3d_force, which is what all controllers provide
+        self.desired_3d_force = self.emergency_controller.output(0.0,controller_state, reference)
+
+        return self.desired_3d_force
+
+    def compute_yaw_rate_emergency(self,time_instant):
+
+        # compute yaw_rate, which is what all yaw_controllers provide
+        self.desired_yaw_rate = 0.0
+
+        return self.desired_yaw_rate
 
     """Labels for the columns of a file that stores data from this mission."""
     file_labels = [
@@ -302,6 +359,15 @@ class Mission(js.Jsonable):
         self.desired_3d_force = np.zeros(3)
         self.desired_yaw_rate = 0.0
 
+        self.get_sample = self.subscriber.get_sample
+
+        self.emergency_controller = EMERGENCY_CONTROLLER()
+
+        self.box_center = numpy.array([0.0,0.0,1.0])
+        self.box_sides  = numpy.array([2.0,2.0,1.5])
+        # go down to z = ... in meters when emergency is triggered
+        self.position_z_before_land = 0.3
+
         return
 
     def reset_initial_time(self,time_instant = None):
@@ -368,7 +434,7 @@ class Mission(js.Jsonable):
         force_ratio = np.linalg.norm(self.desired_3d_force)
         total_weight = self.get_total_weight()
         # this should be zero in "normal" equilibrium 
-        out[0] = 100*(1 - force_ratio/(total_weight))
+        out[0] = 100*(force_ratio/(total_weight) - 1)
 
         # second and third outputs are pitch and roll angles
         out[1],out[2] = utility_functions.roll_and_pitch_from_full_actuation_and_yaw_rad(self.desired_3d_force,self.get_yaw())
@@ -446,10 +512,10 @@ class TrajectoryTracking(Mission):
         # Copy inner_keys into self variables
         # Subscribe to the necessary topics, if any
 
+        self.add_inner_defaults()
+
         # initialize time instant, and  state
         Mission.__init__(self)
-
-        self.add_inner_defaults()
 
         # inspect.getargspec(Subscriber.__init__)
         # self.subscriber = self.Subscriber()
@@ -473,7 +539,7 @@ class TrajectoryTracking(Mission):
 
     def object_description(self):
         description = """
-        <b>Track a desired trajectory. This mission depends on:
+        <b>Track a desired trajectory</b>. This mission depends on:
         <ul>
           <li>controller: a trajectory tracking controller</li>
           <li>reference: a reference position trajectory to be tracked</li>
@@ -528,7 +594,7 @@ class TrajectoryTracking(Mission):
     def get_velocity_desired(self):
         return self.current_reference[3:6]
     def get_euler_angles_desired(self):
-        return numpy.array([0.0,0.0,self.current_yaw_reference])
+        return numpy.array([0.0,0.0,self.current_yaw_reference*180.0/3.142])
 
     # recall that getting the uav_odometry was delegated to the susbscriber
     def get_uav_odometry(self):
@@ -578,23 +644,25 @@ class LoadLifting(Mission):
 
     @classmethod
     def description(cls):
-        string = """Firefly and load, from RotorS, to track a desired trajectory
-        This mission depends on:
-        . a trajectory tracking controller
-        . a reference trajectory to be tracked
-        . a yaw controller
+        description = """
+        <b>Load attached to uav to track a desired trajectory</b>. This mission depends on:
+        <ul>
+          <li>controller: a trajectory tracking controller for system "load+uav"</li>
+          <li>reference: a reference position trajectory to be tracked by load</li>
+          <li>yaw_controller: a yaw controller</li>
+          <li>yaw_reference: a yaw reference</li>
+        </ul>
         """
-        
-        return string
+        return description        
         
     def __init__(self):
         # Copy the parameters into self variables
         # Subscribe to the necessary topics, if any
 
+        self.add_inner_defaults()
+
         # initialize time instant, and  state
         Mission.__init__(self)
-
-        self.add_inner_defaults()
 
         # self.subscriber = self.Subscriber()
 
@@ -604,6 +672,10 @@ class LoadLifting(Mission):
         #Get desired yaw in radians, and its time derivative
         input_for_yaw_controller   = self.yaw_reference.output(self.time_instant_t0)
         self.current_yaw_reference = input_for_yaw_controller[0]
+
+    def object_description(self):
+        string = """No parameters"""
+        return string
 
     def get_total_weight(self):
         return self.controller.get_total_weight()
@@ -668,11 +740,52 @@ class LoadLifting(Mission):
     def get_velocity_desired(self):
         return self.current_reference[3:6]
     def get_euler_angles_desired(self):
-        return numpy.array([0.0,0.0,self.current_yaw_reference])
+        return numpy.array([0.0,0.0,self.current_yaw_reference*180.0/3.142])
 
     # recall that getting the uav_odometry was delegated to the susbscriber
     def get_uav_odometry(self):
         return self.subscriber.get_uav_odometry()
+
+
+@js.inherit_methods_list_from_parents
+class LoadLiftingLTL(LoadLifting):
+
+    def __init__(self):
+        LoadLifting.__init__(self)
+
+    def compute_3d_force(self,time_instant):
+
+        # getting the uav_odometry is delegated to the susbscriber
+        self.uav_odometry = self.get_uav_odometry()
+
+        # job of the subscriber to provide state to the controller
+        # in the standard required by the controller
+        # in this mission, the controller state standard is
+        # position,velocity,euler_angles
+        controller_state = self.subscriber.get_controller_state()
+        
+
+        reference_speed = self.subscriber.get_reference()
+
+        # compute reference
+        # all controllers receive reference of the form
+        # position^(0),...,position^(4)
+        # reference = self.reference.output(time_instant)
+        # x,y reference comes from LTL
+        reference = numpy.concatenate([controller_state[6:8],[0],reference_speed,[0],numpy.zeros(3*3)])
+
+        # reference = numpy.concatenate([controller_state[6:8],[0],numpy.array([0.0,0.1]),[0],numpy.zeros(3*3)])
+
+        self.current_reference = reference    
+
+        # compute 3d_force, which is what all controllers provide
+        self.desired_3d_force = self.controller.output(time_instant,controller_state, reference)
+
+        # if numpy.linalg.norm(self.desired_3d_force) > 0.1:
+        #     r3                     = OdometryUts.get_r3(self.uav_odometry)
+        #     self.desired_3d_force *= numpy.linalg.norm(self.desired_3d_force)/numpy.dot(self.desired_3d_force,r3)
+
+        return self.desired_3d_force
 
 
 import subscriber
@@ -683,14 +796,20 @@ class FireflyGazebo():
     @js.add_to_database(default=True)
     class TrajectoryTracking(TrajectoryTracking):
         def __init__(self):
-            TrajectoryTracking.__init__(self)
             self.subscriber = FireflyGazebo.DATABASE['TrajectoryTracking']()
+            TrajectoryTracking.__init__(self)
 
     @js.add_to_database()
     class LoadLifting(LoadLifting):
         def __init__(self):
-            LoadLifting.__init__(self)
             self.subscriber = FireflyGazebo.DATABASE['LoadLifting']()
+            LoadLifting.__init__(self)
+
+    @js.add_to_database()
+    class LoadLiftingLTL(LoadLiftingLTL):
+        def __init__(self):
+            self.subscriber = FireflyGazebo.DATABASE['LoadLiftingLTL']()
+            LoadLiftingLTL.__init__(self)
 
 class IrisRviz():
     DATABASE = subscriber.IrisRvizSubscriber.database
@@ -698,26 +817,106 @@ class IrisRviz():
     @js.add_to_database(default=True)
     class TrajectoryTracking(TrajectoryTracking):
         def __init__(self):
-            TrajectoryTracking.__init__(self)
             self.subscriber = IrisRviz.DATABASE['TrajectoryTracking']()
+            TrajectoryTracking.__init__(self)
 
     @js.add_to_database()
     class LoadLifting(LoadLifting):
         def __init__(self):
-            LoadLifting.__init__(self)
             self.subscriber = IrisRviz.DATABASE['LoadLifting']()
+            LoadLifting.__init__(self)
 
 class Iris():
     DATABASE = subscriber.IrisSubscriber.database
 
+    @js.inherit_methods_list_from_parents
     @js.add_to_database(default=True)
     class TrajectoryTracking(TrajectoryTracking):
-        def __init__(self):
-            TrajectoryTracking.__init__(self)
-            self.subscriber = Iris.DATABASE['TrajectoryTracking']()
 
+        def __init__(self,
+        body_name = rospy.get_param('IRIS_BODY_NAME','Iris2')
+        ):
+            self.body_name = body_name
+            self.subscriber = Iris.DATABASE['TrajectoryTracking'](body_name = body_name)
+            TrajectoryTracking.__init__(self)
+
+        @js.add_to_methods_list
+        def change_to_stabilize(self):
+            '''change to stabilize'''
+            self.subscriber.set_flight_mode(MODE = 'STABILIZE')
+
+        @js.add_to_methods_list
+        def change_to_land(self):
+            '''change to stabilize'''
+            self.subscriber.set_flight_mode(MODE = 'LAND')
+
+        @js.add_to_methods_list
+        def change_to_acro(self):
+            '''change to stabilize'''
+            self.subscriber.set_flight_mode(MODE = 'ACRO')
+
+        @js.add_to_methods_list
+        def arming_iris(self,neutral_controller=True):
+            'Arm IRIS (setting minimum throttle is done automatically)'
+
+            if neutral_controller:
+                print('Minimum throtlle automatically set')
+                # set minimum throttle
+                DATABASE = controllers.fa_trajectory_tracking_controllers.fa_controller.database
+                self.controller = DATABASE['NeutalController']()
+            else:
+                print('Minimum throtlle NOT automatically set')
+
+            # arm iris
+            self.subscriber.arming_iris()
+
+        @js.add_to_methods_list
+        def unarming_iris(self):
+            'Unarm IRIS'
+            self.subscriber.unarming_iris()
+
+        @js.add_to_methods_list
+        def see_all_mocap_bodies(self):
+            self.subscriber.see_all_mocap_bodies()
+
+    @js.inherit_methods_list_from_parents
     @js.add_to_database()
     class LoadLifting(LoadLifting):
-        def __init__(self):
+
+        def __init__(self,
+        body_name = rospy.get_param('IRIS_BODY_NAME','Iris2'),
+        load_name = rospy.get_param('LOAD_BODY_NAME','Load1')
+        ):
+            self.body_name = body_name
+            self.load_name = load_name
+            self.subscriber = Iris.DATABASE['LoadLifting'](body_name=body_name,load_name=load_name)
             LoadLifting.__init__(self)
-            self.subscriber = Iris.DATABASE['LoadLifting']()
+
+        @js.add_to_methods_list
+        def change_to_stabilize(self):
+            '''change to stabilize'''
+            self.subscriber.change_to_stabilize()
+
+        @js.add_to_methods_list
+        def change_to_land(self):
+            '''change to stabilize'''
+            self.subscriber.change_to_land()
+
+        @js.add_to_methods_list
+        def change_to_acro(self):
+            '''change to stabilize'''
+            self.subscriber.change_to_acro()
+
+        @js.add_to_methods_list
+        def arming_iris(self):
+            'Arm IRIS'
+            self.subscriber.arming_iris()
+
+        @js.add_to_methods_list
+        def unarming_iris(self):
+            'Unarm IRIS'
+            self.subscriber.unarming_iris()
+
+        @js.add_to_methods_list
+        def see_all_mocap_bodies(self):
+            self.subscriber.see_all_mocap_bodies()
