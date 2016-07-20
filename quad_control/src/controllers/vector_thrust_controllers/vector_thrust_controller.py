@@ -54,6 +54,11 @@ class BacksteppingVectorThrustController(VectorThrustController):
 
     js.Jsonable.add_inner('di_controller',DIC_DATABASE)
 
+    @classmethod
+    def description(cls):
+        return "Vector Thrust Controller: controller u(.) for system x = u"
+
+
     # The class "constructor" - It's actually an initializer
     def __init__(self,
     ktt           = 200.0,
@@ -73,8 +78,17 @@ class BacksteppingVectorThrustController(VectorThrustController):
     def output(self,x,gravity):
         return self._VectorThrustController(x,gravity)
 
-    def report(self):
-        return self.DI_Ctrll.report()
+    def object_description(cls):
+        string = """
+        Parameters:
+        <ul>
+            <li>ktt: """ + str(self.ktt) + """</li>
+            <li>ktt2: """ + str(self.ktt2) + """</li>
+            <li>kw: """ + str(self.kw) + """</li>
+            <li>kw2: """ + str(self.kw2) + """</li>
+        </ul>
+        """
+        return string
 
     def _Vtheta(self,x):
 
@@ -268,7 +282,15 @@ class VectorThrustController(VectorThrustController):
 
     @classmethod
     def description(cls):
-        return "Controller for a vector thrusted system, based on (static) feedback linearization: linearization for z component, which requires a double integrator; and linearization for planar components (x and y), which rquires a quadruple integrator"
+        string = """ 
+        Controller for a vector thrusted system, based on (static) feedback linearization: 
+        linearization for z component, which requires a double integrator; 
+        and linearization for planar components (x and y), which rquires a quadruple integrator
+
+        Vector Thrust Controller based on double integrator for z component, 
+        and quadruple integrator for x and y components
+        """
+        return string 
 
     def __init__(self):
         self.add_inner_defaults()
@@ -276,11 +298,11 @@ class VectorThrustController(VectorThrustController):
     def output(self,x,gravity):
         return self._VectorThrustController(x,gravity)
 
-    def report(self):
-        description   = "Vector Thrust Controller based on double integrator for z component, and quadruple integrator for x and y components \n\n"
-        controller_z  = "Controller for z component\n" + self.DI_Ctrll.report()
-        controller_xy = "Controller for xy components\n" + self.QI_Ctrll.report()
-        return description + controller_z + controller_xy
+    def object_description(cls):
+        string = """
+        No parameters
+        """
+        return string
 
     def _VectorThrustController(self,x,gravity):
 
