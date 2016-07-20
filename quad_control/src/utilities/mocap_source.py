@@ -144,18 +144,22 @@ class Mocap(object):
 
     def get_body(self,body_id):
 
-        try:
-            [valid_bodies,bodies_info] = self.find_available_bodies(printinfo=False)
-        except:
-            return 'off'
+        # try:
+        #     [valid_bodies,bodies_info] = self.find_available_bodies(printinfo=False)
+        # except:
+        #     return 'off'
+
+        # # if body_id is part of found bodies print pose, otherwise return off
+        # if body_id in valid_bodies:
+        #     return Body(self,body_id,bodytype='a').getPose(bodies_info)
+        # else:
+        #     return 'off'
 
         # if body_id is part of found bodies print pose, otherwise return off
-        if body_id in valid_bodies:
-            return Body(self,body_id,bodytype='a').getPose(bodies_info)
-        else:
-            return 'off'
-
-
+        try:
+            return Body(self,body_id,bodytype='a').getPose()
+        except:
+            return 'off'        
 
 class Body(object):
 
@@ -187,6 +191,7 @@ class Body(object):
             msg = _parser_comm(socket)
             if msg == None:
                 return 'off'
+
         bodies=msg['bodies']
         timestamp=msg['timestamp']
         try:
@@ -277,3 +282,9 @@ def _parser_comm(socket):
 #    #pick the first valid body
 #    while 1:
 #        bodies = Qs.get_updated_bodies()
+
+# Qs = Mocap(info=0)
+# bodies = Qs.get_updated_bodies()
+# for body in bodies:
+#     print(body)
+#     print(body['id'])
