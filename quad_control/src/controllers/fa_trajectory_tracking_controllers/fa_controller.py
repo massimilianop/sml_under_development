@@ -35,25 +35,25 @@ class SimplePIDController(FAController):
 
     def __init__(self,              \
         proportional_gain_xy = 1.0, \
-        derivative_gain_xy   = 1.0, \
+        derivative_gain_xy   = numpy.sqrt(2*1.0), \
         integral_gain_xy     = 0.0, \
         bound_integral_xy    = 0.0, \
-        proportional_gain_z  = 1.0, \
-        derivative_gain_z    = 1.0, \
+        proportional_gain_z  = 1.5, \
+        derivative_gain_z    = numpy.sqrt(2*1.5), \
         integral_gain_z      = 0.5, \
         bound_integral_z     = 0.0,
-        quad_mass            = rospy.get_param("quadrotor_mass",1.442)
+        quad_mass            = rospy.get_param("total_mass",1.442)
         ):
 
-        self.__proportional_gain_xy = proportional_gain_xy
-        self.__derivative_gain_xy   = derivative_gain_xy
-        self.__integral_gain_xy     = integral_gain_xy
-        self.__bound_integral_xy    = bound_integral_xy
-        self.__proportional_gain_z  = proportional_gain_z
-        self.__derivative_gain_z    = derivative_gain_z
-        self.__integral_gain_z      = integral_gain_z
-        self.__bound_integral_z     = bound_integral_z
-        self.__quad_mass            = quad_mass
+        self.proportional_gain_xy = proportional_gain_xy
+        self.derivative_gain_xy   = derivative_gain_xy
+        self.integral_gain_xy     = integral_gain_xy
+        self.bound_integral_xy    = bound_integral_xy
+        self.proportional_gain_z  = proportional_gain_z
+        self.derivative_gain_z    = derivative_gain_z
+        self.integral_gain_z      = integral_gain_z
+        self.bound_integral_z     = bound_integral_z
+        self.quad_mass            = quad_mass
 
         #TODO get from utilities?
         self.MASS = quad_mass
@@ -67,22 +67,22 @@ class SimplePIDController(FAController):
 
     def object_description(self):
         string =  "<p>PID Controller, with saturation on integral part</p>"
-        string += "<p>force(&#916t, p,pd) = " + str(self.__quad_mass) +"*( pd<sup>(2)</sup> + u(p<sup>(0)</sup> - pd<sup>(0)</sup>,p<sup>(1)</sup> - pd<sup>(1)</sup>) + g e<sub>3</sub> - d<sup>est</sup>), where</p>"
+        string += "<p>force(&#916t, p,pd) = " + str(self.quad_mass) +"*( pd<sup>(2)</sup> + u(p<sup>(0)</sup> - pd<sup>(0)</sup>,p<sup>(1)</sup> - pd<sup>(1)</sup>) + g e<sub>3</sub> - d<sup>est</sup>), where</p>"
         string +="<ul>"
-        string += "<li>u<sub>xy</sub>(p,v) = -"+str(self.__proportional_gain_xy)+"*p"+"-"+str(self.__derivative_gain_xy)+"*v"+"</li>"
-        string += "<li>u<sub>z</sub>(p,v) = -"+str(self.__proportional_gain_z)+"*p"+"-"+str(self.__derivative_gain_z)+"*v"+"</li>"
-        string += "<li>d<sub>xy</sub><sup>est(1)</sup> = "+str(self.__integral_gain_xy)+"*(kp/2*ep + ev)"+"</li>"
-        string += "<li>|d<sub>xy</sub><sup>est(0)</sup>| &#8804 "+str(self.__bound_integral_xy)+"</li>"        
-        string += "<li>d<sub>z</sub><sup>est(1)</sup> = "+str(self.__integral_gain_z)+"*(kp/2*ep + ev)"+"</li>"
-        string += "<li>|d<sub>z</sub><sup>est(0)</sup>| &#8804 "+str(self.__bound_integral_z)+"</li>"
+        string += "<li>u<sub>xy</sub>(p,v) = -"+str(self.proportional_gain_xy)+"*p"+"-"+str(self.derivative_gain_xy)+"*v"+"</li>"
+        string += "<li>u<sub>z</sub>(p,v) = -"+str(self.proportional_gain_z)+"*p"+"-"+str(self.derivative_gain_z)+"*v"+"</li>"
+        string += "<li>d<sub>xy</sub><sup>est(1)</sup> = "+str(self.integral_gain_xy)+"*(kp/2*ep + ev)"+"</li>"
+        string += "<li>|d<sub>xy</sub><sup>est(0)</sup>| &#8804 "+str(self.bound_integral_xy)+"</li>"        
+        string += "<li>d<sub>z</sub><sup>est(1)</sup> = "+str(self.integral_gain_z)+"*(kp/2*ep + ev)"+"</li>"
+        string += "<li>|d<sub>z</sub><sup>est(0)</sup>| &#8804 "+str(self.bound_integral_z)+"</li>"
         string +="</ul>"
         return string
         
     def __str__(self):
         #TODO add all the parameters and the state
         string = Controller.__str__(self)
-        string += "\nProportional gain xy: " + str(self.__proportional_gain_xy)
-        string += "\nDerivative gain xy: " + str(self.__derivative_gain_xy)
+        string += "\nProportional gain xy: " + str(self.proportional_gain_xy)
+        string += "\nDerivative gain xy: " + str(self.derivative_gain_xy)
         return string
 
 
@@ -116,8 +116,8 @@ class SimplePIDController(FAController):
         # -----------------------------------------------------------------------------#
         # update disturbance estimate
 
-        gains_integral_action    = numpy.array([self.__integral_gain_xy ,self.__integral_gain_xy ,self.__integral_gain_z ])
-        max_disturbance_estimate = numpy.array([self.__bound_integral_xy,self.__bound_integral_xy,self.__bound_integral_z])
+        gains_integral_action    = numpy.array([self.integral_gain_xy ,self.integral_gain_xy ,self.integral_gain_z ])
+        max_disturbance_estimate = numpy.array([self.bound_integral_xy,self.bound_integral_xy,self.bound_integral_z])
 
         # derivatice of disturbance estimate (ELEMENT WISE PRODUCT)
         
@@ -140,15 +140,15 @@ class SimplePIDController(FAController):
         u    = numpy.array([0.0,0.0,0.0])
         V_v  = numpy.array([0.0,0.0,0.0])
 
-        kp     = self.__proportional_gain_xy
-        kv     = self.__derivative_gain_xy
+        kp     = self.proportional_gain_xy
+        kv     = self.derivative_gain_xy
         u[0]   = -kp*ep[0] - kv*ev[0]
         u[1]   = -kp*ep[1] - kv*ev[1]
         V_v[0] = (kp/2*ep[0] + ev[0])
         V_v[1] = (kp/2*ep[1] + ev[1])
 
-        kp     = self.__proportional_gain_z
-        kv     = self.__derivative_gain_z
+        kp     = self.proportional_gain_z
+        kv     = self.derivative_gain_z
         u[2]   = -kp*ep[2] - kv*ev[2]
         V_v[2] = (kp/2*ep[2] + ev[2])
 
@@ -165,6 +165,33 @@ class SimplePIDController(FAController):
         self.disturbance_estimate[2] = 0.0
         return         
 
+@js.add_to_database()
+class NeutalController(FAController):
+    """ This is a dynamic controller, not a static controller """
+
+    @classmethod
+    def description(cls):
+        return "Do nothing"
+
+    def __init__(self,              \
+    quad_mass = rospy.get_param("quadrotor_mass",1.442)
+    ):
+        #TODO get from utilities?
+        self.MASS = quad_mass
+        self.GRAVITY = 9.81
+
+    def get_total_weight(self):
+        return self.MASS*self.GRAVITY
+
+    def object_description(self):
+        string =  "No nothing"
+        return string
+        
+    def output(self, delta_t, state, reference):
+        '''No actuation'''
+
+        Full_actuation = numpy.zeros(3)
+        return Full_actuation
     
 # Test
 #string = SimpleBoundedIntegralPIDController.to_string()
@@ -193,21 +220,21 @@ class ThreeDPIDController(FAController):
             bound_integral_xy    = 0.0        ,\
             integral_gain_z      = 0.5        ,\
             bound_integral_z     = 0.0        ,\
-            quad_mass            = rospy.get_param("quadrotor_mass",1.442)
+            quad_mass            = rospy.get_param("total_mass",1.442)
             ):
 
         self.add_inner_defaults()
 
-        self.__integral_gain_xy     = integral_gain_xy
-        self.__bound_integral_xy    = bound_integral_xy
+        self.integral_gain_xy     = integral_gain_xy
+        self.bound_integral_xy    = bound_integral_xy
 
-        self.__integral_gain_z      = integral_gain_z
-        self.__bound_integral_z     = bound_integral_z
+        self.integral_gain_z      = integral_gain_z
+        self.bound_integral_z     = bound_integral_z
 
         #TODO should these two be inherited by a parent instead?
         # Should the mass be passed as a parameter?
         # We can always use 1.66779 as a default value
-        self.__quad_mass = quad_mass
+        self.quad_mass = quad_mass
         
         self.MASS = quad_mass
         self.GRAVITY = 9.81
@@ -219,6 +246,8 @@ class ThreeDPIDController(FAController):
 
         pass
 
+    def get_total_weight(self):
+        return self.MASS*self.GRAVITY
 
     def __str__(self):
         #TODO add the remaining parameters
@@ -255,8 +284,8 @@ class ThreeDPIDController(FAController):
         # -----------------------------------------------------------------------------#
         # update disturbance estimate
 
-        gains_integral_action    = numpy.array([self.__integral_gain_xy ,self.__integral_gain_xy ,self.__integral_gain_z ])
-        max_disturbance_estimate = numpy.array([self.__bound_integral_xy,self.__bound_integral_xy,self.__bound_integral_z])
+        gains_integral_action    = numpy.array([self.integral_gain_xy ,self.integral_gain_xy ,self.integral_gain_z ])
+        max_disturbance_estimate = numpy.array([self.bound_integral_xy,self.bound_integral_xy,self.bound_integral_z])
 
         # derivatice of disturbance estimate (ELEMENT WISE PRODUCT)
         
@@ -297,21 +326,21 @@ class ControllerPIDXYAndZBounded(FAController):
             bound_integral_xy    = 0.0        ,\
             integral_gain_z      = 0.5        ,\
             bound_integral_z     = 0.0        ,\
-            quad_mass            = rospy.get_param("quadrotor_mass",1.442)
+            quad_mass            = rospy.get_param("total_mass",1.442)
             ):
 
         self.add_inner_defaults()
 
-        self.__integral_gain_xy     = integral_gain_xy
-        self.__bound_integral_xy    = bound_integral_xy
+        self.integral_gain_xy     = integral_gain_xy
+        self.bound_integral_xy    = bound_integral_xy
 
-        self.__integral_gain_z      = integral_gain_z
-        self.__bound_integral_z     = bound_integral_z
+        self.integral_gain_z      = integral_gain_z
+        self.bound_integral_z     = bound_integral_z
 
         #TODO should these two be inherited by a parent instead?
         # Should the mass be passed as a parameter?
         # We can always use 1.66779 as a default value
-        self.__quad_mass = quad_mass
+        self.quad_mass = quad_mass
         
         self.MASS = quad_mass
         self.GRAVITY = 9.81

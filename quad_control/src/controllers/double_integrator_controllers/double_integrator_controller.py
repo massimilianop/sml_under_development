@@ -225,11 +225,11 @@ class NDimensionalBoundedDIC(DoubleIntegratorController):
         return "Double-integrator bounded but not component-wise controller"
 
     def __init__(self,
-    natural_frequency       = 2.0,
+    natural_frequency       = 1.0,
     damping                 = numpy.sqrt(2.0)/2.0,
     position_saturation     = 1.0,
     velocity_saturation     = 1.0,
-    size_di                 = 3
+    size_di                 = 2
     ):
 
         DoubleIntegratorController.__init__(self,
@@ -252,19 +252,22 @@ class NDimensionalBoundedDIC(DoubleIntegratorController):
     def output(self,p,v):
         return self._DI_Bounded(p,v)
 
-    def __str__(self):
-        string = DoubleIntegratorController.__str__(self)
-        string += "\nPosition saturation: " + str(self.position_saturation)
-        string += "\nVelocity saturation: " + str(self.velocity_saturation)
+    def object_description(self):
+        string = """
+        Parameters:
+        <ul>
+          <li>natural_frequency: """ + str(self.natural_frequency) +"""</li>
+          <li>damping: """ + str(self.damping) +"""</li>
+          <li>position_saturation: """ + str(self.position_saturation) +"""</li>
+          <li>velocity_saturation: """ + str(self.velocity_saturation) +"""</li>
+          <li>size_di: """ + str(self.size_di) +"""</li>          
+        </ul>
+        """
+        string+="Bounded Double Integrator Controller u(p,v) = -sigma(p) - ro(v): simple control law, complicated Lyapunov function\n"
+        string+="Parameters: sat(x) = k x/sqrt(1 + x**2), with sigma(p) = kp*sat(p/sigma_p) and ro(p) = kv*sat(v/sigma_v)\n"  
+        string+="kp = proportional_gain and kv = derivative_gain and sigma_p = saturation_position and sigma_v = saturation_velocity \n\n"
+        # parameters  = "kp = " + str(self.__proportional_gain) + " and kv = " + str(self.__derivative_gain) + " and sigma_p = " +  str(self.__saturation_position) + "and sigma_v = " +  str(self.__saturation_velocity) + "\n\n"
         return string
-        
-        
-#        description = "Bounded Double Integrator Controller u(p,v) = -sigma(p) - ro(v): simple control law, complicated Lyapunov function\n"
-#        controller  = "Parameters: sat(x) = k x/sqrt(1 + x**2), with sigma(p) = kp*sat(p/sigma_p) and ro(p) = kv*sat(v/sigma_v)\n"  
-#        parameters  = "kp = proportional_gain and kv = derivative_gain and sigma_p = saturation_position and sigma_v = saturation_velocity \n\n"
-#        # parameters  = "kp = " + str(self.__proportional_gain) + " and kv = " + str(self.__derivative_gain) + " and sigma_p = " +  str(self.__saturation_position) + "and sigma_v = " +  str(self.__saturation_velocity) + "\n\n"
-#        return description + controller + parameters
-
 
     def _sat(self,x):
 
@@ -611,10 +614,10 @@ class OneDimensionalBoundedDIC(DoubleIntegratorController):
 
     @classmethod
     def description(cls):
-        return "Double-integrator bounded but not component-wise controller"
+        return "One dimenisonal Double-integrator (bounded actuation)"
 
     def __init__(self,
-    natural_frequency       = 2.0,
+    natural_frequency       = 1.5,
     damping                 = numpy.sqrt(2.0)/2.0,
     position_saturation     = 1.0,
     velocity_saturation     = 1.0
@@ -637,6 +640,19 @@ class OneDimensionalBoundedDIC(DoubleIntegratorController):
 
     def output(self,p,v):
         return self._DI_Bounded(p,v)
+
+
+    def object_description(self):
+        string = """
+        Parameters:
+        <ul>
+          <li>natural_frequency: """ + str(self.natural_frequency) +"""</li>
+          <li>damping: """ + str(self.damping) +"""</li>
+          <li>position_saturation: """ + str(self.position_saturation) +"""</li>
+          <li>velocity_saturation: """ + str(self.velocity_saturation) +"""</li>
+        </ul>
+        """
+        return string        
 
     def __str__(self):
         string = DoubleIntegratorController.__str__(self)

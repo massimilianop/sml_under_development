@@ -82,6 +82,7 @@ class ServiceTimeSequencer():
     def update_and_request(self):
         """Request for the current service, and update next_trigger_instant, service_name and inputs_to_service"""
 
+        # TODO: maybe comment this
         print("asking for: "+self.service_name)
         request_service(self.namespace,self.service_name,self.inputs_service)
 

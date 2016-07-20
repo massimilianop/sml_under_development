@@ -29,6 +29,14 @@ class QuadrupleIntegratorController(js.Jsonable):
 @js.add_to_database(default=True)
 class LinearQuadrupleIntegratorController(QuadrupleIntegratorController):
 
+    @classmethod
+    def description(cls):
+        string = "Linear Quadruple Integrator Controller: controller u(p,v,a,j) for system p^(4) = u"
+        string+= "controller for fourth order integrator: x^(4) = u(x^(0),x^(1),x^(2),x^(3)), where u = K x"
+        string+= "Controller gain: K, and P is found for PA + A^T P = - I (P is important if gradient of Lyapunov is used)"
+        return string
+
+
     # controller_gains  = numpy.array([-2.0, -6.0, -7.0, -4.0])
     # Id = numpy.identity(2)
     # print(numpy.kron(controller_gains,Id))
@@ -37,6 +45,9 @@ class LinearQuadrupleIntegratorController(QuadrupleIntegratorController):
         controller_gains  = numpy.array([-3.0, -3.0, -10.0, -1.0]),
         controller_gains_factor = 1.0
         ):
+
+        self.controller_gains = controller_gains
+        self.controller_gains_factor = controller_gains_factor
 
         # xi = numpy.sqrt(2)/2
         # xi = 1.0
@@ -51,6 +62,8 @@ class LinearQuadrupleIntegratorController(QuadrupleIntegratorController):
 
         # K  = numpy.array([-2.0, -6.0, -7.0, -4.0])
         # KK = numpy.kron(K,Id)
+
+
         controller_gains = numpy.dot(controller_gains_factor,controller_gains)
         self.KK = numpy.kron(controller_gains,Id)
 
@@ -76,10 +89,15 @@ class LinearQuadrupleIntegratorController(QuadrupleIntegratorController):
     def output(self,x1,x2,x3,x4):
         return self._quadruple_integrator(x1,x2,x3,x4)
 
-    def report(self):
-        description = "controller for fourth order integrator: x^(4) = u(x^(0),x^(1),x^(2),x^(3)), where u = K x\n"
-        parameters  = "Controller gain: K = " + str(self.K) + " and P is found for PA + A^T P = - I (P is important if gradient of Lyapunov is used)"
-        return description + parameters + "\n\n"
+    def object_description(self):
+        string = """
+        Parameters:
+        <ul>
+          <li>controller_gains: """ + str(self.controller_gains) +"""</li>
+          <li>controller_gains_factor: """ + str(self.controller_gains_factor) +"""</li>
+        </ul>
+        """
+        return string
 
     def _quadruple_integrator(self,x1,x2,x3,x4):
 
