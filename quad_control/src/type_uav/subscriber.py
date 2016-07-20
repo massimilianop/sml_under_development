@@ -259,6 +259,7 @@ class FireflyGazeboSubscriber():
 
             # Subscribe to the necessary topics, if any
 
+            # HERE PAUL:
             # subscriber to LTL reference
             # self.sub_reference_LTL = rospy.Subscriber(
             #     name = "?????????????",
