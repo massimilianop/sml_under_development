@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+# need ros to tun code below
+import subprocess
+subprocess.call("roscore &",shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+import time
+time.sleep(1)  # wait a bit to be sure the roscore is really launched
+
 # import missions.missions_database
 # MISSIONS_DATABASE = missions.missions_database.database2
 
@@ -24,6 +30,7 @@ import os
 import glob
 DATA_FILE = max(glob.iglob('*.txt'), key=os.path.getctime)
 print(DATA_FILE)
+
 
 # is other file is to be run, use the code below instead
 # DATA_FILE = "/home/pedrootao/SML_CODE/src/quad_control/experimental_data/data/_1468688466_untitled_file.txt"
@@ -71,4 +78,7 @@ def handle_plot_service():
 
     return "Done"
 
-handle_plot_service()    
+handle_plot_service()
+
+# import subprocess
+subprocess.call("killall roscore",shell=True)
