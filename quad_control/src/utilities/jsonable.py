@@ -320,8 +320,8 @@ class Jsonable:
             spec = inspect.getargspec(self.__init__)
 
             arg_dic = dict()
-            print()
-            print(self.constructing_dic)
+
+            # print(self.constructing_dic)
             for arg in spec.args[1:]:
                 if type(self.constructing_dic[arg]) is np.ndarray:
                     val = str(list(self.constructing_dic[arg]))
@@ -546,9 +546,16 @@ class Jsonable:
     
     def object_combined_description(self):
         """Returns a string of the combined description of all jsonable objects (class + its inners)"""
+
+        if hasattr(self,"object_description"):
+            string = "<p>"+self.description()+"</p>"
+        else:
+            string = self.__class__.__name__+" has no method description(). IMPLEMENT IT"
+            print(string)
+            print("Please implement it\n")
         
         if hasattr(self,"object_description"):
-            string = "<p>"+self.object_description()+"</p>"
+            string+= "<p>"+self.object_description()+"</p>"
         else:
             string = self.__class__.__name__+" has no method object_description(). IMPLEMENT IT"
             print(string)
