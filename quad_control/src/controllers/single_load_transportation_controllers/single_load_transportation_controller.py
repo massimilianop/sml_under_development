@@ -190,7 +190,6 @@ class LoadzUAVxy(SingleLoadTransportationController):
         </ul>
         '''
 
-
     def __init__(self, 
         load_mass    = rospy.get_param("load_mass",0.1),
         quad_mass    = rospy.get_param("quadrotor_mass",1.442),
@@ -209,6 +208,26 @@ class LoadzUAVxy(SingleLoadTransportationController):
         self.data = {}
 
         self.e3 = numpy.array([0.0,0.0,1.0])
+
+        self.data = {}
+        self.data['load_position'] = numpy.zeros(3)
+        self.data['load_velocity'] = numpy.zeros(3)
+        self.data['uav_position'] = numpy.zeros(3)
+        self.data['uav_velocity'] = numpy.zeros(3)
+        self.data['unit_vector'] = numpy.array([0.0,0.0,1.0])
+        self.data['angular_velocity'] = numpy.zeros(3)
+
+
+    def object_description(self):
+        string = """
+        Parameters:
+        <ul>
+          <li>load_mass: """ + str(self.load_mass) +"""</li>
+          <li>quad_mass: """ + str(self.quad_mass) +"""</li>
+          <li>cable_length: """ + str(self.cable_length) +"""</li>
+        </ul>
+        """
+        return string
 
     def get_total_weight(self):
         return (self.quad_mass+self.load_mass)*self.g
@@ -392,6 +411,29 @@ class SingleLoadTransportController(SingleLoadTransportationController):
         # TODO import this later from utilities
         self.g            = 9.81
 
+        self.data = {}
+        self.data['load_position'] = numpy.zeros(3)
+        self.data['load_velocity'] = numpy.zeros(3)
+        self.data['uav_position'] = numpy.zeros(3)
+        self.data['uav_velocity'] = numpy.zeros(3)
+        self.data['unit_vector'] = numpy.array([0.0,0.0,1.0])
+        self.data['angular_velocity'] = numpy.zeros(3)
+
+        self.unit_vector_filter = uts.MedianFilter3D(5,data_initial=numpy.array([0.0,0.0,1.0]))
+        self.angular_velocity_filter = uts.MedianFilter3D(5,data_initial=numpy.zeros(3))
+
+    def object_description(self):
+        string = """
+        Parameters:
+        <ul>
+          <li>load_mass: """ + str(self.load_mass) +"""</li>
+          <li>quad_mass: """ + str(self.quad_mass) +"""</li>
+          <li>cable_length: """ + str(self.cable_length) +"""</li>
+        </ul>
+        """
+        return string
+
+
     def get_total_weight(self):
         return (self.quad_mass+self.load_mass)*self.g
 
@@ -443,6 +485,7 @@ class SingleLoadTransportController(SingleLoadTransportationController):
 
         # direction of cable
         n = (pm - pM)/numpy.linalg.norm(pm - pM)
+        n = self.unit_vector_filter.up_and_out(n)
 
         # alpha = 10.0*3.142/180.0
         # if numpy.dot(n,e3)<numpy.cos(alpha):
@@ -450,7 +493,15 @@ class SingleLoadTransportController(SingleLoadTransportationController):
         #     n    = numpy.cos(alpha)*e3 + numpy.sin(alpha)*naux/numpy.linalg.norm(naux)
 
         # angular velocity of cable
-        w  = dot(skew(n),(vm - vM)/numpy.linalg.norm(pM - pm))
+        w = dot(skew(n),(vm - vM)/numpy.linalg.norm(pM - pm))
+        w = self.angular_velocity_filter.up_and_out(w)
+
+        self.data['load_position'] = pM
+        self.data['load_velocity'] = vM
+        self.data['uav_position'] = pm
+        self.data['uav_velocity'] = vm
+        self.data['unit_vector'] = n
+        self.data['angular_velocity'] = w
 
         x = concatenate([p,v,n,w])
         # print x
