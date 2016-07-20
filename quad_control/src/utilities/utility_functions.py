@@ -170,9 +170,14 @@ def roll_and_pitch_from_full_actuation_and_yaw_rad(full_actuation, psi):
     # Rz(psi)*Ry(theta_des)*Rx(phi_des) = n_des
 
     # desired roll and pitch angles
-    n_des     = full_actuation/np.linalg.norm(full_actuation)
-    n_des_rot = rot_z(-psi).dot(n_des)
-
+    norm = np.linalg.norm(full_actuation)
+    # TODO: replace 0.1 by 10% of weight
+    if norm > 0.1:
+        n_des     = full_actuation/norm
+        n_des_rot = rot_z(-psi).dot(n_des)
+    else:
+        n_des     = np.array([0.0,0.0,1.0])
+        n_des_rot = rot_z(-psi).dot(n_des)        
 
     sin_phi   = -n_des_rot[1]
     sin_phi   = np.clip(sin_phi,-1,1)
@@ -193,9 +198,9 @@ def roll_and_pitch_from_full_actuation_and_yaw_rad(full_actuation, psi):
 
 class MedianFilter:
     # N is order of median filter
-    def __init__(self, N):
+    def __init__(self, N,data_initial = 0.0):
         self.N = N
-        self.data = np.zeros(N)
+        self.data = data_initial*np.ones(N)
     
     def update_data(self,new_data):
         N = self.N
@@ -213,11 +218,11 @@ class MedianFilter:
 
 class MedianFilter3D:
     # N is order of median filter
-    def __init__(self, N):
+    def __init__(self, N,data_initial=np.zeros(3)):
         self.N = N
-        self.Dx =  MedianFilter(N)
-        self.Dy =  MedianFilter(N)
-        self.Dz =  MedianFilter(N)
+        self.Dx =  MedianFilter(N,data_initial[0])
+        self.Dy =  MedianFilter(N,data_initial[1])
+        self.Dz =  MedianFilter(N,data_initial[2])
 
     def up_and_out(self,new_data):
         Dx_new = self.Dx.up_and_out(new_data[0])
