@@ -30,11 +30,6 @@ class QuadController():
         # frequency of controlling action!!
         self.frequency = 35.0
 
-        self.box_center = numpy.array([0.0,0.0,1.0])
-        self.box_sides  = numpy.array([2.0,2.0,1.5])
-        # go down to z = ... in meters when emergency is triggered
-        self.position_z_before_land = 0.3
-
         # initialize counter for publishing to GUI
         # we only publish when self.PublishToGUI =1
         self.PublishToGUI = 1
@@ -119,6 +114,8 @@ class QuadController():
 
         self.mission.call_method_inner_of_inner(**dictionary)
 
+        self._add_header_mission()
+
         # return message to Gui, to let it know resquest has been fulfilled
         return SrvChangeJsonableObjectByStrResponse(received = True)     
 
@@ -181,21 +178,6 @@ class QuadController():
 
             self.pub.publish(st_cmd)
 
-    def check_inside_limits(self,position,velocity):
-        if any(numpy.absolute(position - self.box_center) >= self.box_sides):
-            return False
-        else:
-            return True
-
-    def stop_and_land(self,position):
-
-        # Default Mission Class
-        MissionClass = MISSIONS_DATABASE['Default']   
-        self.mission = MissionClass()
-
-        self.mission.hold_position(position)
-
-
     def control_compute(self):
 
         # node will be named quad_control (see rqt_graph)
@@ -229,24 +211,32 @@ class QuadController():
 
         rate = rospy.Rate(self.frequency)
 
-        self.emergency_triggered = False
+        self.emergency_flag = False
 
         while not rospy.is_shutdown():
 
-            position = self.mission.get_position()
-            velocity = self.mission.get_velocity()
-            if (not self.check_inside_limits(position,velocity)) and (not self.emergency_triggered):
-                self.emergency_triggered  = True
-                self.stop_and_land(position)
-
-            self.mission.publish()
-
-            # publish to GUI (it also contains publish state of Control to GUI)
-            self.PublishToGui()
-
+            # this may come after the publish, but beware that it affects the delta_t
             if self.SaveDataFlag == True:
                 # if we want to save data
                 numpy.savetxt(self.file_handle, [numpy.array(self.mission.get_complete_data())], delimiter=' ')
+                # see if we save time by saving like this
+                # numpy.savetxt(self.file_handle, [numpy.array(self.mission.get_complete_data())], delimiter=' ', fmt='%.3f')
+                # see if we save time by saving like this
+                # numpy.savetxt(self.file_handle, [numpy.array([rospy.get_time()])], delimiter=' ', fmt='%.3f')
+
+            self.mission.publish()
+
+            # if self.mission.test_emergency():
+            #     if not self.emergency_flag:
+            #         self.emergency_flag = True
+            #         self.mission.trigger_emergency()
+            #         print('EMERGENGY TRIGGERED\n')
+            #         print('EMERGENGY TRIGGERED\n')
+            #         print('EMERGENGY TRIGGERED\n')
+            #         print('EMERGENGY TRIGGERED\n')
+
+            # publish to GUI (it also contains publish state of Control to GUI)
+            self.PublishToGui()
             
             # go to sleep
             rate.sleep()
