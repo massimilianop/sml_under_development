@@ -224,6 +224,17 @@ class MedianFilter3D:
         self.Dy =  MedianFilter(N,data_initial[1])
         self.Dz =  MedianFilter(N,data_initial[2])
 
+    def update_data(self,new_data):
+        self.Dx.update_data(new_data[0])
+        self.Dy.update_data(new_data[1])
+        self.Dz.update_data(new_data[2])
+
+    def output(self):
+        out1 = self.Dx.output()
+        out2 = self.Dy.output()
+        out3 = self.Dz.output()
+        return np.array([out1,out2,out3])
+
     def up_and_out(self,new_data):
         Dx_new = self.Dx.up_and_out(new_data[0])
         Dy_new = self.Dy.up_and_out(new_data[1])

@@ -226,14 +226,14 @@ class QuadController():
 
             self.mission.publish()
 
-            # if self.mission.test_emergency():
-            #     if not self.emergency_flag:
-            #         self.emergency_flag = True
-            #         self.mission.trigger_emergency()
-            #         print('EMERGENGY TRIGGERED\n')
-            #         print('EMERGENGY TRIGGERED\n')
-            #         print('EMERGENGY TRIGGERED\n')
-            #         print('EMERGENGY TRIGGERED\n')
+            if self.mission.test_emergency():
+                if not self.emergency_flag:
+                    self.emergency_flag = True
+                    self.mission.trigger_emergency()
+                    print('EMERGENGY TRIGGERED\n')
+                    print('EMERGENGY TRIGGERED\n')
+                    print('EMERGENGY TRIGGERED\n')
+                    print('EMERGENGY TRIGGERED\n')
 
             # publish to GUI (it also contains publish state of Control to GUI)
             self.PublishToGui()

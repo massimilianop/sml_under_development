@@ -21,8 +21,11 @@ class BodyPublisher():
         # frequency of publishing
         self.frequency = rospy.get_param(param_name='publishing_frequency',default=50)
 
-        self.bodies_names = ['Load1','Iris5','Iris2']
-        self.child_frame_id = ['base_world','base_uav','base_uav']
+        self.bodies_names = ['Iris5','Iris2','Load1','Truck','Truck2']
+        self.child_frame_id = ['base_uav','base_uav','base_world','base_world','base_world']
+
+        # self.bodies_names = ['Iris5/Iris5','Iris2/Iris2','Load1','Truck','Truck2']
+        # self.child_frame_id = ['base_uav','base_uav','base_world','base_world','base_world']
         # self.bodies_names = rosy.get_param(param_name = '', default =['Load1','Iris5','Iris2'])
 
     def body_publish(self,body,body_name,child_frame_id):

@@ -44,7 +44,11 @@ def handle_plot_service():
 
     read_file = read_file.split(jsonable.Jsonable.UNIQUE_STRING)
 
+    # first element in list is "" (empty string)
     read_file.pop(0)
+
+    # remove last 5 lines (because sometimes there are problems when saving this last data) (It commes will NULL symbols)
+    read_file[-1] = '\n'.join(map(str, read_file[-1].split('\n')[:-6]))
 
     merger = PdfFileMerger()
 

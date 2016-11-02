@@ -9,3 +9,5 @@ plugin = 'tabbedGUI'
 # plugin = 'positionPlot'
 main = Main(filename=plugin)
 sys.exit(main.main(standalone=plugin))
+
+

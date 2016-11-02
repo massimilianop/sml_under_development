@@ -25,6 +25,11 @@ class QuadrupleIntegratorController(js.Jsonable):
     def output(self, position, velocity, acceleration, jerk): 
         raise NotImplementedError()
 
+def sat(x):
+    return 0.10*x/numpy.sqrt(x**2 + 0.10**2)
+
+def sat2(x):
+    return 0.30*x/numpy.sqrt(x**2 + 0.30**2)
 
 @js.add_to_database(default=True)
 class LinearQuadrupleIntegratorController(QuadrupleIntegratorController):
@@ -42,7 +47,7 @@ class LinearQuadrupleIntegratorController(QuadrupleIntegratorController):
     # print(numpy.kron(controller_gains,Id))
 
     def __init__(self, 
-        controller_gains  = numpy.array([-3.0, -3.0, -10.0, -1.0]),
+        controller_gains  = numpy.array([-50.0, -80.0, -20.0, -5.0]),
         controller_gains_factor = 1.0
         ):
 
@@ -102,7 +107,7 @@ class LinearQuadrupleIntegratorController(QuadrupleIntegratorController):
     def _quadruple_integrator(self,x1,x2,x3,x4):
 
         # state
-        x   = numpy.concatenate([x1,x2,x3,x4])
+        x   = numpy.concatenate([sat2(x1),sat2(x2),sat(x3),sat(x4)])
         
         # control input
         u   = numpy.dot(self.KK,x)

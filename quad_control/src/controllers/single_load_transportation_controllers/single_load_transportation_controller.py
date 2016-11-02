@@ -30,7 +30,7 @@ class SingleLoadTransportationController(js.Jsonable):
 
     @classmethod
     def get_data_size(self):
-        return 3 + 3 + 2 + 2
+        return 3 + 3 + 2 + 2 + 1
 
     def get_data(self):
         """Get all data relevant to the mission
@@ -52,6 +52,8 @@ class SingleLoadTransportationController(js.Jsonable):
 
         default_array+= [phi,theta]
         default_array+= [w_phi,w_theta]      
+
+        default_array+= [self.disturbance_estimate]
         
         # default_array = np.concatenate([default_array,self.get_complementary_data()])
         return default_array
@@ -74,6 +76,8 @@ class SingleLoadTransportationController(js.Jsonable):
         w_phi   = []
         w_theta = []
 
+        disturbance = []
+
         import math
 
         for line in string.split('\n'):
@@ -89,6 +93,8 @@ class SingleLoadTransportationController(js.Jsonable):
                 positions_y.append(float(numbers[1]))
                 positions_z.append(float(numbers[2]))
                 
+                print(numbers[2])
+
                 velocities_x.append(float(numbers[3]))
                 velocities_y.append(float(numbers[4]))
                 velocities_z.append(float(numbers[5]))
@@ -97,7 +103,9 @@ class SingleLoadTransportationController(js.Jsonable):
                 theta.append(float(numbers[7])*180/math.pi)
 
                 w_phi.append(float(numbers[8])*180/math.pi)
-                w_theta.append(float(numbers[9])*180/math.pi)               
+                w_theta.append(float(numbers[9])*180/math.pi)      
+
+                disturbance.append(float(numbers[10]))         
 
         
         fig1 = plt.figure()
@@ -130,7 +138,13 @@ class SingleLoadTransportationController(js.Jsonable):
         plt.legend(loc='best')
         plt.grid()           
 
-        return fig1,fig2,fig3,fig4
+        fig5 = plt.figure()
+        plt.plot(times, disturbance, 'r-', label='disturbance')     
+        plt.title('Disturbance')
+        plt.legend(loc='best')
+        plt.grid()
+
+        return fig1,fig2,fig3,fig4,fig5
 
 
 def skew(x):
@@ -144,6 +158,207 @@ def skew(x):
     return out
 
 
+def sat(x):
+    return 0.5*x/numpy.sqrt(x**2 + 0.5**2)
+
+# import double integrator controllers
+import controllers.double_integrator_controllers.double_integrator_controller
+ONE_D_DIC_DATABASE = controllers.double_integrator_controllers.double_integrator_controller.database_one_d
+
+@js.add_to_database(default=True)
+class LinearController(SingleLoadTransportationController):   
+    '''Decompose control problems in two parts:
+    . Control z component of load as double integrator
+    . Control x and y of UAV also as double integrator
+        . for controlling cable oscillations we produce a desired
+        for the xy trajectory of the uav that dampens and steers
+        the cable oscillations to zero
+    '''
+
+    # double integrator controller for z component of load (position)
+    js.Jsonable.add_inner('z_double_integrator_ctr',ONE_D_DIC_DATABASE)    
+
+    @classmethod
+    def description(cls):
+        return '''
+        Linear controller for a <b>single aerial vehicle transporating load</b> attached by cable. Decompose control problems in two parts:
+        <ul>
+            <li>Control z component ...</li>
+            <li>Control x and y ....</li>
+        </ul>
+        '''
+
+    def __init__(self, 
+        load_mass    = rospy.get_param("load_mass",0.1),
+        quad_mass    = rospy.get_param("quadrotor_mass",1.442),
+        cable_length = rospy.get_param("cable_length",0.6),
+        kp           = rospy.get_param("proportional_gain_xy_load_lifting",1.0),
+        kv           = rospy.get_param("derivative_gain_xy_load_lifting",1.41),
+        kt           = rospy.get_param("cable_angle_gain_load_lifting",0.0),
+        kw           = rospy.get_param("cable_angular_velocity_gain_xy_load_lifting",0.0),
+        gain_integral_action = rospy.get_param("gain_integral_action_load_lifting",0.0),
+        max_disturbance_estimate = rospy.get_param("max_disturbance_estimate_load_lifting",0.0)
+        ):
+
+        self.add_inner_defaults()
+
+        self.kp = kp
+        self.kv = kv
+        self.kt = kt
+        self.kw = kw
+
+        self.quad_mass    = quad_mass
+        self.load_mass    = load_mass
+        self.cable_length = cable_length
+        # TODO import this later from utilities
+        self.g            = 9.81
+        self.gravity = uts.GRAVITY
+
+        self.data = {}
+
+        self.e3 = numpy.array([0.0,0.0,1.0])
+
+        self.data = {}
+        self.data['load_position'] = numpy.zeros(3)
+        self.data['load_velocity'] = numpy.zeros(3)
+        self.data['uav_position'] = numpy.zeros(3)
+        self.data['uav_velocity'] = numpy.zeros(3)
+        self.data['unit_vector'] = numpy.array([0.0,0.0,1.0])
+        self.data['angular_velocity'] = numpy.zeros(3)
+
+        self.max_disturbance_estimate = max_disturbance_estimate
+        self.gain_integral_action = gain_integral_action
+
+
+        self.disturbance_estimate = 0.0
+
+
+    def object_description(self):
+        string = """
+        Parameters:
+        <ul>
+          <li>load_mass: """ + str(self.load_mass) +"""</li>
+          <li>quad_mass: """ + str(self.quad_mass) +"""</li>
+          <li>cable_length: """ + str(self.cable_length) +"""</li>
+        </ul>
+        """
+        return string
+
+    def get_total_weight(self):
+        return (self.quad_mass+self.load_mass)*self.g
+
+
+
+    def object_descrition(self):
+        description = "Controller\n"
+        description = "quad mass = " + str(self.quad_mass) + "(kg), load mas = " + str(self.load_mass) + "(kg), cable length = " + str(self.cable_length) + "(m), gravity = " + str(self.g) + "(m/s/s).\n\n"
+        return description
+
+    def output(self, time_instant, states, states_d):
+
+        # initiliaze initial time instant
+        self.t_old = time_instant
+
+        self.output = self.output_after_initialization
+
+        return self.output_after_initialization(time_instant,states,states_d)
+
+
+    def output_after_initialization(self,time_instant,state,stated):
+
+        # masses and cable length
+        m   = self.quad_mass;
+        M   = self.load_mass;
+        L   = self.cable_length;
+
+        # gravity
+        g   = self.g;
+
+        e3  = numpy.array([0.0,0.0,1.0])
+
+        # current LOAD position
+        pM  = state[0:3]
+        self.data['load_position'] = pM
+        # current LOAD velocity
+        vM  = state[3:6]
+        self.data['load_velocity'] = vM
+        # current QUAD position
+        pm  = state[6:9]
+        self.data['uav_position'] = pm
+        # current QUAD velocity
+        vm  = state[9:12]
+        self.data['uav_velocity'] = vm
+
+        # DESIRED LOAD position
+        pd = stated[0:3]
+        # DESIRED LOAD velocity
+        vd = stated[3:6]
+
+        # transformation of state
+        ep = pM - pd
+        ev = vM - vd
+
+        # direction of cable
+        n = (pm - pM)/numpy.linalg.norm(pm - pM)
+
+        # alpha = 10.0*3.142/180.0
+        # if numpy.dot(n,e3)<numpy.cos(alpha):
+        #     naux = numpy.dot(uts.ort_proj(e3),n)
+        #     n    = numpy.cos(alpha)*e3 + numpy.sin(alpha)*naux/numpy.linalg.norm(naux)
+
+        # angular velocity of cable
+        w  = dot(skew(n),(vm - vM)/numpy.linalg.norm(pM - pm))
+
+        self.data['unit_vector'] = n
+        self.data['angular_velocity'] = w
+
+        # direction of cable
+        phi   =  -numpy.arcsin(n[[1]])
+        theta =  numpy.arctan(n[[0]]/n[[2]])
+
+        # angular velocity of cable
+        w_phi   = w[0]/numpy.cos(theta) - w[1]*numpy.tan(phi)*numpy.tan(theta)
+        w_theta = w[1]/(numpy.cos(theta)**2)
+
+
+        u,u_p,u_v,u_p_p,u_v_v,u_p_v,Vpv,VpvD,V_p,V_v,V_v_p,V_v_v = self.z_double_integrator_ctr.output(ep[2],ev[2])
+        uz = (m+M)*g + (m + M)*(u - self.disturbance_estimate)
+
+
+        delta_t = time_instant - self.t_old
+        self.t_old = time_instant
+        disturbance_estimate_dot  = self.gain_integral_action*V_v
+        # new disturbance estimate
+        disturbance_estimate = self.disturbance_estimate + disturbance_estimate_dot*delta_t
+        # saturate estimate just for safety (element wise bound)
+        self.disturbance_estimate = numpy.clip(disturbance_estimate,-1.0*self.max_disturbance_estimate,self.max_disturbance_estimate)
+
+
+        # errors
+        ep = pm - pd
+        ev = vm - vd
+
+        x1 = ep[0]
+        x2 = ev[0]
+        x3 = g*theta[0]
+        x4 = g*w_theta[0]
+        #ux = -(self.kp*x1 + self.kv*x2 + self.kw*x4)
+        #ux = -(self.kp*x1 + self.kv*x2 + self.kw*w_theta[0])
+        ux = -(self.kp*sat(x1) + self.kv*sat(x2) + self.kt*(n[0]) + self.kw*w[1])
+        ux *= m
+
+        x1 = ep[1]
+        x2 = ev[1]
+        x3 = -g*phi[0]
+        x4 = -g*w_phi[0]
+        #uy = -(self.kp*x1 + self.kv*x2 + self.kw*x4)
+        # uy = -(self.kp*x1 + self.kv*x2 + self.kw*(-w_phi[0]))
+        uy = -(self.kp*sat(x1) + self.kv*sat(x2) + self.kt*(n[1]) + self.kw*(-w[0]))
+        uy *= m
+
+        return numpy.array([ux,uy,uz])
+
+
 # import double integrator controllers
 import controllers.double_integrator_controllers.double_integrator_controller
 DIC_DATABASE       = controllers.double_integrator_controllers.double_integrator_controller.database
@@ -153,14 +368,14 @@ ONE_D_DIC_DATABASE = controllers.double_integrator_controllers.double_integrator
 import reference.plan_motion_load_lifting
 PLAN_XY_MOTION_DATABASE = reference.plan_motion_load_lifting.database
 
-def sat(x):
-    return 0.1*x/numpy.sqrt(x**2 + 0.1**2)
+# def sat(x):
+#     return 0.1*x/numpy.sqrt(x**2 + 0.1**2)
 
 # def sat(x):
 #     return x
 
 
-@js.add_to_database(default=True)
+@js.add_to_database()
 class LoadzUAVxy(SingleLoadTransportationController):   
     '''Decompose control problems in two parts:
     . Control z component of load as double integrator
@@ -419,8 +634,8 @@ class SingleLoadTransportController(SingleLoadTransportationController):
         self.data['unit_vector'] = numpy.array([0.0,0.0,1.0])
         self.data['angular_velocity'] = numpy.zeros(3)
 
-        self.unit_vector_filter = uts.MedianFilter3D(5,data_initial=numpy.array([0.0,0.0,1.0]))
-        self.angular_velocity_filter = uts.MedianFilter3D(5,data_initial=numpy.zeros(3))
+        self.unit_vector_filter = uts.MedianFilter3D(3,data_initial=numpy.array([0.0,0.0,1.0]))
+        self.angular_velocity_filter = uts.MedianFilter3D(3,data_initial=numpy.zeros(3))
 
     def object_description(self):
         string = """

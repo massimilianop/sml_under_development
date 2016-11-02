@@ -285,6 +285,18 @@ def _parser_comm(socket):
 
 # Qs = Mocap(info=0)
 # bodies = Qs.get_updated_bodies()
+# # print(bodies)
 # for body in bodies:
 #     print(body)
 #     print(body['id'])
+
+# Qs = Mocap(info=0)
+# bodies = Qs.get_updated_bodies()
+# print(bodies)
+# # determine cable length
+# for body in bodies:
+#     if body['id'] == 2:
+#         body_iris = body 
+#     if body['id'] == 3:
+#         body_load = body
+# print(body_iris['z'] - body_load['z'])

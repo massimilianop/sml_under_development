@@ -24,6 +24,69 @@ class FAController(js.Jsonable):
     def get_mass(self):
         return NotImplementedError()
 
+    @classmethod
+    def get_data_size(self):
+        return 3
+
+    def get_data(self):
+        """Get all data relevant to the mission
+        from this data, mission should be able to do data post-analysis, 
+        like ploting or computing average errors
+        """        
+        default_array = self.disturbance_estimate.tolist()
+        
+        # default_array = np.concatenate([default_array,self.get_complementary_data()])
+        return default_array
+
+    # despite not saving anything, we can plot the rc commands
+    # based on info saving by mission
+    @classmethod
+    def plot_from_string(cls, string,starting_point):
+
+        #plots
+        # import matplotlib.pyplot as plt
+        import matplotlib
+        matplotlib.use('Agg')
+        from matplotlib import pyplot as plt
+
+        times       = []
+        
+        disturbance_estimate_x = []
+        disturbance_estimate_y = []
+        disturbance_estimate_z = []
+
+        for line in string.split('\n'):
+            # ignore empty lines 
+            if line:
+                numbers = line.split(' ')
+
+                # print(numbers)
+                times.append(float(numbers[0]))
+
+                numbers = numbers[starting_point[0]:]
+
+                disturbance_estimate_x.append(float(numbers[0]))
+                disturbance_estimate_y.append(float(numbers[1]))
+                disturbance_estimate_z.append(float(numbers[2]))
+                
+                #yaw_rates.append(float(numbers[13]))
+
+        # it is not bad to import it here, since plotting is done aposteriori
+        import operator
+        times = map(operator.sub,times,len(times)*[times[0]])
+
+        fig1 = plt.figure()
+        plt.plot(times, disturbance_estimate_x, 'r-', label=r'$F_x$')
+        plt.plot(times, disturbance_estimate_y, 'g-', label=r'$F_y$')
+        plt.plot(times, disturbance_estimate_z, 'b-', label=r'$F_z$')
+        plt.title('Disturbance estimate')
+        plt.legend(loc='best')
+        plt.grid()
+
+        # one element tuple
+        return fig1,
+
+
 
 @js.add_to_database(default=True)
 class SimplePIDController(FAController):
@@ -34,16 +97,16 @@ class SimplePIDController(FAController):
         return "PID Controller, with saturation on integral part"
 
     def __init__(self,              \
-        proportional_gain_xy = 1.0, \
-        derivative_gain_xy   = numpy.sqrt(2*1.0), \
-        integral_gain_xy     = 0.0, \
-        bound_integral_xy    = 0.0, \
-        proportional_gain_z  = 1.5, \
-        derivative_gain_z    = numpy.sqrt(2*1.5), \
-        integral_gain_z      = 0.5, \
-        bound_integral_z     = 0.0,
-        quad_mass            = rospy.get_param("total_mass",1.442)
-        ):
+    proportional_gain_xy = rospy.get_param("proportional_gain_xy",6.0), \
+    derivative_gain_xy   = rospy.get_param("derivative_gain_xy",2*1.6*numpy.sqrt(6.0)), \
+    integral_gain_xy     = rospy.get_param("integral_gain_xy",0.0), \
+    bound_integral_xy    = rospy.get_param("bound_integral_xy",0.0), \
+    proportional_gain_z  = rospy.get_param("proportional_gain_z",1.0), \
+    derivative_gain_z    = rospy.get_param("derivative_gain_z",numpy.sqrt(2*1.0)), \
+    integral_gain_z      = rospy.get_param("integral_gain_z",0.0), \
+    bound_integral_z     = rospy.get_param("bound_integral_z",0.0),
+    quad_mass            = rospy.get_param("total_mass",1.442)
+    ):
 
         self.proportional_gain_xy = proportional_gain_xy
         self.derivative_gain_xy   = derivative_gain_xy
@@ -122,14 +185,14 @@ class SimplePIDController(FAController):
         # derivatice of disturbance estimate (ELEMENT WISE PRODUCT)
         
 
-        d_est_dot  = gains_integral_action*V_v
-        # new disturbance estimate
-        t_new = delta_t
-        disturbance_estimate = self.disturbance_estimate + d_est_dot*(t_new - self.t_old) 
-        # saturate estimate just for safety (element wise bound)
-        self.disturbance_estimate = numpy.clip(disturbance_estimate,max_disturbance_estimate,-1.0*max_disturbance_estimate)
-        # update old time
-        self.t_old = t_new
+        # d_est_dot  = gains_integral_action*V_v
+        # # new disturbance estimate
+        # t_new = delta_t
+        # disturbance_estimate = self.disturbance_estimate + d_est_dot*(t_new - self.t_old) 
+        # # saturate estimate just for safety (element wise bound)
+        # self.disturbance_estimate = numpy.clip(disturbance_estimate,max_disturbance_estimate,-1.0*max_disturbance_estimate)
+        # # update old time
+        # self.t_old = t_new
         # -----------------------------------------------------------------------------#
 
         return Full_actuation
@@ -180,6 +243,8 @@ class NeutalController(FAController):
         self.MASS = quad_mass
         self.GRAVITY = 9.81
 
+        self.disturbance_estimate   = numpy.array([0.0,0.0,0.0])
+
     def get_total_weight(self):
         return self.MASS*self.GRAVITY
 
@@ -201,133 +266,139 @@ class NeutalController(FAController):
 #print con.output(0.1, numpy.zeros(9), numpy.zeros(9))
 
 
-import controllers.double_integrator_controllers.double_integrator_controller
-CONTROLLERS_DATABASE = controllers.double_integrator_controllers.double_integrator_controller.database
+# import controllers.double_integrator_controllers.double_integrator_controller
+# CONTROLLERS_DATABASE = controllers.double_integrator_controllers.double_integrator_controller.database
 
-# @js.inherit_methods_list_from_parents
-@js.add_to_database()
-class ThreeDPIDController(FAController):
-    """This is a dynamic controller, not a static controller"""
+# # @js.inherit_methods_list_from_parents
+# @js.add_to_database()
+# class ThreeDPIDController(FAController):
+#     """This is a dynamic controller, not a static controller"""
 
-    js.Jsonable.add_inner('double_integrator_controller',CONTROLLERS_DATABASE)
+#     js.Jsonable.add_inner('double_integrator_controller',CONTROLLERS_DATABASE)
     
-    @classmethod
-    def description(cls):
-        return "PID Controller, with saturation on integral part"
+#     @classmethod
+#     def description(cls):
+#         return "PID Controller, with saturation on integral part"
         
-    def __init__(self,\
-            integral_gain_xy     = 0.0        ,\
-            bound_integral_xy    = 0.0        ,\
-            integral_gain_z      = 0.5        ,\
-            bound_integral_z     = 0.0        ,\
-            quad_mass            = rospy.get_param("total_mass",1.442)
-            ):
+#     def __init__(self,\
+#             integral_gain_xy     = 0.0        ,\
+#             bound_integral_xy    = 0.0        ,\
+#             integral_gain_z      = 0.5        ,\
+#             bound_integral_z     = 0.0        ,\
+#             quad_mass            = rospy.get_param("total_mass",1.442)
+#             ):
 
-        self.add_inner_defaults()
+#         self.add_inner_defaults()
 
-        self.integral_gain_xy     = integral_gain_xy
-        self.bound_integral_xy    = bound_integral_xy
+#         self.integral_gain_xy     = integral_gain_xy
+#         self.bound_integral_xy    = bound_integral_xy
 
-        self.integral_gain_z      = integral_gain_z
-        self.bound_integral_z     = bound_integral_z
+#         self.integral_gain_z      = integral_gain_z
+#         self.bound_integral_z     = bound_integral_z
 
-        #TODO should these two be inherited by a parent instead?
-        # Should the mass be passed as a parameter?
-        # We can always use 1.66779 as a default value
-        self.quad_mass = quad_mass
+#         #TODO should these two be inherited by a parent instead?
+#         # Should the mass be passed as a parameter?
+#         # We can always use 1.66779 as a default value
+#         self.quad_mass = quad_mass
         
-        self.MASS = quad_mass
-        self.GRAVITY = 9.81
+#         self.MASS = quad_mass
+#         self.GRAVITY = 9.81
 
-        self.disturbance_estimate   = numpy.array([0.0,0.0,0.0])
-        self.d_est = self.disturbance_estimate
+#         self.disturbance_estimate   = numpy.array([0.0,0.0,0.0])
+#         self.d_est = self.disturbance_estimate
 
-        self.t_old  = 0.0
+#         self.t_old  = 0.0
 
-        pass
+#         pass
 
-    def get_total_weight(self):
-        return self.MASS*self.GRAVITY
+#     def get_total_weight(self):
+#         return self.MASS*self.GRAVITY
 
-    def __str__(self):
-        #TODO add the remaining parameters
-        string = Controller.__str__(self)
-        string += "\nDouble-integrator controller: " + str(self.double_integrator_controller)
-        return string
-        
-
-    def output(self, delta_t, state, reference):
-
-        # third canonical basis vector
-        e3 = numpy.array([0.0,0.0,1.0])        
-        
-        #--------------------------------------#
-        # position and velocity
-        x  = state[0:3]; v  = state[3:6]
-
-        #--------------------------------------#
-        # desired quad trajectory
-        xd = reference[0:3];
-        vd = reference[3:6];
-        ad = reference[6:9];
-        
-        #--------------------------------------#
-        # position error and velocity error
-        ep = x - xd
-        ev = v - vd
-
-        u,u_p,u_v,u_p_p,u_v_v,u_p_v,Vpv,VpvD,V_p,V_v,V_v_p,V_v_v = self.double_integrator_controller.output(ep,ev)
-
-        Full_actuation = self.MASS*(ad + u + self.GRAVITY*e3 - self.d_est)
-
-
-        # -----------------------------------------------------------------------------#
-        # update disturbance estimate
-
-        gains_integral_action    = numpy.array([self.integral_gain_xy ,self.integral_gain_xy ,self.integral_gain_z ])
-        max_disturbance_estimate = numpy.array([self.bound_integral_xy,self.bound_integral_xy,self.bound_integral_z])
-
-        # derivatice of disturbance estimate (ELEMENT WISE PRODUCT)
+#     def __str__(self):
+#         #TODO add the remaining parameters
+#         string = Controller.__str__(self)
+#         string += "\nDouble-integrator controller: " + str(self.double_integrator_controller)
+#         return string
         
 
-        d_est_dot  = gains_integral_action*V_v
-        # new disturbance estimate
-        t_new = delta_t
-        disturbance_estimate = self.disturbance_estimate + d_est_dot*(t_new - self.t_old) 
-        # saturate estimate just for safety (element wise bound)
-        self.disturbance_estimate = numpy.clip(disturbance_estimate,-1.0*max_disturbance_estimate,max_disturbance_estimate)
-        # update old time
-        self.t_old = t_new
+#     def output(self, delta_t, state, reference):
 
-        return Full_actuation
+#         # third canonical basis vector
+#         e3 = numpy.array([0.0,0.0,1.0])        
+        
+#         #--------------------------------------#
+#         # position and velocity
+#         x  = state[0:3]; v  = state[3:6]
+
+#         #--------------------------------------#
+#         # desired quad trajectory
+#         xd = reference[0:3];
+#         vd = reference[3:6];
+#         ad = reference[6:9];
+        
+#         #--------------------------------------#
+#         # position error and velocity error
+#         ep = x - xd
+#         ev = v - vd
+
+#         u,u_p,u_v,u_p_p,u_v_v,u_p_v,Vpv,VpvD,V_p,V_v,V_v_p,V_v_v = self.double_integrator_controller.output(ep,ev)
+
+#         Full_actuation = self.MASS*(ad + u + self.GRAVITY*e3 - self.d_est)
 
 
-    def reset_disturbance_estimate(self):
-        self.disturbance_estimate = numpy.array([0.0,0.0,0.0])
-        return
+#         # -----------------------------------------------------------------------------#
+#         # update disturbance estimate
+
+#         gains_integral_action    = numpy.array([self.integral_gain_xy ,self.integral_gain_xy ,self.integral_gain_z ])
+#         max_disturbance_estimate = numpy.array([self.bound_integral_xy,self.bound_integral_xy,self.bound_integral_z])
+
+#         # derivatice of disturbance estimate (ELEMENT WISE PRODUCT)
+        
+
+#         # d_est_dot  = gains_integral_action*V_v
+#         # # new disturbance estimate
+#         # t_new = delta_t
+#         # disturbance_estimate = self.disturbance_estimate + d_est_dot*(t_new - self.t_old) 
+#         # # saturate estimate just for safety (element wise bound)
+#         # self.disturbance_estimate = numpy.clip(disturbance_estimate,max_disturbance_estimate,-1.0*max_disturbance_estimate)
+#         # # update old time
+#         # self.t_old = t_new
+
+#         return Full_actuation
+
+
+#     def reset_disturbance_estimate(self):
+#         self.disturbance_estimate = numpy.array([0.0,0.0,0.0])
+#         return
 
 
 import controllers.double_integrator_controllers.double_integrator_controller
 CONTROLLERS_DATABASE = controllers.double_integrator_controllers.double_integrator_controller.database
+CONTROLLERS_DATABASE_ONE_D = controllers.double_integrator_controllers.double_integrator_controller.database_one_d
 
 @js.add_to_database()
 class ControllerPIDXYAndZBounded(FAController):
     """This is a dynamic controller, not a static controller"""
 
     js.Jsonable.add_inner('double_integrator_xy',CONTROLLERS_DATABASE)
-    js.Jsonable.add_inner('double_integrator_z',CONTROLLERS_DATABASE)
+    js.Jsonable.add_inner('double_integrator_z',CONTROLLERS_DATABASE_ONE_D)
 
     @classmethod
     def description(cls):
-        return "PID Controller, with saturation on integral part"
-        
+        string = "PID Controller, with saturation on integral part."
+        string+= "<ul>"
+        string+= "<li>double_integrator_xy: controller for xy</li>"
+        string+= "<li>double_integrator_xy: controller for z</li>"
+        string+= "</ul>"
+        return string
+
     def __init__(self,\
-            integral_gain_xy     = 0.0        ,\
-            bound_integral_xy    = 0.0        ,\
-            integral_gain_z      = 0.5        ,\
-            bound_integral_z     = 0.0        ,\
-            quad_mass            = rospy.get_param("total_mass",1.442)
-            ):
+    integral_gain_xy     = rospy.get_param("integral_gain_xy",0.0), \
+    bound_integral_xy    = rospy.get_param("bound_integral_xy",0.0), \
+    integral_gain_z      = rospy.get_param("integral_gain_z",0.0), \
+    bound_integral_z     = rospy.get_param("bound_integral_z",0.0),
+    quad_mass            = rospy.get_param("total_mass",1.442)
+    ):
 
         self.add_inner_defaults()
 
@@ -346,33 +417,74 @@ class ControllerPIDXYAndZBounded(FAController):
         self.GRAVITY = 9.81
 
         self.disturbance_estimate   = numpy.array([0.0,0.0,0.0])
-        self.d_est = self.disturbance_estimate
 
-        self.t_old  = 0.0
+        # self.t_old  = 0.0
 
+
+    def object_description(self):
+        string = """
+        Parameters:
+        <ul>
+          <li>integral_gain_xy: """ + str(self.integral_gain_xy) +"""(N)</li>
+          <li>bound_integral_xy: """ + str(self.bound_integral_xy) +"""</li>
+          <li>integral_gain_z: """ + str(self.integral_gain_z) +"""</li>
+          <li>bound_integral_z: """ + str(self.bound_integral_z) +"""(N)</li>
+          <li>quad_mass: """ + str(self.quad_mass) +"""</li>
+        </ul>
+        """
+        return string
+
+    def get_total_weight(self):
+        return self.MASS*self.GRAVITY
+
+    @js.add_to_methods_list
     def reset_estimate_xy(self):
-        self.d_est[0] = 0.0
-        self.d_est[1] = 0.0
+        self.disturbance_estimate[0] = 0.0
+        self.disturbance_estimate[1] = 0.0
         return
 
+    @js.add_to_methods_list
     def reset_estimate_z(self):
-        self.d_est[2] = 0.0
-        return        
+        self.disturbance_estimate[2] = 0.0
+        return     
 
     def update_parameters(self,parameters):
         self.parameters = parameters
 
-    def output(self, time, states, states_d):
+
+    def output(self, time_instant, states, states_d):
         # convert euler angles from deg to rotation matrix
         ee = states[6:9]
         R  = uts.rot_from_euler_deg(ee)
         R  = numpy.reshape(R,9)
         # collecting states
         states  = numpy.concatenate([states[0:6],R])
-        return self.controller(time,states,states_d)     
+
+        # initiliaze initial time instant
+        self.t_old = time_instant
+
+        self.output = self.output_after_initialization
+
+        return self.controller(0.0,states,states_d)
+
+    def output_after_initialization(self, time_instant, states, states_d):
+        # convert euler angles from deg to rotation matrix
+        ee = states[6:9]
+        R  = uts.rot_from_euler_deg(ee)
+        R  = numpy.reshape(R,9)
+        # collecting states
+        states  = numpy.concatenate([states[0:6],R])
+
+        delta_t = time_instant - self.t_old
+
+        output = self.controller(delta_t,states,states_d)
+
+        self.t_old = time_instant
+
+        return output
 
     # Controller
-    def controller(self,t_new,states,states_d):
+    def controller(self,delta_t,states,states_d):
          
         # third canonical basis vector
         e3 = numpy.array([0.0,0.0,1.0])        
@@ -396,32 +508,29 @@ class ControllerPIDXYAndZBounded(FAController):
 
         u,V_v = self.input_and_gradient_of_lyapunov(ep,ev)
 
-        Full_actuation = self.MASS*(ad + u + self.GRAVITY*e3 - self.d_est)
+        Full_actuation = self.MASS*(ad + u + self.GRAVITY*e3 - self.disturbance_estimate)
 
         # -----------------------------------------------------------------------------#
         # update disturbance estimate
 
-        # derivatice of disturbance estimate (ELEMENT WISE PRODUCT)
-        d_est_dot  = self.GAINS_INTEGRAL_ACTION*V_v
+        gains_integral_action    = numpy.array([self.integral_gain_xy ,self.integral_gain_xy ,self.integral_gain_z ])
+        max_disturbance_estimate = numpy.array([self.bound_integral_xy,self.bound_integral_xy,self.bound_integral_z])
+
+
+        disturbance_estimate_dot  = gains_integral_action*V_v
         # new disturbance estimate
-        self.d_est = self.d_est + d_est_dot*(t_new - self.t_old) 
-        # element-wise division
-        ratio      = self.d_est/self.MAX_DISTURBANCE_ESTIMATE
-        # saturate estimate just for safety (element wise multiplication)
-        self.d_est = self.MAX_DISTURBANCE_ESTIMATE*np.clip(ratio,1,-1)
-        # update old time
-        self.t_old = t_new
-        # -----------------------------------------------------------------------------#
+        disturbance_estimate = self.disturbance_estimate + disturbance_estimate_dot*delta_t
+        # saturate estimate just for safety (element wise bound)
+        self.disturbance_estimate = numpy.clip(disturbance_estimate,-1.0*max_disturbance_estimate,max_disturbance_estimate)
 
         return Full_actuation
 
     def input_and_gradient_of_lyapunov(self,ep,ev):
 
-        u_x,u_p,u_v,u_p_p,u_v_v,u_p_v,Vpv,VpvD,V_p,V_v_x,V_v_p,V_v_v = self.double_integrator_xy.output(ep[0],ev[0])
-        u_y,u_p,u_v,u_p_p,u_v_v,u_p_v,Vpv,VpvD,V_p,V_v_y,V_v_p,V_v_v = self.double_integrator_xy.output(ep[1],ev[1])
-        u_z,u_p,u_v,u_p_p,u_v_v,u_p_v,Vpv,VpvD,V_p,V_v_z,V_v_p,V_v_v = self.double_integrator_z.output(ep[2],ev[2])
+        u_xy,u_p_xy,u_v_xy,u_p_p_xy,u_v_v_xy,u_p_v_xy,Vpv_xy,VpvD_xy,V_p_xy,V_v_xy,V_v_p_xy,V_v_v_xy = self.double_integrator_xy.output(ep[0:2],ev[0:2])
+        u_z,u_p_z,u_v_z,u_p_p_z,u_v_v_z,u_p_v_z,Vpv_z,VpvD_z,V_p_z,V_v_z,V_v_p_z,V_v_v_z = self.double_integrator_z.output(ep[2],ev[2])
 
-        u   = numpy.array([u_x,u_y,u_z])
-        V_v = numpy.array([V_v_x,V_v_y,V_v_z])
+        u   = numpy.concatenate([u_xy,[u_z]])
+        V_v = numpy.concatenate([V_v_xy,[V_v_z]])
 
         return (u,V_v)

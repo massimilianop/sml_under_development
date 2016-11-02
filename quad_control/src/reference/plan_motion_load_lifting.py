@@ -21,8 +21,10 @@ class PlanXYMotionLoadLifting(js.Jsonable):
         '''
 
 
+# def sat(x):
+    # return 0.1*x/numpy.sqrt(x**2 + 0.1**2)
 def sat(x):
-    return 0.1*x/numpy.sqrt(x**2 + 0.1**2)
+    return x
 
 # def sat(x):
 #     return x
@@ -88,7 +90,7 @@ class PlanXYMotionLoadLiftingQI(PlanXYMotionLoadLifting):
         v_star_tilde = reference['velocity']
 
         # if numpy.linalg.norm(p_old - p_star_tilde) + numpy.linalg.norm(v_old - v_star_tilde) < 0.3:
-        if numpy.linalg.norm(p_old - p_star_tilde) < 0.2:
+        if numpy.linalg.norm(p_old - p_star_tilde) < 0.3:
             
             # direction of cable
             n = state['unit_vector']

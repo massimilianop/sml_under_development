@@ -257,19 +257,19 @@ class positionPlotPlugin(Plugin):
         # ---------------------------------------------- #  
         # channels
         self.Ch1plotvector = [0]*self.Size_Vector
-        self.Ch1curve = channelplotwidget.getPlotItem().plot(self.timevector,self.Ch1plotvector, name='U<sub>1</sub>')
+        self.Ch1curve = channelplotwidget.getPlotItem().plot(self.timevector,self.Ch1plotvector, name='WR')
         self.Ch1curve.setPen(pg.mkPen('r'))
 
         self.Ch2plotvector = [0]*self.Size_Vector
-        self.Ch2curve = channelplotwidget.getPlotItem().plot(self.timevector,self.Ch2plotvector, name='U<sub>2</sub>')
+        self.Ch2curve = channelplotwidget.getPlotItem().plot(self.timevector,self.Ch2plotvector, name='&#966;')
         self.Ch2curve.setPen(pg.mkPen('g'))
 
         self.Ch3plotvector = [0]*self.Size_Vector
-        self.Ch3curve = channelplotwidget.getPlotItem().plot(self.timevector,self.Ch3plotvector, name='U<sub>3</sub>')
+        self.Ch3curve = channelplotwidget.getPlotItem().plot(self.timevector,self.Ch3plotvector, name='&#952;')
         self.Ch3curve.setPen(pg.mkPen('b'))
 
         self.Ch4plotvector = [0]*self.Size_Vector
-        self.Ch4curve = channelplotwidget.getPlotItem().plot(self.timevector,self.Ch4plotvector, name='U<sub>4</sub>')
+        self.Ch4curve = channelplotwidget.getPlotItem().plot(self.timevector,self.Ch4plotvector, name='&#968; rate')
         self.Ch4curve.setPen(pg.mkPen('c'))
 
 

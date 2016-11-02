@@ -12,6 +12,8 @@ from quad_control.srv import SrvCreateJsonableObjectByStr,IrisPlusResetNeutral,I
 
 import argparse
 
+import collections
+
 
 import rospkg
 # get an instance of RosPack with the default search paths
@@ -102,6 +104,8 @@ class ChooseMissionPlugin(Plugin):
         # Add widget to the user interface
         #context.add_widget(self._widget)
 
+        self._widget.labelVehicle.setText("Vehicle = " + rospy.get_namespace())
+
         # ---------------------------------------------- #
         # ---------------------------------------------- #
 
@@ -123,6 +127,9 @@ class ChooseMissionPlugin(Plugin):
         # if item in list is clicked once, print corresponding message
         self._widget.available_mission_sequences.itemClicked.connect(self.print_sequence_mission_description)
 
+        
+        self._widget.textEdit_detailed_description.itemDoubleClicked.connect(self.print_mission_step_description)
+        self._widget.pushButtonUpdate.clicked.connect(self.modify_mission_step_description)
 
         self.reset_sequence_missions()
 
@@ -144,6 +151,59 @@ class ChooseMissionPlugin(Plugin):
         #getattr(self,name_tab).change_dictionary_of_options(self.__HeadClass.inner[inner_key])
         self._widget.tabWidget.addTab(getattr(self,name_tab)._widget,name_tab)
         #self.mission_inner_keys.append(inner_key)
+
+    def print_mission_step_description(self):
+        
+        self._widget.mission_sequence_description.clear()
+
+        item_number = self._widget.textEdit_detailed_description.currentRow()
+
+        description = self.dic_sequence_services['list_sequence_services'][item_number]
+
+        simplified_dictionary = collections.OrderedDict()
+        simplified_dictionary['trigger_instant'] = description['trigger_instant']
+
+        dictionary = json.loads(description['inputs_service']['dictionary'])
+        if 'key' in dictionary.keys():
+            simplified_dictionary['input_string'] = json.loads(dictionary['input_string'])
+        if 'func_name' in dictionary.keys():
+            simplified_dictionary['input_to_func'] = dictionary['input_to_func']
+
+        string = json.dumps(simplified_dictionary, separators=(', \n', '\t: '))
+
+        string = string.replace('"[','[')
+        string = string.replace(']"',']')
+        string = string.replace('{','{\n')
+        string = string.replace('}','\n}')
+        for i in range(10):
+            string = string.replace(', \n'+str(i),', '+str(i))
+            string = string.replace(', \n'+str(-i),', '+str(-i))
+
+        self._widget.mission_sequence_description.setText(string)
+
+
+    def modify_mission_step_description(self):
+        
+        item_number = self._widget.textEdit_detailed_description.currentRow()
+
+        description = self.dic_sequence_services['list_sequence_services'][item_number]
+
+        string = self._widget.mission_sequence_description.toPlainText()
+
+        simplified_dictionary = json.loads(string)
+        
+        description['trigger_instant'] = simplified_dictionary['trigger_instant']
+
+        dictionary = json.loads(description['inputs_service']['dictionary'])
+        if 'key' in dictionary.keys():
+            dictionary['input_string'] = json.dumps(simplified_dictionary['input_string']) 
+        if 'func_name' in dictionary.keys():
+            dictionary['input_to_func'] = simplified_dictionary['input_to_func']
+
+        description['inputs_service']['dictionary'] = json.dumps(dictionary)
+
+        # since trigger_instant might have changed, print again
+        self.update_detailed_description()
 
     def select_chosen_sequence(self):
 
@@ -178,20 +238,32 @@ class ChooseMissionPlugin(Plugin):
 
     def update_detailed_description(self):
 
+        # # print detailed description
+        # self._widget.textEdit_detailed_description.clear()
+        # detailed_description = ""
+        # for item in self.dic_sequence_services['list_sequence_services']:
+        #     detailed_description += str(item['trigger_instant'])+": "
+        #     dictionary = item['inputs_service']['dictionary']
+        #     dictionary = json.loads(dictionary)
+        #     if 'key' in dictionary.keys():
+        #         detailed_description += dictionary['key'] +'\n'
+        #     if 'func_name' in dictionary.keys():
+        #         detailed_description += dictionary['func_name'] +'\n'
+
+        #self._widget.textEdit_detailed_description.setText(detailed_description)
+
         # print detailed description
         self._widget.textEdit_detailed_description.clear()
-        detailed_description = ""
         for item in self.dic_sequence_services['list_sequence_services']:
-            detailed_description += str(item['trigger_instant'])+": "
+            detailed_description = str(item['trigger_instant'])+": "
             dictionary = item['inputs_service']['dictionary']
             dictionary = json.loads(dictionary)
             if 'key' in dictionary.keys():
                 detailed_description += dictionary['key'] +'\n'
+                self._widget.textEdit_detailed_description.addItem(detailed_description)
             if 'func_name' in dictionary.keys():
                 detailed_description += dictionary['func_name'] +'\n'
-
-        self._widget.textEdit_detailed_description.setText(detailed_description)
-
+                self._widget.textEdit_detailed_description.addItem(detailed_description)
 
     def new_sequence(self):
 

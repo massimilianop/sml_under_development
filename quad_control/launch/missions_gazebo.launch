@@ -16,6 +16,34 @@
     <param name="trajectry_offset_z" type="double" value="0.0"/>
 
 
+    <!-- Iris 2 parameters -->
+    <param name="proportional_gain_xy" type="double" value="1.0"/>
+    <!-- <param name="proportional_gain_xy" type="double" value="6.0"/> -->
+    <param name="derivative_gain_xy" type="double" value="1.42"/>
+    <param name="integral_gain_xy" type="double" value="0.0"/>
+    <param name="bound_integral_xy" type="double" value="0.0"/>
+
+    <param name="natural_frequency_xy" type="double" value="2.0"/>
+    <param name="damping_xy" type="double" value="1.5"/>
+    <param name="position_saturation_xy" type="double" value="1.0"/>
+    <param name="velocity_saturation_xy" type="double" value="1.0"/>
+
+
+    <param name="proportional_gain_z" type="double" value="2.0"/>
+    <param name="derivative_gain_z" type="double" value="3.0"/>
+    <!-- <param name="integral_gain_z" type="double" value="0.4"/> -->
+    <!-- <param name="bound_integral_z" type="double" value="0.0"/> -->
+    <param name="integral_gain_z" type="double" value="0.0"/>
+    <param name="bound_integral_z" type="double" value="0.5"/>
+
+
+    <!-- load lifting gains -->
+    <param name="proportional_gain_xy_load_lifting" type="double" value="1.0"/>
+    <param name="derivative_gain_xy_load_lifting" type="double" value="1.42"/>
+    <param name="cable_angle_gain_load_lifting" type="double" value="1.0"/>
+    <param name="cable_angular_velocity_gain_xy_load_lifting" type="double" value="0.0"/>
+
+
     <!-- Default Yaw Controller -->
     <param name="ControllerDefault" type="str" value="SimplePIDController"/>
     <param name="DIControllerDefault" type="str" value="ComponentWise3DDIC"/>
@@ -46,7 +74,6 @@
     <param name="sigma_p" value="0.5"/> 
     <param name="sigma_v" value="0.5"/> 
 
-    <param name="throttle_neutral" value="1450"/> 
     <!-- <param name="quadrotor_mass" value="1.442"/> -->
     <param name="quadrotor_mass" value="1.56779"/>
     <!-- <param name="total_mass" type="double" value="1.56779"/> -->
@@ -64,12 +91,6 @@
     <param name="Throttle_neutral_sim" value="1484.0"/>  
     <param name="ACRO_RP_P_sim" value="4.5"/> 
     <param name="ktt_inner_loop" value="10.0"/> 
-
-
-    <!-- PARAMETERS THAT ARE COMMOM BETWEEN CONTROLLER AND SIMULATOR -->
-    <!-- see WEB: ARDUCOPTER DIFFERENT MODES PARAMETERS -->
-    <param name="MAX_ANGLE_DEG" value="45.0"/> 
-    <param name="MAX_PSI_SPEED_Deg" value="200.0"/> 
 
     <!-- GUI -->
     <!-- <node name="rqt_gui" pkg="gui" type="tabbedGUI"/> -->

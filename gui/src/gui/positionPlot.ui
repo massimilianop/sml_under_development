@@ -111,9 +111,9 @@
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_4">
              <item>
-              <widget class="QCheckBox" name="Ch2check">
+              <widget class="QCheckBox" name="Ch1check">
                <property name="text">
-                <string>channel 2</string>
+                <string>Weigth Ratio</string>
                </property>
                <property name="checked">
                 <bool>true</bool>
@@ -121,9 +121,9 @@
               </widget>
              </item>
              <item>
-              <widget class="QCheckBox" name="Ch4check">
+              <widget class="QCheckBox" name="Ch2check">
                <property name="text">
-                <string>channel 4</string>
+                <string>Roll (deg)</string>
                </property>
                <property name="checked">
                 <bool>true</bool>
@@ -133,7 +133,7 @@
              <item>
               <widget class="QCheckBox" name="Ch3check">
                <property name="text">
-                <string>channel 3</string>
+                <string>Pitch (deg)</string>
                </property>
                <property name="checked">
                 <bool>true</bool>
@@ -141,9 +141,9 @@
               </widget>
              </item>
              <item>
-              <widget class="QCheckBox" name="Ch1check">
+              <widget class="QCheckBox" name="Ch4check">
                <property name="text">
-                <string>channel 1</string>
+                <string>Yaw rate (deg/s)</string>
                </property>
                <property name="checked">
                 <bool>true</bool>

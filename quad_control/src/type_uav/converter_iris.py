@@ -31,10 +31,17 @@ class IrisPlusConverter(object):
     total_mass = rospy.get_param("total_mass",1.442)
     ):
 
-        self.force_z_median = uts.MedianFilter(10)
+        self.force_median = uts.MedianFilter3D(70)
         
+        # # Throttle neutral 
+        # self.throttle_neutral = throttle_neutral
+        # self.roll_neutral  = 1500
+        # self.pitch_neutral = 1500
+
         # Throttle neutral 
         self.throttle_neutral = throttle_neutral
+        self.roll_neutral  = rospy.get_param("roll_neutral_value",1500)
+        self.pitch_neutral = rospy.get_param("pitch_neutral_value",1500)
 
         # total mass
         self.total_mass = total_mass
@@ -44,6 +51,14 @@ class IrisPlusConverter(object):
         # rotation matrix initialization
         self.rotation_matrix = numpy.identity(3)
 
+        self.roll_compensation = rospy.get_param("iris_roll_gain",1.0)
+        self.pitch_compensation = rospy.get_param("iris_pitch_gain",1.0)
+
+        if rospy.get_param("complete_neutral_reset",False):
+            self.reset_k_trottle_neutral = self.complete_reset_k_trottle_neutral
+        else:
+            self.reset_k_trottle_neutral = self.incomplete_reset_k_trottle_neutral
+
     def set_mass(self,mass):
         self.total_mass = mass
         pass
@@ -51,26 +66,63 @@ class IrisPlusConverter(object):
     def get_k_throttle_neutral(self):
         return self.throttle_neutral
 
-    def reset_k_trottle_neutral(self):
+    def incomplete_reset_k_trottle_neutral(self):
         # if force > m*gravity, decrease neutral value
         # if force < m*gravity, increase neutral value
 
-        median_force = self.force_z_median.output()
-        rospy.logwarn('median force = '+ str(median_force))
+        median_force = self.force_median.output()
 
-        self.throttle_neutral = self.throttle_neutral*median_force/(self.total_mass*self.__GRAVITY)
+        median_force_z = median_force[2]
+        rospy.logwarn('median force = '+ str(median_force_z))
+
+        self.throttle_neutral = self.throttle_neutral*median_force_z/(self.total_mass*self.__GRAVITY)
 
         # for safety better bound this value
-        self.throttle_neutral = numpy.clip(self.throttle_neutral,1400,1600)
-        rospy.logwarn('new neutral value = ' + str(self.throttle_neutral) + ' in [1400,1600]')
-        return 
+        self.throttle_neutral = numpy.clip(self.throttle_neutral,1350,1600)
+        rospy.logwarn('new neutral value = ' + str(self.throttle_neutral) + ' in [1350,1600]')
+
+        return
+
+    def complete_reset_k_trottle_neutral(self):
+        # if force > m*gravity, decrease neutral value
+        # if force < m*gravity, increase neutral value
+
+        median_force = self.force_median.output()
+
+        median_force_z = median_force[2]
+        rospy.logwarn('median force = '+ str(median_force_z))
+
+        self.throttle_neutral = self.throttle_neutral*median_force_z/(self.total_mass*self.__GRAVITY)
+
+        # for safety better bound this value
+        self.throttle_neutral = numpy.clip(self.throttle_neutral,1350,1600)
+        rospy.logwarn('new neutral value = ' + str(self.throttle_neutral) + ' in [1350,1600]')
+
+
+        roll_desired_median,pitch_desired_median = self.roll_pitch(median_force)
+
+        MAX_PSI_SPEED_Deg = self.MAX_PSI_SPEED_Deg
+        MAX_PSI_SPEED_Rad = MAX_PSI_SPEED_Deg*numpy.pi/180.0
+
+        MAX_ANGLE_DEG = self.MAX_ANGLE_DEG
+        MAX_ANGLE_RAD = MAX_ANGLE_DEG*numpy.pi/180.0
+
+        self.roll_neutral = self.roll_neutral + self.roll_compensation*roll_desired_median*500.0/MAX_ANGLE_RAD
+        self.roll_neutral = numpy.clip(self.roll_neutral,1440,1560)
+        rospy.logwarn('new roll neutral value = ' + str(self.roll_neutral) + ' in [1440,1560]')
+
+        self.pitch_neutral =  self.pitch_neutral - self.pitch_compensation*pitch_desired_median*500.0/MAX_ANGLE_RAD
+        self.pitch_neutral = numpy.clip(self.pitch_neutral,1440,1560)
+        rospy.logwarn('new pitch neutral value = ' + str(self.pitch_neutral) + ' in [1440,1560]')
+
+        return
 
     def set_k_trottle_neutral(self,throttle_neutral):
         # setting throttle value
         self.throttle_neutral = throttle_neutral
         # for safety better bound this value
-        self.throttle_neutral = numpy.clip(self.throttle_neutral,1400,1600)
-        rospy.logwarn('settting neutral value to = ' + str(self.throttle_neutral) + ' in [1400,1600]')
+        self.throttle_neutral = numpy.clip(self.throttle_neutral,1350,1600)
+        rospy.logwarn('settting neutral value to = ' + str(self.throttle_neutral) + ' in [1350,1600]')
         return 
 
     def reset_parameters(self):
@@ -97,7 +149,7 @@ class IrisPlusConverter(object):
 
     def input_conveter(self,desired_3d_force,yaw_rate_desired):
 
-        self.force_z_median.update_data(desired_3d_force[2])
+        self.force_median.update_data(desired_3d_force)
 
         #---------------------------------------------------------------------#
         # third canonical basis vector
@@ -112,7 +164,10 @@ class IrisPlusConverter(object):
         # compensation the pilot must fo as the vehicles attitude changes
 
         # computing desired Throttle, desired roll angle, pitch angle, and desired yaw rate
+        # throttle will be smaller when tilted (compensates for adjustsments done onboard)
         Throttle = numpy.dot(desired_3d_force,throttle_unit_vector)
+        # TODO: remark here
+        # Throttle = numpy.linalg.norm(desired_3d_force)
 
         # this decreases the throtle, which will be increased (by internal controller)
         # I commented this out, because throtlled was being clipped at minimum (1000)
@@ -138,11 +193,11 @@ class IrisPlusConverter(object):
         # angles comand between 1000 and 2000 PWM
 
         # Roll
-        U[0]  =  1500.0 + roll_desired*500.0/MAX_ANGLE_RAD;    
+        U[0]  =  self.roll_neutral + self.roll_compensation*roll_desired*500.0/MAX_ANGLE_RAD;    
         # Pitch: 
         # ATTENTTION TO PITCH: WHEN STICK IS FORWARD PITCH,
         # pwm GOES TO 1000, AND PITCH IS POSITIVE 
-        U[1]  =  1500.0 - pitch_desired*500.0/MAX_ANGLE_RAD;    
+        U[1]  =  self.pitch_neutral - self.pitch_compensation*pitch_desired*500.0/MAX_ANGLE_RAD;    
 
         # psi angular speed 
         U[3]  =  1500.0 - yaw_rate_desired*500.0/MAX_PSI_SPEED_Rad;    
@@ -152,6 +207,23 @@ class IrisPlusConverter(object):
 
         # need to bound between 1000 and 2000; element-wise operation
         U     = numpy.clip(U,1000,2000) 
+
+        # # Roll
+        # U[0]  =  1500.0 + roll_desired*500.0/MAX_ANGLE_RAD;    
+        # # Pitch: 
+        # # ATTENTTION TO PITCH: WHEN STICK IS FORWARD PITCH,
+        # # pwm GOES TO 1000, AND PITCH IS POSITIVE 
+        # U[1]  =  1500.0 - pitch_desired*500.0/MAX_ANGLE_RAD;    
+
+        # # psi angular speed 
+        # U[3]  =  1500.0 - yaw_rate_desired*500.0/MAX_PSI_SPEED_Rad;    
+
+        # # REMARK: the throtle comes between 1000 and 2000 PWM
+        # U[2]  = Throttle*self.throttle_neutral/(self.__GRAVITY*self.total_mass);
+
+        # # need to bound between 1000 and 2000; element-wise operation
+        # U     = numpy.clip(U,1000,2000) 
+
 
         return U
 

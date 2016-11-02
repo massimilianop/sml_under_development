@@ -261,7 +261,7 @@ class Mission(js.Jsonable):
                 numbers = line.split(' ')
 
                 numbers = numbers[starting_point[0]:]
-                
+
                 times.append(float(numbers[0]))
 
                 positions_x.append(float(numbers[1]))
@@ -292,6 +292,9 @@ class Mission(js.Jsonable):
 
         # it is not bad to import it here, since plotting is done aposteriori
         import operator
+
+        times = map(operator.sub,times,len(times)*[times[0]])
+
         fig1 = plt.figure()
         plt.plot(times[1:], map(operator.sub,times[1:],times[0:-1]), 'r-', label=r'$\Delta t$')       
         plt.title('Time Interval (s)')
@@ -437,7 +440,7 @@ class Mission(js.Jsonable):
         out[0] = 100*(force_ratio/(total_weight) - 1)
 
         # second and third outputs are pitch and roll angles
-        out[1],out[2] = utility_functions.roll_and_pitch_from_full_actuation_and_yaw_rad(self.desired_3d_force,self.get_yaw())
+        out[1],out[2] = utility_functions.roll_and_pitch_from_full_actuation_and_yaw_rad(self.desired_3d_force,3.142/180.0*self.get_yaw())
         # angles are in degrees
         # roll
         out[1] *= 180.0/3.14159
@@ -486,7 +489,7 @@ import reference.yaw_trajectory
 YAW_TRAJECTORIES_DATABASE = reference.yaw_trajectory.database
 
 @js.inherit_methods_list_from_parents
-class TrajectoryTracking(Mission):
+class TrajectoryTrackingUAV(Mission):
 
     js.Jsonable.add_inner('controller',CONTROLLERS_DATABASE)
     js.Jsonable.add_inner('reference',TRAJECTORIES_DATABASE)
@@ -601,10 +604,8 @@ class TrajectoryTracking(Mission):
         return self.subscriber.get_uav_odometry()
 
     @js.add_to_methods_list
-    def print_test(self,a=2,b=3):
-        """descibe function here"""
+    def print_sum(self,a=1,b=1):
         print(a+b)
-        return
 
     def hold_position(self,position=numpy.zeros(3)):
         # dy default, desired trajectory is staying still in origin
@@ -634,7 +635,7 @@ import reference.yaw_trajectory
 YAW_TRAJECTORIES_DATABASE = reference.yaw_trajectory.database
 
 @js.inherit_methods_list_from_parents
-class LoadLifting(Mission):
+class LoadLiftingUAV(Mission):
 
 
     js.Jsonable.add_inner('controller',CONTROLLERS_DATABASE)
@@ -748,11 +749,12 @@ class LoadLifting(Mission):
 
 
 @js.inherit_methods_list_from_parents
-class LoadLiftingLTL(LoadLifting):
+class LoadLiftingLTLUAV(LoadLiftingUAV):
 
     def __init__(self):
         LoadLifting.__init__(self)
 
+    # "override" the parents method
     def compute_3d_force(self,time_instant):
 
         # getting the uav_odometry is delegated to the susbscriber
@@ -794,51 +796,43 @@ class FireflyGazebo():
     DATABASE = subscriber.FireflyGazeboSubscriber.database
 
     @js.add_to_database(default=True)
-    class TrajectoryTracking(TrajectoryTracking):
+    class TrajectoryTracking(TrajectoryTrackingUAV):
         def __init__(self):
             self.subscriber = FireflyGazebo.DATABASE['TrajectoryTracking']()
-            TrajectoryTracking.__init__(self)
+            TrajectoryTrackingUAV.__init__(self)
 
     @js.add_to_database()
-    class LoadLifting(LoadLifting):
+    class LoadLifting(LoadLiftingUAV):
         def __init__(self):
             self.subscriber = FireflyGazebo.DATABASE['LoadLifting']()
-            LoadLifting.__init__(self)
+            LoadLiftingUAV.__init__(self)
 
     @js.add_to_database()
-    class LoadLiftingLTL(LoadLiftingLTL):
+    class LoadLiftingLTL(LoadLiftingLTLUAV):
         def __init__(self):
             self.subscriber = FireflyGazebo.DATABASE['LoadLiftingLTL']()
-            LoadLiftingLTL.__init__(self)
+            LoadLiftingLTLUAV.__init__(self)
 
 class IrisRviz():
     DATABASE = subscriber.IrisRvizSubscriber.database
 
     @js.add_to_database(default=True)
-    class TrajectoryTracking(TrajectoryTracking):
+    class TrajectoryTracking(TrajectoryTrackingUAV):
         def __init__(self):
             self.subscriber = IrisRviz.DATABASE['TrajectoryTracking']()
-            TrajectoryTracking.__init__(self)
+            TrajectoryTrackingUAV.__init__(self)
 
     @js.add_to_database()
-    class LoadLifting(LoadLifting):
+    class LoadLifting(LoadLiftingUAV):
         def __init__(self):
             self.subscriber = IrisRviz.DATABASE['LoadLifting']()
-            LoadLifting.__init__(self)
+            LoadLiftingUAV.__init__(self)
 
 class Iris():
+
     DATABASE = subscriber.IrisSubscriber.database
 
-    @js.inherit_methods_list_from_parents
-    @js.add_to_database(default=True)
-    class TrajectoryTracking(TrajectoryTracking):
-
-        def __init__(self,
-        body_name = rospy.get_param('IRIS_BODY_NAME','Iris2')
-        ):
-            self.body_name = body_name
-            self.subscriber = Iris.DATABASE['TrajectoryTracking'](body_name = body_name)
-            TrajectoryTracking.__init__(self)
+    class IrisSubscriber():
 
         @js.add_to_methods_list
         def change_to_stabilize(self):
@@ -863,7 +857,9 @@ class Iris():
                 print('Minimum throtlle automatically set')
                 # set minimum throttle
                 DATABASE = controllers.fa_trajectory_tracking_controllers.fa_controller.database
-                self.controller = DATABASE['NeutalController']()
+                # THIS IS PROBLEMATIIC
+                # self.controller = DATABASE['NeutalController']()
+                self.change_inner_key('controller','NeutalController',"{}")
             else:
                 print('Minimum throtlle NOT automatically set')
 
@@ -880,8 +876,19 @@ class Iris():
             self.subscriber.see_all_mocap_bodies()
 
     @js.inherit_methods_list_from_parents
+    @js.add_to_database(default=True)
+    class TrajectoryTracking(TrajectoryTrackingUAV,IrisSubscriber):
+
+        def __init__(self,
+        body_name = rospy.get_param('IRIS_BODY_NAME','Iris2')
+        ):
+            self.body_name = body_name
+            self.subscriber = Iris.DATABASE['TrajectoryTracking'](body_name = body_name)
+            TrajectoryTrackingUAV.__init__(self)
+
+    @js.inherit_methods_list_from_parents
     @js.add_to_database()
-    class LoadLifting(LoadLifting):
+    class LoadLifting(LoadLiftingUAV,IrisSubscriber):
 
         def __init__(self,
         body_name = rospy.get_param('IRIS_BODY_NAME','Iris2'),
@@ -890,33 +897,23 @@ class Iris():
             self.body_name = body_name
             self.load_name = load_name
             self.subscriber = Iris.DATABASE['LoadLifting'](body_name=body_name,load_name=load_name)
-            LoadLifting.__init__(self)
+            LoadLiftingUAV.__init__(self)
 
-        @js.add_to_methods_list
-        def change_to_stabilize(self):
-            '''change to stabilize'''
-            self.subscriber.change_to_stabilize()
 
-        @js.add_to_methods_list
-        def change_to_land(self):
-            '''change to stabilize'''
-            self.subscriber.change_to_land()
+class NEO():
 
-        @js.add_to_methods_list
-        def change_to_acro(self):
-            '''change to stabilize'''
-            self.subscriber.change_to_acro()
+!!!    DATABASE = subscriber.NEOSubscriber.database
 
-        @js.add_to_methods_list
-        def arming_iris(self):
-            'Arm IRIS'
-            self.subscriber.arming_iris()
+    class NEOSubscriber():
+        pass
 
-        @js.add_to_methods_list
-        def unarming_iris(self):
-            'Unarm IRIS'
-            self.subscriber.unarming_iris()
+    @js.inherit_methods_list_from_parents
+    @js.add_to_database(default=True)
+    class TrajectoryTracking(TrajectoryTrackingUAV,NEOSubscriber):
 
-        @js.add_to_methods_list
-        def see_all_mocap_bodies(self):
-            self.subscriber.see_all_mocap_bodies()
+        def __init__(self,
+        body_name = rospy.get_param('IRIS_BODY_NAME','Iris2')
+        ):
+            self.body_name = body_name
+            self.subscriber = Iris.DATABASE['TrajectoryTracking'](body_name = body_name)
+            TrajectoryTrackingUAV.__init__(self)

@@ -3,14 +3,81 @@
     <include file="$(find quad_control)/launch/mocap_publisher.launch">
       <!-- all vars that included.launch requires must be set -->
       <!-- <arg name="hoge" value="fuga" /> -->
-    </include>    
+    </include>
 
     <!-- Iris 2 -->
-    <param name="IRIS_BODY_NAME" type="str" value="Iris2"/>
+    <!-- <param name="IRIS_BODY_NAME" type="str" value="Iris2"/> -->
     <param name="LOAD_BODY_NAME" type="str" value="Load1"/>
 
     <param name="quadrotor_mass" type="double" value="1.442"/>
-    <param name="total_mass" type="double" value="1.442"/>
+    <!-- no load -->
+    <!-- <param name="total_mass" type="double" value="1.442"/> -->
+
+        <!-- load lifting: cable length in meters -->
+    <param name="cable_length" value="0.8"/> 
+    <!-- load lifting: load mass in kg -->
+    <param name="load_mass" value="0.145"/>
+    <!-- with load -->
+    <param name="total_mass" type="double" value="1.587"/>
+
+
+    <!-- Iris 2 parameters -->
+    <param name="proportional_gain_xy" type="double" value="4.0"/>
+    <!-- <param name="proportional_gain_xy" type="double" value="6.0"/> -->
+    <param name="derivative_gain_xy" type="double" value="6.0"/>
+    <param name="integral_gain_xy" type="double" value="0.0"/>
+    <param name="bound_integral_xy" type="double" value="0.0"/>
+
+    <param name="natural_frequency_xy" type="double" value="2.0"/>
+    <param name="damping_xy" type="double" value="1.5"/>
+    <param name="position_saturation_xy" type="double" value="1.0"/>
+    <param name="velocity_saturation_xy" type="double" value="1.0"/>
+
+
+    <param name="proportional_gain_z" type="double" value="1.0"/>
+    <param name="derivative_gain_z" type="double" value="1.414"/>
+    <!-- <param name="integral_gain_z" type="double" value="0.4"/> -->
+    <!-- <param name="bound_integral_z" type="double" value="0.0"/> -->
+    <param name="integral_gain_z" type="double" value="0.0"/>
+    <param name="bound_integral_z" type="double" value="0.5"/>
+
+    <param name="natural_frequency_z" type="double" value="1.0"/>
+    <param name="damping_z" type="double" value="0.6"/>
+    <param name="position_saturation_z" type="double" value="0.5"/>
+    <param name="velocity_saturation_z" type="double" value="0.5"/>    
+
+    <!-- Iris 2 -->
+    <param name="complete_neutral_reset" type="bool" value="false"/>
+    <param name="throttle_neutral" type="double" value="1420"/>
+
+<!--     <param name="roll_neutral_value" type="double" value="1452"/>
+    <param name="pitch_neutral_value" type="double" value="1465"/> -->
+    <param name="roll_neutral_value" type="double" value="1450"/>
+    <param name="pitch_neutral_value" type="double" value="1526"/>
+
+    <param name="iris_roll_gain" type="double" value="1.0"/>
+    <param name="iris_pitch_gain" type="double" value="1.5"/>
+    
+    <!-- Iris 5 -->
+
+<!--     <param name="IRIS_BODY_NAME" type="str" value="Iris5"/>
+
+    <param name="complete_neutral_reset" type="bool" value="false"/>
+    <param name="throttle_neutral" type="double" value="1400"/>
+    <param name="roll_neutral_value" type="double" value="1440"/>
+    <param name="pitch_neutral_value" type="double" value="1515"/>
+    <param name="iris_roll_gain" type="double" value="1.2"/>
+    <param name="iris_pitch_gain" type="double" value="1.5"/> -->
+
+    <!-- load lifting gains -->
+    <param name="proportional_gain_xy_load_lifting" type="double" value="3.5"/>
+    <param name="derivative_gain_xy_load_lifting" type="double" value="5.5"/>
+    <param name="cable_angle_gain_load_lifting" type="double" value="-2.0"/>
+    <param name="cable_angular_velocity_gain_xy_load_lifting" type="double" value="0.0"/>
+    <param name="gain_integral_action_load_lifting" type="double" value="0.25"/>
+    <param name="max_disturbance_estimate_load_lifting" type="double" value="0.5"/>
+    
+
 
     <!-- Controller Node -->
 <!--     <node pkg="quad_control" name="plot_nodeasas" type="plot_experiment.py"  output="screen"/>
@@ -58,13 +125,9 @@
     <param name="sigma_p" value="0.5"/> 
     <param name="sigma_v" value="0.5"/> 
 
-    <param name="throttle_neutral" value="1450"/> 
     <!-- <param name="quadrotor_mass" value="1.442"/> -->
 
-    <!-- load lifting: cable length in meters -->
-    <param name="cable_length" value="0.6"/> 
-    <!-- load lifting: load mass in kg -->
-    <param name="load_mass" value="0.1"/>
+
 
     <!-- Simulator parameters -->
     <param name="gravity_sim" value="9.81"/>
@@ -82,7 +145,7 @@
     <!-- MAVROS -->
     <!-- In order to run mavros node, you need to have access to device connected to ttyUSB0, so you may have to change some permissions -->
 
-    <!-- 
+    
     <arg name="fcu_url" default="/dev/ttyUSB0:57600" />
     <arg name="gcs_url" default="" />
     <arg name="tgt_system" default="1" />
@@ -98,8 +161,10 @@
         <arg name="tgt_system" value="$(arg tgt_system)" />
         <arg name="tgt_component" value="$(arg tgt_component)" />
         <arg name="log_output" value="$(arg log_output)" />
-    </include>  
-     -->
+    </include>
+
+<!--     <param name="rc_serial_port" value="/dev/ttyACM0"/> 
+    <node name="rc_link" pkg="quad_control" type="rc_control.py" output="screen"/> -->
 
     <!-- GUI -->
     <!-- <node name="rqt_gui" pkg="gui" type="tabbedGUI"/> -->

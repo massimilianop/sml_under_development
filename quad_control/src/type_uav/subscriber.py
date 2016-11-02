@@ -44,12 +44,11 @@ class Subscriber(js.Jsonable):
 """Subscribers for Firefly in Gazebo"""
 
 from converter_firefly import RotorSConverter
-
 class FireflyGazeboSubscriber():
     """this is just a namespace"""
 
     # parent class
-    class FireflyGazeboSubscriber(Subscriber):
+    class FireflyGazeboSubscriberNested(Subscriber):
             
         @classmethod
         def description(cls):
@@ -65,7 +64,7 @@ class FireflyGazeboSubscriber():
 
     # add class to database
     @js.add_to_database(default=True)
-    class TrajectoryTracking(FireflyGazeboSubscriber):
+    class TrajectoryTracking(FireflyGazeboSubscriberNested):
 
         @classmethod
         def description(cls):
@@ -144,7 +143,7 @@ class FireflyGazeboSubscriber():
 
     # add class to database
     @js.add_to_database()
-    class LoadLifting(FireflyGazeboSubscriber):
+    class LoadLifting(FireflyGazeboSubscriberNested):
 
         @classmethod
         def description(cls):
@@ -241,6 +240,8 @@ class FireflyGazeboSubscriber():
 
         def get_uav_odometry(self):
             return self.uav_odometry
+
+        bla = 2
 
 
     # add class to database
@@ -503,6 +504,140 @@ class IrisSubscriber():
             """
             return description
 
+        # # TODO: this is not to be here
+        # @js.add_to_methods_list
+        # def set_min_throttle(self):
+        #     '''Ask for minimum throttle'''
+
+        #     #Change the flight mode on the Pixhawk flight controller
+        #     try:
+        #         # it waits for service for 2 seconds
+        #         rospy.wait_for_service('ServiceChangeController',1.0)
+
+        #         try:
+        #             AskForMinThrotlle = rospy.ServiceProxy('ServiceChangeController',SrvControllerChangeByStr)
+                    
+        #             answer = AskForMinThrotlle(controller_name = "NeutralController", parameters = "")
+        #             if answer.received:
+        #                 rospy.logwarn('Min Throttle')
+        #                 # return True
+        #             else:
+        #                 rospy.logwarn('Could not provide Service')
+        #                 # return False
+
+        #         except rospy.ServiceException as exc:
+        #             rospy.logwarn("Service did not process request: " + str(exc))
+
+        #     except rospy.ServiceException as exc:
+        #         rospy.logwarn("Service did not process request: " + str(exc))
+
+        # @js.add_to_methods_list
+        # def change_to_stabilize(self):
+        #     '''change to stabilize'''
+        #     self.set_flight_mode(MODE = 'STABILIZE')
+
+        # @js.add_to_methods_list
+        # def change_to_land(self):
+        #     '''change to stabilize'''
+        #     self.set_flight_mode(MODE = 'LAND')
+
+        # @js.add_to_methods_list
+        # def change_to_acro(self):
+        #     '''change to stabilize'''
+        #     self.set_flight_mode(MODE = 'ACRO')
+
+        # def set_flight_mode(self,MODE):
+        #     '''Set flight mode'''
+            
+        #     #Change the flight mode on the Pixhawk flight controller
+        #     try:
+        #         # it waits for service for 2 seconds
+        #         rospy.wait_for_service(service = '/'+self.body_name+'/'+'mavros/set_mode',timeout= 2.0)
+
+        #         try:
+        #             change_param = rospy.ServiceProxy(name = '/'+self.body_name+'/'+'mavros/set_mode',service_class = SetMode)
+        #             param=change_param(base_mode = 0,custom_mode=MODE)
+
+        #             if param.success:
+        #                 rospy.logwarn('Flight mode changed to '+MODE)
+        #                 # return True
+        #             else:
+        #                 rospy.logwarn('Could not change Flight mode')
+        #                 # return False
+
+        #         except rospy.ServiceException as exc:
+        #             rospy.logwarn("Service did not process request: " + str(exc))
+
+        #     except rospy.ServiceException as exc:
+        #         rospy.logwarn("Service did not process request: " + str(exc))
+
+
+
+        # @js.add_to_methods_list
+        # def arming_iris(self):
+        #     'Arm IRIS'
+
+        #     # change to minimum throttle first
+        #     try:
+
+        #         rospy.logwarn('Arming Quad ...')
+        #         rospy.wait_for_service(service = '/'+self.body_name+'/'+'mavros/cmd/arming',timeout = 2.0)
+
+        #         try:
+        #             arming = rospy.ServiceProxy(name = '/'+self.body_name+'/'+'mavros/cmd/arming',service_class = CommandBool)
+        #             arming_result=arming(value = True)
+
+        #             if arming_result.success:
+        #                 rospy.logwarn('Quad is Armed!!!!')
+        #                 # return True
+        #             else:
+        #                 rospy.logwarn('Cannot arm quad')
+        #                 # return False
+
+        #         except rospy.ServiceException as exc:
+        #             rospy.logwarn("Service did not process request: " + str(exc))
+
+        #     except rospy.ServiceException as exc:
+        #         rospy.logwarn("Service did not process request: " + str(exc))
+
+        # @js.add_to_methods_list
+        # def unarming_iris(self):
+        #     'Unarm IRIS'
+
+        #     try:
+
+        #         rospy.logwarn('Un-Arming Quad ...')
+        #         rospy.wait_for_service(service = '/'+self.body_name+'/'+'mavros/cmd/arming',timeout = 2.0)
+
+        #         try:
+        #             arming = rospy.ServiceProxy(name = '/'+self.body_name+'/'+'mavros/cmd/arming',service_class = CommandBool)
+        #             arming_result=arming(value = False)
+
+        #             if arming_result.success:
+        #                 rospy.logwarn('Quad is Un-Armed!!!!')
+        #                 # return True
+        #             else:
+        #                 rospy.logwarn('Cannot un-arm quad')
+        #                 # return False
+
+        #         except rospy.ServiceException as exc:
+        #             rospy.logwarn("Service did not process request: " + str(exc))
+
+        #     except rospy.ServiceException as exc:
+        #         rospy.logwarn("Service did not process request: " + str(exc))
+
+        # # TODO:
+        # # @js.add_to_methods_list
+        # # def get_state_iris(self):
+
+        # # # mavros_msgs/State
+
+        # # @js.add_to_methods_list
+        # # def see_all_mocap_bodies(self):
+        # #     print(self.Qs)
+        # #     print(self.Qs.find_available_bodies())
+        # #     return
+
         # TODO: this is not to be here
         @js.add_to_methods_list
         def set_min_throttle(self):
@@ -656,6 +791,8 @@ class IrisSubscriber():
             # Copy the parameters into self variables
             # Subscribe to the necessary topics, if any
 
+            self.body_name = body_name
+
             self.sub_odometry = rospy.Subscriber(body_name+'Odometry', Odometry, self.get_state_from_simulator)
 
             self.uav_odometry =  Odometry()
@@ -665,7 +802,7 @@ class IrisSubscriber():
             
         def __del__(self):
             # Unsubscribe from all the subscribed topics
-            self.sub_odometry.unregister()             
+            self.sub_odometry.unregister()
 
 
         # callback when simulator publishes states
@@ -725,7 +862,6 @@ class IrisSubscriber():
         ):
             # Copy the parameters into self variables
             # Subscribe to the necessary topics, if any
-
 
             self.sub_odometry = rospy.Subscriber(body_name+'Odometry', Odometry, self.get_state_from_simulator)
             self.sub_load_odometry = rospy.Subscriber(load_name+'Odometry', Odometry, self.update_load_odometry)

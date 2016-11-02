@@ -1,0 +1,14 @@
+python teensy_ppm.py
+
+see if blinks
+
+
+----------------------------------
+need to connect power supply to board
+
+5 and 12 V power supply for rc antenna
+
+power after plugged in
+
+------------------------------------------
+http://hintshop.ludvig.co.nz/show/persistent-names-usb-serial-devices/

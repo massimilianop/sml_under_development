@@ -547,7 +547,7 @@ class Jsonable:
     def object_combined_description(self):
         """Returns a string of the combined description of all jsonable objects (class + its inners)"""
 
-        if hasattr(self,"object_description"):
+        if hasattr(self,"description"):
             string = "<p>"+self.description()+"</p>"
         else:
             string = self.__class__.__name__+" has no method description(). IMPLEMENT IT"
@@ -703,17 +703,23 @@ def inherit_methods_list_from_parents(Class):
     and it appends the parents methods_list to the child methods_list
     """
 
-    frame = inspect.currentframe()
-    local_variables = frame.f_back.f_locals
- 
+    # frame = inspect.currentframe()
+    # local_variables = frame.f_back.f_locals
+
     ParentClasses = Class.__bases__
 
     for ParentClass in ParentClasses:
-        if hasattr(ParentClass,"methods_list"):
-            if "methods_list" in local_variables.keys():
-                local_variables['methods_list'] += ParentClass.methods_list
-            else:
-                local_variables['methods_list'] = ParentClass.methods_list
+
+        if hasattr(Class,"methods_list"):
+            if hasattr(ParentClass,"methods_list"):
+                # Class would inherit methods_list from parent, 
+                # but nmethods_list is now property of class
+                Class.methods_list += ParentClass.methods_list
+        else:
+            if hasattr(ParentClass,"methods_list"):
+                # Class would inherit methods_list from parent, 
+                # but nmethods_list is now property of class
+                setattr(Class,'methods_list',ParentClass.methods_list)
 
     # return Class
     return Class

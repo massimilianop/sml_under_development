@@ -5,6 +5,9 @@ from utilities import jsonable as js
 
 import numpy
 
+# for accessing the parameters database
+import rospy
+
 class DoubleIntegratorController(js.Jsonable):
     '''
     Controller for double integrator x_2dot = u(x_0dot,x_1dot)
@@ -224,11 +227,12 @@ class NDimensionalBoundedDIC(DoubleIntegratorController):
     def description(cls):
         return "Double-integrator bounded but not component-wise controller"
 
+
     def __init__(self,
-    natural_frequency       = 1.0,
-    damping                 = numpy.sqrt(2.0)/2.0,
-    position_saturation     = 1.0,
-    velocity_saturation     = 1.0,
+    natural_frequency       = rospy.get_param("natural_frequency_xy",1.0),
+    damping                 = rospy.get_param("damping_xy",numpy.sqrt(2.0)/2.0),
+    position_saturation     = rospy.get_param("position_saturation_xy",1.0),
+    velocity_saturation     = rospy.get_param("velocity_saturation_xy",1.0),
     size_di                 = 2
     ):
 
@@ -606,9 +610,8 @@ class NotComponentWise3DDIC(DoubleIntegratorController):
 #print con.output(zeros(3),zeros(3))
 #print con.output(zeros(3), zeros(3))
 
-
+# @js.add_to_database()
 @js.add_to_database(database_name='database_one_d',default=True)
-@js.add_to_database()
 class OneDimensionalBoundedDIC(DoubleIntegratorController): 
 
 
@@ -617,10 +620,10 @@ class OneDimensionalBoundedDIC(DoubleIntegratorController):
         return "One dimenisonal Double-integrator (bounded actuation)"
 
     def __init__(self,
-    natural_frequency       = 1.5,
-    damping                 = numpy.sqrt(2.0)/2.0,
-    position_saturation     = 1.0,
-    velocity_saturation     = 1.0
+    natural_frequency       = rospy.get_param("natural_frequency_z",1.5),
+    damping                 = rospy.get_param("damping_z",numpy.sqrt(2.0)/2.0),
+    position_saturation     = rospy.get_param("position_saturationy_z",0.5),
+    velocity_saturation     = rospy.get_param("velocity_saturation_z",0.5)
     ):
         
         DoubleIntegratorController.__init__(self,

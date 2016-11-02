@@ -264,7 +264,7 @@ class BacksteppingVectorThrustController(VectorThrustController):
 
 
 import controllers.double_integrator_controllers
-DI_CONTROLLERS_DATABASE = controllers.double_integrator_controllers.double_integrator_controller.database
+DI_CONTROLLERS_DATABASE_ONE_D = controllers.double_integrator_controllers.double_integrator_controller.database_one_d
 
 import controllers.quadruple_integrator_controllers.quadruple_integrator_controller
 QI_CONTROLLERS_DATABASE = controllers.quadruple_integrator_controllers.quadruple_integrator_controller.database
@@ -277,7 +277,7 @@ from utilities.utility_functions import skew as skew
 @js.add_to_database()
 class VectorThrustController(VectorThrustController):
 
-    js.Jsonable.add_inner('double_integrator_z',DI_CONTROLLERS_DATABASE)
+    js.Jsonable.add_inner('double_integrator_z',DI_CONTROLLERS_DATABASE_ONE_D)
     js.Jsonable.add_inner('quadruple_integrator_xy',QI_CONTROLLERS_DATABASE)
 
     @classmethod
@@ -388,7 +388,8 @@ class VectorThrustController(VectorThrustController):
                    1.0/n3**2*(u_z + g_0t[2])*dot(PP,dot(skew(e3), dot(outer(dot(skew(w),n),n) + outer(n,dot(skew(w),n)) ,w))) 
                
                
-        xi5 = xi3_t_t + xi3_t_x + xi3_x_t + xi3_x_x
+        # xi5 = xi3_t_t + xi3_t_x + xi3_x_t + xi3_x_x
+        xi5 = numpy.zeros(2)
 
         # control xy directions with quadruple integrator 
 
