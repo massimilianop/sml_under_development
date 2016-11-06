@@ -134,50 +134,6 @@ class QuadController():
             # if data is being saved, append mission header
             numpy.savetxt(self.file_handle, [string], fmt="%s")
 
-    def PublishToGui(self):
-
-        # WE ONLY PUBLIS TO TO GUI AT A CERTAIN FREQEUNCY
-        # WHICH IS NOT NECESSARILY THE FREQUENCY OF THE NODE
-        if self.PublishToGUI <= self.PublishToGUIBound:
-            # if we dont publish, we increase counter
-            self.PublishToGUI = self.PublishToGUI + 1
-        else:
-            # if we publish, we increase counter
-            self.PublishToGUI = 1
-
-            # create a message of type quad_state_and_cmd
-            st_cmd = quad_state_and_cmd()
-
-            # get current time
-            st_cmd.time  = rospy.get_time()
-
-            position = self.mission.get_position()
-            velocity = self.mission.get_velocity()
-
-            # state of quad comes from QUALISYS, or other sensor
-            st_cmd.x  = position[0]; st_cmd.y     = position[1]; st_cmd.z     = position[2]
-            st_cmd.vx = velocity[0]; st_cmd.vy    = velocity[1]; st_cmd.vz    = velocity[2]
-
-            euler_angle  = self.mission.get_euler_angles()
-
-            st_cmd.roll  = euler_angle[0]; st_cmd.pitch = euler_angle[1]; st_cmd.yaw   = euler_angle[2]
-            
-            ea_desired = self.mission.get_euler_angles_desired()            
-            st_cmd.roll_d  = ea_desired[0]; st_cmd.pitch_d = ea_desired[1]; st_cmd.yaw_d   = ea_desired[2]
-
-            position_desired = self.mission.get_position_desired()
-            velocity_desired = self.mission.get_velocity_desired()
-
-            st_cmd.xd    = position_desired[0]; st_cmd.yd    = position_desired[1]; st_cmd.zd    = position_desired[2]
-            st_cmd.vxd   = velocity_desired[0]; st_cmd.vyd   = velocity_desired[1]; st_cmd.vzd   = velocity_desired[2]
-
-            rc_input_to_quad = self.mission.get_input()
-            st_cmd.cmd_1 = rc_input_to_quad[0]; st_cmd.cmd_2 = rc_input_to_quad[1]; st_cmd.cmd_3 = rc_input_to_quad[2]; st_cmd.cmd_4 = rc_input_to_quad[3]
-
-            st_cmd.cmd_5 = 1500.0; st_cmd.cmd_6 = 1500.0; st_cmd.cmd_7 = 1500.0; st_cmd.cmd_8 = 1500.0
-
-            self.pub.publish(st_cmd)
-
     def control_compute(self):
 
         # node will be named quad_control (see rqt_graph)
