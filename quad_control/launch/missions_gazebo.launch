@@ -1,5 +1,8 @@
 <launch>
 
+    <!-- for the GUI -->
+    <param name="bound_counter_plot_uav_real_pose" type="int" value="10"/>
+
     <!-- Controller Node -->
 <!--     <node pkg="quad_control" name="plotting_node" type="plot_experiment.py"  output="screen"/> -->
 

@@ -1,4 +1,8 @@
 <launch>
+
+  <!-- remap topic name -->
+  <remap from="/firefly/ground_truth/odometry" to="uav_real_pose"/>
+
   <arg name="mav_name" default="firefly"/>
   <arg name="enable_logging" default="false" />
   <arg name="enable_ground_truth" default="true" />

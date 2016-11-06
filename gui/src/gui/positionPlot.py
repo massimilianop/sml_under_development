@@ -16,6 +16,11 @@ import numpy
 
 import subprocess
 
+import geometry_msgs.msg
+import nav_msgs.msg
+import mav_msgs.msg
+import tf
+
 from quad_control.msg import quad_state_and_cmd
 
 # import services defined in quad_control
@@ -50,6 +55,9 @@ class positionPlotPlugin(Plugin):
     # Need to know frequency of messages we are subscribing to 
     Frequency_Subscription = 10
 
+    data_uav_real_pose = pyqtSignal(nav_msgs.msg.Odometry)
+    data_uav_desired_pose = pyqtSignal(geometry_msgs.msg.Pose)
+    data_uav_input = pyqtSignal(mav_msgs.msg.RollPitchYawrateThrust)
 
     def __init__(self, context,namespace = None):
 
@@ -94,6 +102,9 @@ class positionPlotPlugin(Plugin):
         # commment this, otherwise form is included when gui is opened
         # Add widget to the user interface
         #context.add_widget(self._widget)
+
+        # uav total weight (kg)
+        self.uav_total_weight = rospy.get_param('uav_total_weight',1.0)
 
         # ---------------------------------------------- #
 
@@ -163,122 +174,130 @@ class positionPlotPlugin(Plugin):
         # self.timevector = [0]*self.Size_Vector
         self.timevector = [i*1.0/self.Frequency_Subscription for i in range(self.Size_Vector)]
 
-        
+        self.time_uav_real_pose    = [0]*self.Size_Vector
+        self.time_uav_desired_pose = [0]*self.Size_Vector
+        self.time_uav_input        = [0]*self.Size_Vector
+
         #Setting variables for each coordinate and channel
 
         # ---------------------------------------------- #  
         # positions x,y,z
         self.Xplotvector = [0]*self.Size_Vector
-        self.Xcurve = plotwidget.getPlotItem().plot(self.timevector,self.Xplotvector, name='x')
+        self.Xcurve = plotwidget.getPlotItem().plot([],[], name='x')
         self.Xcurve.setPen(pg.mkPen('r'))
         
         self.Yplotvector = [0]*self.Size_Vector
-        self.Ycurve = plotwidget.getPlotItem().plot(self.timevector,self.Yplotvector, name='y')
+        self.Ycurve = plotwidget.getPlotItem().plot([],[], name='y')
         self.Ycurve.setPen(pg.mkPen('g'))
 
         self.Zplotvector = [0]*self.Size_Vector
-        self.Zcurve = plotwidget.getPlotItem().plot(self.timevector,self.Zplotvector, name='z')
+        self.Zcurve = plotwidget.getPlotItem().plot([],[], name='z')
         self.Zcurve.setPen(pg.mkPen('b'))
 
 
         # ---------------------------------------------- #  
         # desired positions x,y,z
         self.Xdplotvector = [0]*self.Size_Vector
-        self.Xdcurve = plotwidget.getPlotItem().plot(self.timevector,self.Xdplotvector, name='x')
+        self.Xdcurve = plotwidget.getPlotItem().plot([],[], name='x')
         self.Xdcurve.setPen(pg.mkPen('r', style=PyQt4.QtCore.Qt.DashLine))
         
         self.Ydplotvector = [0]*self.Size_Vector
-        self.Ydcurve = plotwidget.getPlotItem().plot(self.timevector,self.Ydplotvector, name='y')
+        self.Ydcurve = plotwidget.getPlotItem().plot([],[], name='y')
         self.Ydcurve.setPen(pg.mkPen('g', style=PyQt4.QtCore.Qt.DashLine))
 
         self.Zdplotvector = [0]*self.Size_Vector
-        self.Zdcurve = plotwidget.getPlotItem().plot(self.timevector,self.Zdplotvector, name='z')
+        self.Zdcurve = plotwidget.getPlotItem().plot([],[], name='z')
         self.Zdcurve.setPen(pg.mkPen('b', style=PyQt4.QtCore.Qt.DashLine))        
 
 
         # ---------------------------------------------- #  
         # velocities x,y,z
         self.Xvelplotvector = [0]*self.Size_Vector
-        self.Xvelcurve = velplotwidget.getPlotItem().plot(self.timevector,self.Xvelplotvector, name='v<sub>x</sub>')
+        self.Xvelcurve = velplotwidget.getPlotItem().plot([],[], name='v<sub>x</sub>')
         self.Xvelcurve.setPen(pg.mkPen('r'))
         
         self.Yvelplotvector = [0]*self.Size_Vector
-        self.Yvelcurve = velplotwidget.getPlotItem().plot(self.timevector,self.Yvelplotvector, name='v<sub>y</sub>')
+        self.Yvelcurve = velplotwidget.getPlotItem().plot([],[], name='v<sub>y</sub>')
         self.Yvelcurve.setPen(pg.mkPen('g'))
 
         self.Zvelplotvector = [0]*self.Size_Vector
-        self.Zvelcurve = velplotwidget.getPlotItem().plot(self.timevector,self.Zvelplotvector, name='v<sub>z</sub>')
+        self.Zvelcurve = velplotwidget.getPlotItem().plot([],[], name='v<sub>z</sub>')
         self.Zvelcurve.setPen(pg.mkPen('b'))
 
         # ---------------------------------------------- #  
         # desired velocities x,y,z
         self.Xdvelplotvector = [0]*self.Size_Vector
-        self.Xdvelcurve = velplotwidget.getPlotItem().plot(self.timevector,self.Xdvelplotvector, name='v<sub>x</sub>')
+        self.Xdvelcurve = velplotwidget.getPlotItem().plot([],[], name='v<sub>x</sub>')
         self.Xdvelcurve.setPen(pg.mkPen('r', style=PyQt4.QtCore.Qt.DashLine))
         
         self.Ydvelplotvector = [0]*self.Size_Vector
-        self.Ydvelcurve = velplotwidget.getPlotItem().plot(self.timevector,self.Ydvelplotvector, name='v<sub>y</sub>')
+        self.Ydvelcurve = velplotwidget.getPlotItem().plot([],[], name='v<sub>y</sub>')
         self.Ydvelcurve.setPen(pg.mkPen('g', style=PyQt4.QtCore.Qt.DashLine))
 
         self.Zdvelplotvector = [0]*self.Size_Vector
-        self.Zdvelcurve = velplotwidget.getPlotItem().plot(self.timevector,self.Zdvelplotvector, name='v<sub>z</sub>')
+        self.Zdvelcurve = velplotwidget.getPlotItem().plot([],[], name='v<sub>z</sub>')
         self.Zdvelcurve.setPen(pg.mkPen('b', style=PyQt4.QtCore.Qt.DashLine))
 
         # ---------------------------------------------- #  
         #  IT ACCEPTS HTML CODE FOR WRITTING ANGLES
         # Euler angles
         self.Roll_plotvector = [0]*self.Size_Vector
-        self.Roll_curve = Anglesplotwidget.getPlotItem().plot(self.timevector,self.Roll_plotvector, name='&#966;')
+        self.Roll_curve = Anglesplotwidget.getPlotItem().plot([],[], name='&#966;')
         self.Roll_curve.setPen(pg.mkPen('r'))
         
         self.Pitch_plotvector = [0]*self.Size_Vector
-        self.Pitch_curve = Anglesplotwidget.getPlotItem().plot(self.timevector,self.Pitch_plotvector, name='&#952;')
+        self.Pitch_curve = Anglesplotwidget.getPlotItem().plot([],[], name='&#952;')
         self.Pitch_curve.setPen(pg.mkPen('g'))
 
         self.Yaw_plotvector = [0]*self.Size_Vector
-        self.Yaw_curve = Anglesplotwidget.getPlotItem().plot(self.timevector,self.Yaw_plotvector, name='&#968;')
+        self.Yaw_curve = Anglesplotwidget.getPlotItem().plot([],[], name='&#968;')
         self.Yaw_curve.setPen(pg.mkPen('b'))
-
 
         # ---------------------------------------------- #  
         # desired Euler angles
         self.Rolld_plotvector = [0]*self.Size_Vector
-        self.Rolld_curve = Anglesplotwidget.getPlotItem().plot(self.timevector,self.Rolld_plotvector, name='&#966;<sub>d</sub>')
+        self.Rolld_curve = Anglesplotwidget.getPlotItem().plot([],[], name='&#966;<sub>d</sub>')
         self.Rolld_curve.setPen(pg.mkPen('r', style=PyQt4.QtCore.Qt.DashLine))
         
         self.Pitchd_plotvector = [0]*self.Size_Vector
-        self.Pitchd_curve = Anglesplotwidget.getPlotItem().plot(self.timevector,self.Pitchd_plotvector, name='&#952;<sub>d</sub>')
+        self.Pitchd_curve = Anglesplotwidget.getPlotItem().plot([],[], name='&#952;<sub>d</sub>')
         self.Pitchd_curve.setPen(pg.mkPen('g', style=PyQt4.QtCore.Qt.DashLine))
 
         self.Yawd_plotvector = [0]*self.Size_Vector
-        self.Yawd_curve = Anglesplotwidget.getPlotItem().plot(self.timevector,self.Yawd_plotvector, name='&#968;<sub>d</sub>')
+        self.Yawd_curve = Anglesplotwidget.getPlotItem().plot([],[], name='&#968;<sub>d</sub>')
         self.Yawd_curve.setPen(pg.mkPen('b', style=PyQt4.QtCore.Qt.DashLine))    
 
         # ---------------------------------------------- #  
         # channels
         self.Ch1plotvector = [0]*self.Size_Vector
-        self.Ch1curve = channelplotwidget.getPlotItem().plot(self.timevector,self.Ch1plotvector, name='WR')
+        self.Ch1curve = channelplotwidget.getPlotItem().plot([],[], name='WR')
         self.Ch1curve.setPen(pg.mkPen('r'))
 
         self.Ch2plotvector = [0]*self.Size_Vector
-        self.Ch2curve = channelplotwidget.getPlotItem().plot(self.timevector,self.Ch2plotvector, name='&#966;')
+        self.Ch2curve = channelplotwidget.getPlotItem().plot([],[], name='&#966;')
         self.Ch2curve.setPen(pg.mkPen('g'))
 
         self.Ch3plotvector = [0]*self.Size_Vector
-        self.Ch3curve = channelplotwidget.getPlotItem().plot(self.timevector,self.Ch3plotvector, name='&#952;')
+        self.Ch3curve = channelplotwidget.getPlotItem().plot([],[], name='&#952;')
         self.Ch3curve.setPen(pg.mkPen('b'))
 
         self.Ch4plotvector = [0]*self.Size_Vector
-        self.Ch4curve = channelplotwidget.getPlotItem().plot(self.timevector,self.Ch4plotvector, name='&#968; rate')
+        self.Ch4curve = channelplotwidget.getPlotItem().plot([],[], name='&#968; rate')
         self.Ch4curve.setPen(pg.mkPen('c'))
-
-
 
         # ---------------------------------------------- #
         # THIS IS A NECESSARY MEASURE BECAUSE THE UPDATING OF DATA AND
         # THE SUBSCRIPTION RUN ON DIFFERENT THREADS
         self.combined_data.connect(self.update_data)
 
+        # self.data_uav_real_pose = pyqtSignal(nav_msgs.msg.Odometry)
+        self.data_uav_real_pose.connect(self.update_uav_real_pose)
+
+        # self.data_uav_desired_pose = pyqtSignal(geometry_msgs.msg.Pose)
+        self.data_uav_desired_pose.connect(self.update_uav_desired_pose)
+
+        # self.data_uav_input = pyqtSignal(mav_msgs.msg.RollPitchYawrateThrust)
+        self.data_uav_input.connect(self.update_uav_input)
         
         # ---------------------------------------------- #
         # counter for data saving
@@ -289,6 +308,10 @@ class positionPlotPlugin(Plugin):
         # counter for plotting
         self.counterPlot = 1
         self.counterBoundPlot = numpy.int(self.Period_Plot*self.Frequency_Subscription)
+
+
+        self.counter_plot_uav_real_pose = 1
+        self.bound_counter_plot_uav_real_pose = rospy.get_param('bound_counter_plot_uav_real_pose',10)
 
         # ---------------------------------------------- #
         # initial time: this will be used to offset to time to 0 
@@ -376,7 +399,6 @@ class positionPlotPlugin(Plugin):
         if self.counter == 1:
             self.timevector[:-1] = self.timevector[1:]
             self.timevector[-1]  = data.time - self.time0
-
         
         self.VariableOnUpdate(self.Xplotvector,data.x,self.Xcurve,self._widget.Xcheck)
         self.VariableOnUpdate(self.Yplotvector,data.y,self.Ycurve,self._widget.Ycheck)
@@ -447,14 +469,162 @@ class positionPlotPlugin(Plugin):
                 # clear plot 
                 PlotHandle.setData([],[])
 
+    def plot_update(self,time_vector,vector,new_data,plot_handle,widget_check_box):
+
+        vector[:-1] = vector[1:]
+        vector[-1]  = new_data
+
+        # plot if box for "x" component is ticked
+        if widget_check_box.isChecked():
+            plot_handle.setData(time_vector,vector)
+        else:
+            # clear plot 
+            plot_handle.setData([],[])
+
+
+    def update_uav_real_pose(self,msg = nav_msgs.msg.Odometry()):
+
+        time = self.time_uav_real_pose
+
+        x = msg.pose.pose.position.x
+        self.plot_update(time,self.Xplotvector,x,self.Xcurve,self._widget.Xcheck)
+        y = msg.pose.pose.position.y
+        self.plot_update(time,self.Yplotvector,y,self.Ycurve,self._widget.Ycheck)
+        z = msg.pose.pose.position.z
+        self.plot_update(time,self.Zplotvector,z,self.Zcurve,self._widget.Zcheck)
+        
+        vx = msg.twist.twist.linear.x
+        self.plot_update(time,self.Xvelplotvector,vx,self.Xvelcurve,self._widget.Xvelcheck)
+        vy = msg.twist.twist.linear.y
+        self.plot_update(time,self.Yvelplotvector,vy,self.Yvelcurve,self._widget.Yvelcheck)
+        vz = msg.twist.twist.linear.z
+        self.plot_update(time,self.Zvelplotvector,vz,self.Zvelcurve,self._widget.Zvelcheck)       
+    
+        qx = msg.pose.pose.orientation.x
+        qy = msg.pose.pose.orientation.y
+        qz = msg.pose.pose.orientation.z
+        qw = msg.pose.pose.orientation.w
+
+        euler = tf.transformations.euler_from_quaternion(
+            quaternion = (qx,qy,qz,qw),
+            axes='sxyz') 
+
+        roll = euler[0]*180.0/3.142
+        self.plot_update(time,self.Roll_plotvector,roll,self.Roll_curve,self._widget.Roll_check)
+        pitch = euler[1]*180.0/3.142
+        self.plot_update(time,self.Pitch_plotvector,pitch,self.Pitch_curve,self._widget.Pitch_check)
+        yaw = euler[2]*180.0/3.142
+        self.plot_update(time,self.Yaw_plotvector,yaw,self.Yaw_curve,self._widget.Yaw_check)
+
+    def update_uav_desired_pose(self,msg = geometry_msgs.msg.Pose()):
+
+        time = self.time_uav_desired_pose
+
+        x = msg.pose.pose.position.x
+        self.plot_update(time,self.Xdplotvector,x,self.Xdcurve,self._widget.Xdcheck)
+        y = msg.pose.pose.position.y
+        self.plot_update(time,self.Ydplotvector,y,self.Ydcurve,self._widget.Ydcheck)
+        z = msg.pose.pose.position.z
+        self.plot_update(time,self.Zdplotvector,z,self.Zdcurve,self._widget.Zdcheck)
+        
+        vx = msg.twist.twist.linear.x
+        self.plot_update(time,self.Xveldplotvector,vx,self.Xveldcurve,self._widget.Xveldcheck)
+        vy = msg.twist.twist.linear.y
+        self.plot_update(time,self.Yveldplotvector,vy,self.Yveldcurve,self._widget.Yveldcheck)
+        vz = msg.twist.twist.linear.z
+        self.plot_update(time,self.Zveldplotvector,vz,self.Zveldcurve,self._widget.Zveldcheck)       
+    
+        qx = msg.pose.pose.orientation.x
+        qy = msg.pose.pose.orientation.y
+        qz = msg.pose.pose.orientation.y
+        qw = msg.pose.pose.orientation.y
+
+        euler = tf.transformations.euler_from_quaternion(
+            quaternion = (qx,qy,qz,qw),
+            axes='sxyz') 
+
+        roll = euler[0]*180.0/3.142
+        self.plot_update(time,self.Rolld_plotvector,roll,self.Rolld_curve,self._widget.Rolld_check)
+        pitch = euler[1]*180.0/3.142
+        self.plot_update(time,self.Pitchd_plotvector,pitch,self.Pitchd_curve,self._widget.Pitchd_check)
+        yaw = euler[2]*180.0/3.142
+        self.plot_update(time,self.Yawd_plotvector,yaw,self.Yawd_curve,self._widget.Yawd_check)
+
+    def update_uav_input(self,msg = mav_msgs.msg.RollPitchYawrateThrust()):
+
+        time = self.time_uav_input
+
+        roll = msg.roll*180.0/3.142 # deg
+        self.plot_update(time,self.Ch1plotvector,roll,  self.Ch1curve,self._widget.Ch1check)
+        pitch  = msg.pitch*180.0/3.142 # deg
+        self.plot_update(time,self.Ch2plotvector,pitch, self.Ch2curve,self._widget.Ch2check)
+        yaw_rate = msg.yaw_rate*180.0/3.142 # deg/s
+        self.plot_update(time,self.Ch3plotvector,yaw_rate,self.Ch3curve,self._widget.Ch3check)
+        ratio  = 100*(1 - msg.thrust.z/self.uav_total_weight)
+        self.plot_update(time,self.Ch4plotvector,ratio ,self.Ch4curve,self._widget.Ch4check)
+
+        
+
+    def callback_uav_real_pose(self,msg = nav_msgs.msg.Odometry()):
+
+        # increase or reset counter plot data saving
+        if self.counter_plot_uav_real_pose <= self.bound_counter_plot_uav_real_pose:
+            self.counter_plot_uav_real_pose += 1
+        else:
+            self.counter_plot_uav_real_pose = 1
+
+            self.time_uav_real_pose[:-1] = self.time_uav_real_pose[1:]
+            self.time_uav_real_pose[-1]  = rospy.get_time() - self.time0
+
+            self.data_uav_real_pose.emit(msg)
+
+    def callback_uav_desired_pose(self,msg = geometry_msgs.msg.Pose()):
+
+        self.time_uav_desired_pose[:-1] = self.time_uav_desired_pose[1:]
+        self.time_uav_desired_pose[-1]  = rospy.get_time() - self.time0
+
+        self.data_uav_desired_pose.emit(msg)
+
+    def callback_uav_input(self,msg = mav_msgs.msg.RollPitchYawrateThrust()):
+        
+        self.time_uav_input[:-1] = self.time_uav_input[1:]
+        self.time_uav_input[-1]  = rospy.get_time() - self.time0
+
+        self.data_uav_input.emit(msg)
+
 
     def SetSubscription(self):
 
         if self._widget.ButtonSubscribe.isChecked():
-            self.sub = rospy.Subscriber(self.namespace+'quad_state_and_cmd', quad_state_and_cmd, self.callback)
+            #self.sub = rospy.Subscriber(self.namespace+'quad_state_and_cmd', quad_state_and_cmd, self.callback)
+        
+            # self.subscriber_uav_real_pose = rospy.Subscriber(name       = 'uav_real_pose',
+            #                                                  data_class = geometry_msgs.msg.Pose,
+            #                                                  callback   = self.update_uav_real_pose)
+
+            self.subscriber_uav_real_pose = rospy.Subscriber(
+                name       = 'uav_real_pose',
+                data_class = nav_msgs.msg.Odometry,
+                callback   = self.callback_uav_real_pose)
+
+            self.subscriber_uav_desired_pose = rospy.Subscriber(
+                name       = 'uav_desired_pose',
+                data_class = geometry_msgs.msg.Pose,
+                callback   = self.callback_uav_desired_pose)
+
+            self.subscriber_uav_input = rospy.Subscriber(
+                name       = 'uav_input',
+                data_class = mav_msgs.msg.RollPitchYawrateThrust,
+                callback   = self.callback_uav_input)
+
         else:
+
+            self.subscriber_uav_real_pose.unregister()
+            self.subscriber_uav_desired_pose.unregister()
+            self.subscriber_uav_input.unregister()
+
             # unsubscribe to topic
-            self.sub.unregister()
+            #self.sub.unregister()
 
             # clear all plots 
             self.Xcurve.setData([],[])
