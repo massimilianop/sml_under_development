@@ -92,8 +92,6 @@ class SingleLoadTransportationController(js.Jsonable):
                 positions_x.append(float(numbers[0]))
                 positions_y.append(float(numbers[1]))
                 positions_z.append(float(numbers[2]))
-                
-                print(numbers[2])
 
                 velocities_x.append(float(numbers[3]))
                 velocities_y.append(float(numbers[4]))
