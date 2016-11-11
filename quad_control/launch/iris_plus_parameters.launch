@@ -1,6 +1,0 @@
-<launch>
-
-    <param name="MAX_ANGLE_DEG" value="45.0"/> 
-    <param name="MAX_PSI_SPEED_Deg" value="200.0"/> 
-
-</launch>
