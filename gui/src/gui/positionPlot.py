@@ -55,7 +55,7 @@ class positionPlotPlugin(Plugin):
     # Need to know frequency of messages we are subscribing to 
     Frequency_Subscription = 10
 
-    data_uav_real_pose = pyqtSignal(nav_msgs.msg.Odometry)
+    data_uav_real_odometry = pyqtSignal(nav_msgs.msg.Odometry)
     data_uav_desired_pose = pyqtSignal(geometry_msgs.msg.Pose)
     data_uav_input = pyqtSignal(mav_msgs.msg.RollPitchYawrateThrust)
 
@@ -104,7 +104,7 @@ class positionPlotPlugin(Plugin):
         #context.add_widget(self._widget)
 
         # uav total weight (kg)
-        self.uav_total_weight = rospy.get_param('uav_total_weight',1.0)
+        self.uav_total_weight = (rospy.get_param('uav_mass')+rospy.get_param('extra_mass'))*rospy.get_param('gravity')
 
         # ---------------------------------------------- #
 
@@ -174,7 +174,7 @@ class positionPlotPlugin(Plugin):
         # self.timevector = [0]*self.Size_Vector
         self.timevector = [i*1.0/self.Frequency_Subscription for i in range(self.Size_Vector)]
 
-        self.time_uav_real_pose    = [0]*self.Size_Vector
+        self.time_uav_real_odometry    = [0]*self.Size_Vector
         self.time_uav_desired_pose = [0]*self.Size_Vector
         self.time_uav_input        = [0]*self.Size_Vector
 
@@ -270,19 +270,19 @@ class positionPlotPlugin(Plugin):
         # ---------------------------------------------- #  
         # channels
         self.Ch1plotvector = [0]*self.Size_Vector
-        self.Ch1curve = channelplotwidget.getPlotItem().plot([],[], name='WR')
+        self.Ch1curve = channelplotwidget.getPlotItem().plot([],[], name='&#966;')
         self.Ch1curve.setPen(pg.mkPen('r'))
 
         self.Ch2plotvector = [0]*self.Size_Vector
-        self.Ch2curve = channelplotwidget.getPlotItem().plot([],[], name='&#966;')
+        self.Ch2curve = channelplotwidget.getPlotItem().plot([],[], name='&#952;')
         self.Ch2curve.setPen(pg.mkPen('g'))
 
         self.Ch3plotvector = [0]*self.Size_Vector
-        self.Ch3curve = channelplotwidget.getPlotItem().plot([],[], name='&#952;')
+        self.Ch3curve = channelplotwidget.getPlotItem().plot([],[], name='&#968; rate')
         self.Ch3curve.setPen(pg.mkPen('b'))
 
         self.Ch4plotvector = [0]*self.Size_Vector
-        self.Ch4curve = channelplotwidget.getPlotItem().plot([],[], name='&#968; rate')
+        self.Ch4curve = channelplotwidget.getPlotItem().plot([],[], name='WR')
         self.Ch4curve.setPen(pg.mkPen('c'))
 
         # ---------------------------------------------- #
@@ -290,8 +290,8 @@ class positionPlotPlugin(Plugin):
         # THE SUBSCRIPTION RUN ON DIFFERENT THREADS
         self.combined_data.connect(self.update_data)
 
-        # self.data_uav_real_pose = pyqtSignal(nav_msgs.msg.Odometry)
-        self.data_uav_real_pose.connect(self.update_uav_real_pose)
+        # self.data_uav_real_odometry = pyqtSignal(nav_msgs.msg.Odometry)
+        self.data_uav_real_odometry.connect(self.update_uav_real_odometry)
 
         # self.data_uav_desired_pose = pyqtSignal(geometry_msgs.msg.Pose)
         self.data_uav_desired_pose.connect(self.update_uav_desired_pose)
@@ -310,8 +310,11 @@ class positionPlotPlugin(Plugin):
         self.counterBoundPlot = numpy.int(self.Period_Plot*self.Frequency_Subscription)
 
 
-        self.counter_plot_uav_real_pose = 1
-        self.bound_counter_plot_uav_real_pose = rospy.get_param('bound_counter_plot_uav_real_pose',10)
+        self.counter_plot_uav_real_odometry = 1
+        self.bound_counter_plot_uav_real_odometry = rospy.get_param('bound_counter_plot_uav_real_odometry',10)
+
+        self.counter_plot_uav_input = 1
+        self.bound_counter_plot_uav_input = rospy.get_param('bound_counter_plot_uav_input',3)
 
         # ---------------------------------------------- #
         # initial time: this will be used to offset to time to 0 
@@ -482,9 +485,9 @@ class positionPlotPlugin(Plugin):
             plot_handle.setData([],[])
 
 
-    def update_uav_real_pose(self,msg = nav_msgs.msg.Odometry()):
+    def update_uav_real_odometry(self,msg = nav_msgs.msg.Odometry()):
 
-        time = self.time_uav_real_pose
+        time = self.time_uav_real_odometry
 
         x = msg.pose.pose.position.x
         self.plot_update(time,self.Xplotvector,x,self.Xcurve,self._widget.Xcheck)
@@ -565,18 +568,18 @@ class positionPlotPlugin(Plugin):
 
         
 
-    def callback_uav_real_pose(self,msg = nav_msgs.msg.Odometry()):
+    def callback_uav_real_odometry(self,msg = nav_msgs.msg.Odometry()):
 
         # increase or reset counter plot data saving
-        if self.counter_plot_uav_real_pose <= self.bound_counter_plot_uav_real_pose:
-            self.counter_plot_uav_real_pose += 1
+        if self.counter_plot_uav_real_odometry <= self.bound_counter_plot_uav_real_odometry:
+            self.counter_plot_uav_real_odometry += 1
         else:
-            self.counter_plot_uav_real_pose = 1
+            self.counter_plot_uav_real_odometry = 1
 
-            self.time_uav_real_pose[:-1] = self.time_uav_real_pose[1:]
-            self.time_uav_real_pose[-1]  = rospy.get_time() - self.time0
+            self.time_uav_real_odometry[:-1] = self.time_uav_real_odometry[1:]
+            self.time_uav_real_odometry[-1]  = rospy.get_time() - self.time0
 
-            self.data_uav_real_pose.emit(msg)
+            self.data_uav_real_odometry.emit(msg)
 
     def callback_uav_desired_pose(self,msg = geometry_msgs.msg.Pose()):
 
@@ -586,11 +589,18 @@ class positionPlotPlugin(Plugin):
         self.data_uav_desired_pose.emit(msg)
 
     def callback_uav_input(self,msg = mav_msgs.msg.RollPitchYawrateThrust()):
-        
-        self.time_uav_input[:-1] = self.time_uav_input[1:]
-        self.time_uav_input[-1]  = rospy.get_time() - self.time0
 
-        self.data_uav_input.emit(msg)
+        # increase or reset counter plot data saving
+        if self.counter_plot_uav_input <= self.bound_counter_plot_uav_input:
+            self.counter_plot_uav_input += 1
+        else:
+            self.counter_plot_uav_input = 1
+
+            self.time_uav_input[:-1] = self.time_uav_input[1:]
+            self.time_uav_input[-1]  = rospy.get_time() - self.time0
+
+            self.data_uav_input.emit(msg)
+
 
 
     def SetSubscription(self):
@@ -598,14 +608,14 @@ class positionPlotPlugin(Plugin):
         if self._widget.ButtonSubscribe.isChecked():
             #self.sub = rospy.Subscriber(self.namespace+'quad_state_and_cmd', quad_state_and_cmd, self.callback)
         
-            # self.subscriber_uav_real_pose = rospy.Subscriber(name       = 'uav_real_pose',
+            # self.subscriber_uav_real_odometry = rospy.Subscriber(name       = 'uav_real_odometry',
             #                                                  data_class = geometry_msgs.msg.Pose,
-            #                                                  callback   = self.update_uav_real_pose)
+            #                                                  callback   = self.update_uav_real_odometry)
 
-            self.subscriber_uav_real_pose = rospy.Subscriber(
-                name       = 'uav_real_pose',
+            self.subscriber_uav_real_odometry = rospy.Subscriber(
+                name       = 'uav_real_odometry',
                 data_class = nav_msgs.msg.Odometry,
-                callback   = self.callback_uav_real_pose)
+                callback   = self.callback_uav_real_odometry)
 
             self.subscriber_uav_desired_pose = rospy.Subscriber(
                 name       = 'uav_desired_pose',
@@ -613,13 +623,13 @@ class positionPlotPlugin(Plugin):
                 callback   = self.callback_uav_desired_pose)
 
             self.subscriber_uav_input = rospy.Subscriber(
-                name       = 'uav_input',
+                name       = 'uav_roll_pitch_yawrate_thrust',
                 data_class = mav_msgs.msg.RollPitchYawrateThrust,
                 callback   = self.callback_uav_input)
 
         else:
 
-            self.subscriber_uav_real_pose.unregister()
+            self.subscriber_uav_real_odometry.unregister()
             self.subscriber_uav_desired_pose.unregister()
             self.subscriber_uav_input.unregister()
 

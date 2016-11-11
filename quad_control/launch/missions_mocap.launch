@@ -1,5 +1,11 @@
 <launch>
 
+    <!-- Default Trajectory -->
+    <param name="trajectry_offset_x" type="double" value="0.0"/>
+    <param name="trajectry_offset_y" type="double" value="0.0"/>
+    <param name="trajectry_offset_z" type="double" value="0.0"/>
+
+
     <include file="$(find quad_control)/launch/mocap_publisher.launch">
       <!-- all vars that included.launch requires must be set -->
       <!-- <arg name="hoge" value="fuga" /> -->
@@ -146,7 +152,7 @@
     <!-- In order to run mavros node, you need to have access to device connected to ttyUSB0, so you may have to change some permissions -->
 
     
-    <arg name="fcu_url" default="/dev/ttyUSB0:57600" />
+<!--     <arg name="fcu_url" default="/dev/ttyUSB0:57600" />
     <arg name="gcs_url" default="" />
     <arg name="tgt_system" default="1" />
     <arg name="tgt_component" default="1" />
@@ -162,7 +168,7 @@
         <arg name="tgt_component" value="$(arg tgt_component)" />
         <arg name="log_output" value="$(arg log_output)" />
     </include>
-
+ -->
 <!--     <param name="rc_serial_port" value="/dev/ttyACM0"/> 
     <node name="rc_link" pkg="quad_control" type="rc_control.py" output="screen"/> -->
 

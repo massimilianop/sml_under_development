@@ -3,9 +3,6 @@
 
 import rospy
 
-# controller node publishes message of this type so that GUI can plot stuff
-from quad_control.msg import quad_state_and_cmd
-
 # import services defined in quad_control
 # SaveData is for saving data in txt file
 from quad_control.srv import *
@@ -14,9 +11,6 @@ from quad_control.srv import *
 from rospkg import RosPack
 
 import numpy
-
-# import missions.missions_database
-# MISSIONS_DATABASE = missions.missions_database.database2
 
 import type_uav.type_uav
 MISSIONS_DATABASE = type_uav.type_uav.database
@@ -29,14 +23,6 @@ class QuadController():
 
         # frequency of controlling action!!
         self.frequency = 35.0
-
-        # initialize counter for publishing to GUI
-        # we only publish when self.PublishToGUI =1
-        self.PublishToGUI = 1
-        # Frequency of publishing to GUI (Hz)
-        frequency_PubToGui = 10
-        # we reset counter when self.PublishToGUI >= PublishToGUIBound
-        self.PublishToGUIBound = int(self.frequency/frequency_PubToGui)
 
         # for saving data
         # determine ROS workspace directory
@@ -87,17 +73,32 @@ class QuadController():
         sequence_of_inners = dictionary["sequence_inner_key"]
 
         if sequence_of_inners:
+
             self.mission.change_inner_of_inner(**dictionary)
+            if rospy.get_param('playing_back',True):
+                self.message += "\n\n" + 'At ' + str(rospy.get_time() - self.message_time) + ' seconds'
+                dictionary = json.loads(req.dictionary)
+                sequence_of_inners = dictionary["sequence_inner_key"]      
+
+                jsonable = self.mission.get_inner(sequence_of_inners)
+                msg = jsonable.object_combined_description()
+                self.message += "\n\n" + msg
+
         else:
             # change mission, if sequence is empty
-            
+
             # mission name
             self.mission_name = dictionary["key"]
 
             # chosen class taken from dictionary
             MissionClass = MISSIONS_DATABASE[dictionary["key"]]
         
+            self.mission.to_do_before_finishing() 
             self.mission = MissionClass.from_string(dictionary["input_string"])            
+
+            if rospy.get_param('playing_back',True):
+                self.message += "\n\n" + 'At ' + str(rospy.get_time() - self.message_time) + ' seconds'
+                self.message += "\n\n" + self.mission.object_combined_description()
 
 
         self._add_header_mission()
@@ -112,9 +113,13 @@ class QuadController():
         # dictionary = '{"sequence_inner_key":"","func_name":"","input_to_func":""}'
         dictionary = json.loads(req.dictionary)
 
-        self.mission.call_method_inner_of_inner(**dictionary)
-
+        msg = self.mission.call_method_inner_of_inner(**dictionary)
+        
         self._add_header_mission()
+
+        if rospy.get_param('playing_back',True):
+            self.message += "\n\n" + 'At ' + str(rospy.get_time() - self.message_time) + ' seconds'
+            self.message += "\n\n" + str(msg)
 
         # return message to Gui, to let it know resquest has been fulfilled
         return SrvChangeJsonableObjectByStrResponse(received = True)     
@@ -138,9 +143,6 @@ class QuadController():
 
         # node will be named quad_control (see rqt_graph)
         rospy.init_node('quad_control', anonymous=True)
-
-        # message published by quad_control to GUI 
-        self.pub = rospy.Publisher('quad_state_and_cmd', quad_state_and_cmd, queue_size=10)
 
         #-----------------------------------------------------------------------#
         # TO SAVE DATA FLAG
@@ -167,6 +169,11 @@ class QuadController():
 
         rate = rospy.Rate(self.frequency)
 
+        if rospy.get_param('playing_back',True):
+            self.message_time = rospy.get_time()
+            self.message  = 'At 0 seconds:'
+            self.message += "\n\n" + self.mission.object_combined_description()
+
         self.emergency_flag = False
 
         while not rospy.is_shutdown():
@@ -186,13 +193,7 @@ class QuadController():
                 if not self.emergency_flag:
                     self.emergency_flag = True
                     self.mission.trigger_emergency()
-                    print('EMERGENGY TRIGGERED\n')
-                    print('EMERGENGY TRIGGERED\n')
-                    print('EMERGENGY TRIGGERED\n')
-                    print('EMERGENGY TRIGGERED\n')
-
-            # publish to GUI (it also contains publish state of Control to GUI)
-            self.PublishToGui()
+                    print(4*'EMERGENGY TRIGGERED\n')
             
             # go to sleep
             rate.sleep()
@@ -203,3 +204,10 @@ if __name__ == '__main__':
         AQuadController.control_compute()
     except rospy.ROSInterruptException:
         pass
+
+    if rospy.get_param('playing_back',True):
+        import pdfkit
+        pdfkit.from_string(AQuadController.message, "/home/pedrootao/SML_CODE/src/quad_control/experimental_data/data.pdf")
+        AQuadController.mission.print_all_plots("/home/pedrootao/SML_CODE/src/quad_control/experimental_data/data.pdf")
+        #AQuadController.mission.to_do_before_finishing()
+

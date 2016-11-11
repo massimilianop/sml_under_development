@@ -14,6 +14,7 @@ services_database['ServiceChangeSimulator'] = SrvChangeJsonableObjectByStr
 services_database['ServiceChangeSimulatorCallMethod'] = SrvChangeJsonableObjectByStr
 
 import json
+import std_msgs.msg
 
 # TODO: reply may have other fields
 def request_service(namespace,service_name_str,service_inputs_dic):
@@ -49,18 +50,25 @@ class ServiceTimeSequencer():
         # infinite trigger instant in sec (approx one hour) 
         self.infinity  = infinity
 
-    def handle_service_sequence(self,data):
+    def handle_service_sequence(self,data = std_msgs.msg._String.String()):
+        self.service_sequence = json.loads(data.data)
+        self.initial_instant  = rospy.get_time()
+        self.update()
+
+    def handle_service_sequence_with_publish(self,data = ServiceSequenceRequest(service_sequence = '')):
         """handle for when new sequence of services is received"""
 
+        self.pub_service_sequecer.publish(data.service_sequence)
+        
         # loads string with sequence of services (which is a list where each element is a dictionary)
         # and each dictionary is of the form dictionary = {'trigger_instant':'','service_name':'','inputs_service':''}
         # inputs to service is on its own also a dictionary
         self.service_sequence = json.loads(data.service_sequence)
         self.initial_instant  = rospy.get_time()
-
         self.update()
-
+        
         return ServiceSequenceResponse(received = True)
+        
 
     def update(self):
         """Update next_trigger_instant, service_name and inputs_to_service"""
@@ -95,8 +103,24 @@ class ServiceTimeSequencer():
         # name node as service_time_sequencer
         rospy.init_node('service_time_sequencer', anonymous=True)
 
-        # service for selecting desired trajectory
-        rospy.Service('ServiceSequencer', ServiceSequence, self.handle_service_sequence)
+        if rospy.get_param('playing_back',True):
+            # publish so that rosbag may be used to save this 
+            self.sub_service_sequecer = rospy.Subscriber(
+                name = 'ServiceSequencer',
+                data_class = std_msgs.msg.String,
+                callback = self.handle_service_sequence)
+        else:
+            # service for selecting desired trajectory
+            rospy.Service(
+                name = 'ServiceSequencer', 
+                service_class = ServiceSequence, 
+                handler = self.handle_service_sequence_with_publish)
+
+            # publish so that rosbag may be used to save this 
+            self.pub_service_sequecer = rospy.Publisher(
+                name = 'ServiceSequencer',
+                data_class = std_msgs.msg.String,
+                queue_size = 1)           
 
         rate = rospy.Rate(self.frequency)
 

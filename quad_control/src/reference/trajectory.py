@@ -10,6 +10,8 @@ import numpy as np
 
 import rospy
 
+import geometry_msgs.msg
+
 DEFAULT_OFFSET = np.array([
     rospy.get_param("trajectry_offset_x",0),
     rospy.get_param("trajectry_offset_y",0),
@@ -24,12 +26,26 @@ class Trajectory(js.Jsonable):
         return "<b>Abstract Trajectory</b> with 3D offset in (m) and rotation as [roll,pitch,yaw] in (deg)"
 
 
-    def __init__(self, offset=DEFAULT_OFFSET, rotation=np.zeros(3)):
+    def __init__(self, 
+        offset=DEFAULT_OFFSET, 
+        rotation=np.zeros(3)):
 
         self.offset = np.array(offset)
         self.rotation = np.array(rotation)
         self.rotation_matrix = uts.rot_from_euler_rad(self.rotation)
         #TODO change the names in the utility_functions module
+
+        if rospy.get_param('playing_back',True):
+            self.initialize_save_reference_position()
+            rospy.Subscriber(
+                name       = rospy.get_param('reference_position'),
+                data_class = geometry_msgs.msg.Vector3Stamped,
+                callback   = self.callback_save_reference_position)
+        else:
+            self.pub_reference_position = rospy.Publisher(
+                name       = rospy.get_param('reference_position'),
+                data_class = geometry_msgs.msg.Vector3Stamped,
+                queue_size = 1)
     
     def object_description(self):
         string = """
@@ -76,9 +92,67 @@ class Trajectory(js.Jsonable):
         #return pos_out, vel_out, acc_out, jrk_out, snp_out
         return np.concatenate([pos_out, vel_out, acc_out, jrk_out, snp_out])
         
-        
     def output(self, time):
-        return self.__add_offset_and_rotation(*self.desired_trajectory(time))
+        output = self.__add_offset_and_rotation(*self.desired_trajectory(time))
+
+        if not rospy.get_param('playing_back'):
+            msg = geometry_msgs.msg.Vector3Stamped()
+            msg.header.stamp = rospy.get_rostime()
+            msg.vector.x = output[0]
+            msg.vector.y = output[1]
+            msg.vector.z = output[2]
+            self.pub_reference_position.publish(msg)
+
+        return output
+
+    def initialize_save_reference_position(self):
+
+        self.times = []
+
+        self.px    = []
+        self.py    = []
+        self.pz    = []
+
+    def callback_save_reference_position(self, 
+        msg = geometry_msgs.msg.Vector3Stamped):
+                
+        self.times.append(float(msg.header.stamp.to_sec()))
+
+        self.px.append(float(msg.vector.x))
+        self.py.append(float(msg.vector.y))
+        self.pz.append(float(msg.vector.z))
+
+    def print_reference_position(self):
+        
+        if self.times:
+            # import matplotlib.pyplot as plt
+            import matplotlib
+            matplotlib.use('Agg')
+            from matplotlib import pyplot as plt
+
+            # it is not bad to import it here, since plotting is done aposteriori
+            # import operator
+            # times = map(operator.sub,self.times,len(self.times)*[self.times[0]])
+            times = self.times
+
+            fig1 = plt.figure()
+            plt.plot(times, self.px, 'r-', label=r'$x$')
+            plt.plot(times, self.py, 'g-', label=r'$y$')
+            plt.plot(times, self.pz, 'b-', label=r'$z$')
+            plt.title('Desired positions (m)')
+            plt.legend(loc='best')
+            plt.grid()
+
+            # one element tuple
+            return fig1,
+
+        else: 
+            print('No reference position messages')
+            # empty tuple of figures
+            return ()
+
+    def get_all_plots(self):
+        return self.print_reference_position()
 
 
 # """Test"""

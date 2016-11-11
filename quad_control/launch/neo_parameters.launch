@@ -1,0 +1,31 @@
+<launch>
+
+    <param name="gravity" value="9.81"/>
+
+    <!-- Iris 2 parameters -->
+    <param name="natural_frequency_xy" type="double" value="1.0"/>
+    <param name="damping_xy" type="double" value="0.7"/>
+    <param name="position_saturation_xy" type="double" value="1.0"/>
+    <param name="velocity_saturation_xy" type="double" value="1.0"/>
+    <param name="integral_gain_xy" type="double" value="0.0"/>
+    <param name="bound_integral_xy" type="double" value="0.0"/>
+
+
+    <param name="natural_frequency_z" type="double" value="1.4"/>
+    <param name="damping_z" type="double" value="1.0"/>
+    <!-- <param name="integral_gain_z" type="double" value="0.4"/> -->
+    <!-- <param name="bound_integral_z" type="double" value="0.0"/> -->
+    <param name="integral_gain_z" type="double" value="0.0"/>
+    <param name="bound_integral_z" type="double" value="0.5"/>
+
+
+    <!-- load lifting gains -->
+    <param name="proportional_gain_xy_load_lifting" type="double" value="1.0"/>
+    <param name="derivative_gain_xy_load_lifting" type="double" value="1.42"/>
+    <param name="cable_angle_gain_load_lifting" type="double" value="1.0"/>
+    <param name="cable_angular_velocity_gain_xy_load_lifting" type="double" value="0.0"/>
+
+    <param name="uav_mass" value="1.56779"/>
+    <param name="extra_mass" type="double" value="0.0"/>
+
+</launch>

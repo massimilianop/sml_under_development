@@ -4,6 +4,7 @@
 import json
 import inspect
 import numpy as np
+import os
 
 import collections
 
@@ -412,6 +413,7 @@ class Jsonable:
             if key in dictionary_of_classes.keys():
                 Class  = dictionary_of_classes[key]
                 class_object = Class.from_string(input_string)
+                getattr(self,inner_key).to_do_before_finishing()
                 setattr(self,inner_key,class_object)
                 # TODO: there should always exist constructing_dic
                 if hasattr(self,"constructing_dic"):
@@ -421,6 +423,31 @@ class Jsonable:
         else:
             print("WARNING: " + self.__class__.__name__ + "has no" + inner_key)
             return
+
+    def to_do_before_finishing(self):
+        self.individual_to_do_before_finishing()
+        for arg in self.inner.keys():
+            getattr(self,arg).to_do_before_finishing()
+    def individual_to_do_before_finishing(self):
+        pass
+
+    def get_inner(self,sequence_inner_key):
+
+        inner_key = sequence_inner_key.pop(0)
+
+        if sequence_inner_key:
+            if hasattr(self,inner_key): 
+                return getattr(self,inner_key).get_inner(sequence_inner_key)
+            else:
+                print("WARNING: " + self.__class__.__name__ + "has no" + inner_key)
+            return
+        else:
+            if hasattr(self,inner_key):
+                return getattr(self,inner_key)
+            else:
+                print("WARNING: " + self.__class__.__name__ + "has no" + inner_key)
+                return None
+
 
     def change_inner_of_inner(self,sequence_inner_key,key,input_string):
         
@@ -441,10 +468,10 @@ class Jsonable:
 
         if sequence_inner_key:
             inner_key = sequence_inner_key.pop(0)
-            getattr(self,inner_key).call_method_inner_of_inner(sequence_inner_key,func_name,input_to_func)
+            return getattr(self,inner_key).call_method_inner_of_inner(sequence_inner_key,func_name,input_to_func)
         else:
             # if sequence is empty, method is of self
-            getattr(self,func_name)(**input_to_func)
+            return getattr(self,func_name)(**input_to_func)
 
     def get_parameters(self):
         """Child classes redefine this
@@ -614,6 +641,73 @@ class Jsonable:
 
         return figures
 
+    def combine_all_plots(self):
+        '''explain'''
+
+        if hasattr(self,'get_all_plots'):
+            figures = self.get_all_plots()
+        else:
+            #print(self.__class__.__name__ + 'has no plots')
+            figures = ()
+
+        # TODO: the order of the inners may be different from get_complete_data
+        # changed inner from dictionary to ordered dictionary
+        for arg in self.inner.keys():
+            figures+=getattr(self,arg).combine_all_plots()
+
+        return figures
+
+    def print_all_plots(self,file_name = ""):
+    #def print_all_plots(self,file_name = std_msgs.msg.String()):
+
+        import matplotlib.backends.backend_pdf
+        from PyPDF2 import PdfFileMerger, PdfFileReader 
+        from matplotlib import pyplot as plt
+
+        merger = PdfFileMerger()
+        merger.append(PdfFileReader(file(file_name,"rb")))
+        fig = plt.figure()
+        pdf = matplotlib.backends.backend_pdf.PdfPages(file_name)
+
+        for fig in self.combine_all_plots():
+            pdf.savefig(fig)
+
+        plt.close("all")
+        pdf.close()
+
+        merger.append(PdfFileReader(file_name,"rb"))
+        merger.write(file_name)
+
+    def print_plots(self, tuple_of_figures = (), file_name = ""):
+    #def print_all_plots(self,file_name = std_msgs.msg.String()):
+
+        import matplotlib.backends.backend_pdf
+        from matplotlib import pyplot as plt
+        #import os
+
+        fig = plt.figure()
+        if os.path.isfile(file_name):
+            from PyPDF2 import PdfFileMerger, PdfFileReader 
+            merger = PdfFileMerger()
+            merger.append(PdfFileReader(file(file_name,"rb")))
+            pdf = matplotlib.backends.backend_pdf.PdfPages(file_name)
+
+            for fig in tuple_of_figures:
+                pdf.savefig(fig)
+
+            plt.close("all")
+            pdf.close()
+
+            merger.append(PdfFileReader(file_name,"rb"))
+            merger.write(file_name)
+        else:
+            pdf = matplotlib.backends.backend_pdf.PdfPages(file_name)
+
+            for fig in tuple_of_figures:
+                pdf.savefig(fig)
+
+            plt.close("all")
+            pdf.close()
 
 ###############
 # TESTING

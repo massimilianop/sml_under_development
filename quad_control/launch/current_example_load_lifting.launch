@@ -1,5 +1,40 @@
 <launch>
 
+  <arg name="uav_odometry" value="uav_odometry"/>
+  <arg name="reference_position" value="reference_position"/>
+
+  <arg name="fa_disturbance_estimate" value="fa_disturbance_estimate"/>
+
+  <arg name="load_odometry" value="load_odometry"/>
+
+  <arg name="playing_back" default="false"/>
+  <arg name="record" default="true" />
+
+  <group unless="$(arg playing_back)">
+
+    <node pkg="rosbag" type="record" name="rosbag_record"
+      args="-o $(find quad_control)/experimental_data/rosbag/file /ServiceSequencer $(arg uav_odometry) uav_roll_pitch_yawrate_thrust $(arg fa_disturbance_estimate) $(arg reference_position)"
+      if="$(arg record)"/>
+
+
+    <!-- <include file="$(find quad_control)/launch/mav_with_load_example.launch"> -->
+      <!-- all vars that included.launch requires must be set -->
+      <!-- <arg name="uav_odometry" value="$(arg uav_odometry)"/> -->
+      <!-- <arg name="load_odometry" value="$(arg load_odometry)"/> -->
+    <!-- </include> -->
+
+    <include file="$(find quad_control)/launch/firefly_example.launch">
+      <arg name="uav_odometry" value="$(arg uav_odometry)"/>
+    </include>
+
+  </group>
+
+  <param name="uav_odometry" type="str" value="$(arg uav_odometry)"/>
+  <param name="reference_position" type="str" value="$(arg reference_position)"/>
+  <param name="fa_disturbance_estimate" type="str" value="$(arg fa_disturbance_estimate)"/>
+  <param name="load_odometry" type="str" value="$(arg load_odometry)"/>
+  <param name="playing_back" type="bool" value="$(arg playing_back)"/>
+
     <!-- mission_type: may be specified by used when launching; or when this file is included elsewhere -->
     
     <arg name="gazebo" default="False"/>

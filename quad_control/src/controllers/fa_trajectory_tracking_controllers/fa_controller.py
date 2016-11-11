@@ -11,82 +11,47 @@ import rospy
 
 from utilities import jsonable as js
 
+import nav_msgs.msg
+import geometry_msgs.msg
+
 class FAController(js.Jsonable):
 
     
     @classmethod
     def description(cls):
         return "Controller for **fully actuated** quadrotor model"
-        
-    def __str__(self):
-        return self.description()
-        
-    def get_mass(self):
-        return NotImplementedError()
-
-    @classmethod
-    def get_data_size(self):
-        return 3
-
-    def get_data(self):
-        """Get all data relevant to the mission
-        from this data, mission should be able to do data post-analysis, 
-        like ploting or computing average errors
-        """        
-        default_array = self.disturbance_estimate.tolist()
-        
-        # default_array = np.concatenate([default_array,self.get_complementary_data()])
-        return default_array
-
-    # despite not saving anything, we can plot the rc commands
-    # based on info saving by mission
-    @classmethod
-    def plot_from_string(cls, string,starting_point):
-
-        #plots
-        # import matplotlib.pyplot as plt
-        import matplotlib
-        matplotlib.use('Agg')
-        from matplotlib import pyplot as plt
-
-        times       = []
-        
-        disturbance_estimate_x = []
-        disturbance_estimate_y = []
-        disturbance_estimate_z = []
-
-        for line in string.split('\n'):
-            # ignore empty lines 
-            if line:
-                numbers = line.split(' ')
-
-                # print(numbers)
-                times.append(float(numbers[0]))
-
-                numbers = numbers[starting_point[0]:]
-
-                disturbance_estimate_x.append(float(numbers[0]))
-                disturbance_estimate_y.append(float(numbers[1]))
-                disturbance_estimate_z.append(float(numbers[2]))
-                
-                #yaw_rates.append(float(numbers[13]))
-
-        # it is not bad to import it here, since plotting is done aposteriori
-        import operator
-        times = map(operator.sub,times,len(times)*[times[0]])
-
-        fig1 = plt.figure()
-        plt.plot(times, disturbance_estimate_x, 'r-', label=r'$F_x$')
-        plt.plot(times, disturbance_estimate_y, 'g-', label=r'$F_y$')
-        plt.plot(times, disturbance_estimate_z, 'b-', label=r'$F_z$')
-        plt.title('Disturbance estimate')
-        plt.legend(loc='best')
-        plt.grid()
-
-        # one element tuple
-        return fig1,
 
 
+def position_and_velocity_from_odometry(odometry):
+    x = np.array([odometry.pose.pose.position.x,\
+                  odometry.pose.pose.position.y,\
+                  odometry.pose.pose.position.z])
+
+    # TODO: naming of child_frame_id
+    if odometry.child_frame_id == 'firefly/base_link':
+
+        # velocity is in the body reference frame
+        v_body = np.array([odometry.twist.twist.linear.x,\
+                           odometry.twist.twist.linear.y,\
+                           odometry.twist.twist.linear.z])
+
+        quaternion = np.array([odometry.pose.pose.orientation.x,\
+                               odometry.pose.pose.orientation.y,\
+                               odometry.pose.pose.orientation.z,\
+                               odometry.pose.pose.orientation.w])
+
+        # TODO
+        rotation_matrix  = uts.rot_from_quaternion(quaternion)
+
+        v = np.dot(rotation_matrix,v_body)
+
+    else:
+        # velocity is in the body reference frame
+        v = np.array([odometry.twist.twist.linear.x,\
+                      odometry.twist.twist.linear.y,\
+                      odometry.twist.twist.linear.z])
+
+    return x,v
 
 @js.add_to_database(default=True)
 class SimplePIDController(FAController):
@@ -96,16 +61,16 @@ class SimplePIDController(FAController):
     def description(cls):
         return "PID Controller, with saturation on integral part"
 
-    def __init__(self,              \
-    proportional_gain_xy = rospy.get_param("proportional_gain_xy",6.0), \
-    derivative_gain_xy   = rospy.get_param("derivative_gain_xy",2*1.6*numpy.sqrt(6.0)), \
-    integral_gain_xy     = rospy.get_param("integral_gain_xy",0.0), \
-    bound_integral_xy    = rospy.get_param("bound_integral_xy",0.0), \
-    proportional_gain_z  = rospy.get_param("proportional_gain_z",1.0), \
-    derivative_gain_z    = rospy.get_param("derivative_gain_z",numpy.sqrt(2*1.0)), \
-    integral_gain_z      = rospy.get_param("integral_gain_z",0.0), \
+    def __init__(self,
+    proportional_gain_xy = rospy.get_param("natural_frequency_xy",1.0)**2,
+    derivative_gain_xy   = 2*rospy.get_param("damping_xy",0.7)*rospy.get_param("natural_frequency_xy",1.0),
+    integral_gain_xy     = rospy.get_param("integral_gain_xy",0.0),
+    bound_integral_xy    = rospy.get_param("bound_integral_xy",0.0),
+    proportional_gain_z  = rospy.get_param("natural_frequency_z",1.0)**2,
+    derivative_gain_z    = 2*rospy.get_param("damping_z",1.0)*rospy.get_param("natural_frequency_z",1.0),
+    integral_gain_z      = rospy.get_param("integral_gain_z",0.0),
     bound_integral_z     = rospy.get_param("bound_integral_z",0.0),
-    quad_mass            = rospy.get_param("total_mass",1.442)
+    quad_mass            = rospy.get_param("uav_mass",1.442) + rospy.get_param("extra_mass",0.0)
     ):
 
         self.proportional_gain_xy = proportional_gain_xy
@@ -131,7 +96,7 @@ class SimplePIDController(FAController):
     def object_description(self):
         string =  "<p>PID Controller, with saturation on integral part</p>"
         string += "<p>force(&#916t, p,pd) = " + str(self.quad_mass) +"*( pd<sup>(2)</sup> + u(p<sup>(0)</sup> - pd<sup>(0)</sup>,p<sup>(1)</sup> - pd<sup>(1)</sup>) + g e<sub>3</sub> - d<sup>est</sup>), where</p>"
-        string +="<ul>"
+        string += "<ul>"
         string += "<li>u<sub>xy</sub>(p,v) = -"+str(self.proportional_gain_xy)+"*p"+"-"+str(self.derivative_gain_xy)+"*v"+"</li>"
         string += "<li>u<sub>z</sub>(p,v) = -"+str(self.proportional_gain_z)+"*p"+"-"+str(self.derivative_gain_z)+"*v"+"</li>"
         string += "<li>d<sub>xy</sub><sup>est(1)</sup> = "+str(self.integral_gain_xy)+"*(kp/2*ep + ev)"+"</li>"
@@ -148,16 +113,20 @@ class SimplePIDController(FAController):
         string += "\nDerivative gain xy: " + str(self.derivative_gain_xy)
         return string
 
+    def output(self, 
+        time_instant = 0.0,
+        uav_odometry = nav_msgs.msg.Odometry(),
+        reference = np.zeros(6)):
 
-    def output(self, delta_t, state, reference):
+        x,v = position_and_velocity_from_odometry(uav_odometry)
 
         # third canonical basis vector
         e3 = numpy.array([0.0,0.0,1.0])        
         
         #--------------------------------------#
         # position and velocity
-        x  = state[0:3]
-        v  = state[3:6]
+        #x  = state[0:3]
+        #v  = state[3:6]
         # thrust unit vector and its angular velocity
         # R  = state[6:15]; R  = numpy.reshape(R,(3,3))
 
@@ -223,7 +192,6 @@ class SimplePIDController(FAController):
         self.disturbance_estimate[1] = 0.0
         return
 
-
     def reset_estimate_z(self):
         self.disturbance_estimate[2] = 0.0
         return         
@@ -237,7 +205,7 @@ class NeutalController(FAController):
         return "Do nothing"
 
     def __init__(self,              \
-    quad_mass = rospy.get_param("quadrotor_mass",1.442)
+    quad_mass = rospy.get_param("uav_mass",1.442)
     ):
         #TODO get from utilities?
         self.MASS = quad_mass
@@ -251,12 +219,15 @@ class NeutalController(FAController):
     def object_description(self):
         string =  "No nothing"
         return string
-        
-    def output(self, delta_t, state, reference):
-        '''No actuation'''
 
-        Full_actuation = numpy.zeros(3)
-        return Full_actuation
+
+    def output(self, 
+        time_instant = 0.0,
+        uav_odometry = nav_msgs.msg.Odometry(),
+        reference = np.zeros(6)):
+
+        full_actuation = numpy.zeros(3)
+        return full_actuation
     
 # Test
 #string = SimpleBoundedIntegralPIDController.to_string()
@@ -397,7 +368,7 @@ class ControllerPIDXYAndZBounded(FAController):
     bound_integral_xy    = rospy.get_param("bound_integral_xy",0.0), \
     integral_gain_z      = rospy.get_param("integral_gain_z",0.0), \
     bound_integral_z     = rospy.get_param("bound_integral_z",0.0),
-    quad_mass            = rospy.get_param("total_mass",1.442)
+    quad_mass            = rospy.get_param("uav_mass",1.442) + rospy.get_param("extra_mass",0.0)
     ):
 
         self.add_inner_defaults()
@@ -415,6 +386,19 @@ class ControllerPIDXYAndZBounded(FAController):
         
         self.MASS = quad_mass
         self.GRAVITY = 9.81
+
+
+        if rospy.get_param('playing_back',True):
+            self.initialize_save_disturbance_estimate()
+            rospy.Subscriber(
+                name       = rospy.get_param('fa_disturbance_estimate'),
+                data_class = geometry_msgs.msg.Vector3Stamped,
+                callback   = self.callback_save_disturbance_estimate)
+        else:
+            self.pub_disturbance_estimate = rospy.Publisher(
+                name       = rospy.get_param('fa_disturbance_estimate'),
+                data_class = geometry_msgs.msg.Vector3Stamped,
+                queue_size = 1)
 
         self.disturbance_estimate   = numpy.array([0.0,0.0,0.0])
 
@@ -451,55 +435,67 @@ class ControllerPIDXYAndZBounded(FAController):
     def update_parameters(self,parameters):
         self.parameters = parameters
 
-
-    def output(self, time_instant, states, states_d):
-        # convert euler angles from deg to rotation matrix
-        ee = states[6:9]
-        R  = uts.rot_from_euler_deg(ee)
-        R  = numpy.reshape(R,9)
-        # collecting states
-        states  = numpy.concatenate([states[0:6],R])
+    def output(self, 
+        time_instant = 0.0,
+        uav_odometry = nav_msgs.msg.Odometry(),
+        reference = np.zeros(6)):
 
         # initiliaze initial time instant
         self.t_old = time_instant
 
         self.output = self.output_after_initialization
 
-        return self.controller(0.0,states,states_d)
+        output = self.controller(
+            delta_t = 0.0,
+            uav_odometry = uav_odometry,
+            reference = reference)
 
-    def output_after_initialization(self, time_instant, states, states_d):
-        # convert euler angles from deg to rotation matrix
-        ee = states[6:9]
-        R  = uts.rot_from_euler_deg(ee)
-        R  = numpy.reshape(R,9)
-        # collecting states
-        states  = numpy.concatenate([states[0:6],R])
+        # zero disturbance to start with
+        self.pub_disturbance_estimate.publish(geometry_msgs.msg.Vector3Stamped())
+
+        return output
+
+    def output_after_initialization(self, 
+        time_instant = 0.0,
+        uav_odometry = nav_msgs.msg.Odometry(),
+        reference = np.zeros(6)):
 
         delta_t = time_instant - self.t_old
 
-        output = self.controller(delta_t,states,states_d)
+        output = self.controller(
+            delta_t = delta_t,
+            uav_odometry = uav_odometry,
+            reference = reference)
 
         self.t_old = time_instant
+
+        disturbance_estimate_msg = geometry_msgs.msg.Vector3Stamped()
+        disturbance_estimate_msg.header.stamp = rospy.get_rostime()
+        disturbance_estimate_msg.vector.x = self.disturbance_estimate[0]
+        disturbance_estimate_msg.vector.y = self.disturbance_estimate[1]
+        disturbance_estimate_msg.vector.z = self.disturbance_estimate[2]
+        self.pub_disturbance_estimate.publish(disturbance_estimate_msg)
 
         return output
 
     # Controller
-    def controller(self,delta_t,states,states_d):
+    def controller(self, 
+        delta_t = 0.0,
+        uav_odometry = nav_msgs.msg.Odometry(),
+        reference = np.zeros(9)):
+
          
+        # position and velocity
+        x,v = position_and_velocity_from_odometry(uav_odometry)
+
         # third canonical basis vector
         e3 = numpy.array([0.0,0.0,1.0])        
-        
-        #--------------------------------------#
-        # position and velocity
-        x  = states[0:3]; v  = states[3:6]
-        # thrust unit vector and its angular velocity
-        # R  = states[6:15]; R  = numpy.reshape(R,(3,3))
 
         #--------------------------------------#
         # desired quad trajectory
-        xd = states_d[0:3];
-        vd = states_d[3:6];
-        ad = states_d[6:9];
+        xd = reference[0:3];
+        vd = reference[3:6];
+        ad = reference[6:9];
         
         #--------------------------------------#
         # position error and velocity error
@@ -534,3 +530,53 @@ class ControllerPIDXYAndZBounded(FAController):
         V_v = numpy.concatenate([V_v_xy,[V_v_z]])
 
         return (u,V_v)
+
+
+    def initialize_save_disturbance_estimate(self):
+
+        self.times = []
+
+        self.dx    = []
+        self.dy    = []
+        self.dz    = []
+
+    def callback_save_disturbance_estimate(self, msg = geometry_msgs.msg.Vector3Stamped()):
+                
+        self.times.append(float(msg.header.stamp.to_sec()))
+
+        self.dx.append(float(msg.vector.x))
+        self.dy.append(float(msg.vector.y))
+        self.dz.append(float(msg.vector.z))
+
+
+    def print_disturbance_estimate(self):
+        
+        if self.times:
+            # import matplotlib.pyplot as plt
+            import matplotlib
+            matplotlib.use('Agg')
+            from matplotlib import pyplot as plt
+
+            # it is not bad to import it here, since plotting is done aposteriori
+            # import operator
+            #times = map(operator.sub,self.times,len(self.times)*[self.times[0]])
+            times = self.times
+
+            fig1 = plt.figure()
+            plt.plot(times, self.dx, 'r-', label=r'$F_x$')
+            plt.plot(times, self.dy, 'g-', label=r'$F_y$')
+            plt.plot(times, self.dz, 'b-', label=r'$F_z$')
+            plt.title('Disturbance estimate')
+            plt.legend(loc='best')
+            plt.grid()
+
+            # one element tuple
+            return fig1,
+
+        else: 
+            print('No disturbance messages')
+            # empty tuple of figures
+            return ()
+
+    def get_all_plots(self):
+        return self.print_disturbance_estimate()

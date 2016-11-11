@@ -1,4 +1,5 @@
 <launch>
+
   <arg name="mav_name" default="firefly"/>
   <arg name="enable_logging" default="false" />
   <arg name="enable_ground_truth" default="true" />

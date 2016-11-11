@@ -1,0 +1,27 @@
+<launch>
+
+    <arg name="gui_off" default="false"/>
+    <arg name="uav_odometry" value="uav_odometry"/>
+    <arg name="uav_desired_pose" value="uav_desired_pose"/>
+    <arg name="uav_roll_pitch_yawrate_thrust" value="uav_roll_pitch_yawrate_thrust"/>
+
+    <!-- GUI -->
+    <!-- <node name="rqt_gui" pkg="gui" type="tabbedGUI"/> -->
+    <!-- <node name="rqt_gui" pkg="gui" type="tabPlugin"/> -->
+
+    <!-- This runs rqt and we have to select plugin manually -->
+    <!-- similar to rosrun rqt_gui rqt_gui -->
+    <!-- <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui"/> -->
+
+    <!-- for the GUI -->
+    <param name="bound_counter_plot_uav_real_pose" type="int" value="10"/>
+    <!-- <remap from="uav_real_odometry" to="$(arg uav_odometry)"/> -->
+    <remap from="uav_real_odometry" to="$(arg uav_odometry)"/>
+    
+    <group unless="$(arg gui_off)">
+        <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" args="--standalone  tabbedGUI --args '' 'gazebo'" output="screen"/>
+    </group>
+    
+    <node pkg="quad_control" name="service_time_sequencer" type="service_time_sequencer.py"  output="screen"/>
+    
+</launch>

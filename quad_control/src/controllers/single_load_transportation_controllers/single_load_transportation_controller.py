@@ -55,7 +55,7 @@ class SingleLoadTransportationController(js.Jsonable):
 
         default_array+= [self.disturbance_estimate]
         
-        # default_array = np.concatenate([default_array,self.get_complementary_data()])
+        # default_array = numpy.concatenate([default_array,self.get_complementary_data()])
         return default_array
 
     def plot_from_string(cls, string,starting_point):
@@ -252,17 +252,17 @@ class LinearController(SingleLoadTransportationController):
         description = "quad mass = " + str(self.quad_mass) + "(kg), load mas = " + str(self.load_mass) + "(kg), cable length = " + str(self.cable_length) + "(m), gravity = " + str(self.g) + "(m/s/s).\n\n"
         return description
 
-    def output(self, time_instant, states, states_d):
+    def output(self, time_instant, uav_odometry, load_odometry, states_d):
 
         # initiliaze initial time instant
         self.t_old = time_instant
 
         self.output = self.output_after_initialization
 
-        return self.output_after_initialization(time_instant,states,states_d)
+        return self.output_after_initialization(time_instant,uav_odometry, load_odometry,states_d)
 
 
-    def output_after_initialization(self,time_instant,state,stated):
+    def output_after_initialization(self,time_instant,uav_odometry, load_odometry,stated):
 
         # masses and cable length
         m   = self.quad_mass;
@@ -274,17 +274,72 @@ class LinearController(SingleLoadTransportationController):
 
         e3  = numpy.array([0.0,0.0,1.0])
 
+        ## UAV
+        pm = numpy.array([uav_odometry.pose.pose.position.x,\
+                      uav_odometry.pose.pose.position.y,\
+                      uav_odometry.pose.pose.position.z])
+
+        if uav_odometry.child_frame_id == 'base_frame':
+            # velocity is in the body reference frame
+            v_body = numpy.array([uav_odometry.twist.twist.linear.x,\
+                               uav_odometry.twist.twist.linear.y,\
+                               uav_odometry.twist.twist.linear.z])
+
+            quaternion = numpy.array([uav_odometry.pose.pose.orientation.x,\
+                                   uav_odometry.pose.pose.orientation.y,\
+                                   uav_odometry.pose.pose.orientation.z,\
+                                   uav_odometry.pose.pose.orientation.w])  
+
+            rotation_matrix  = uts.rot_from_quaternion(quaternion)
+
+            vm = numpy.dot(rotation_matrix,v_body)
+
+        # if uav_odometry.child_frame_id == 'world_frame':
+        else:
+            # velocity is in the body reference frame
+            vm = numpy.array([uav_odometry.twist.twist.linear.x,\
+                          uav_odometry.twist.twist.linear.y,\
+                          uav_odometry.twist.twist.linear.z]) 
+
+        ## LOAD
+        pM = numpy.array([load_odometry.pose.pose.position.x,\
+                      load_odometry.pose.pose.position.y,\
+                      load_odometry.pose.pose.position.z])
+
+        if load_odometry.child_frame_id == 'base_frame':
+            # velocity is in the body reference frame
+            v_body = numpy.array([load_odometry.twist.twist.linear.x,\
+                               load_odometry.twist.twist.linear.y,\
+                               load_odometry.twist.twist.linear.z])
+
+            quaternion = numpy.array([load_odometry.pose.pose.orientation.x,\
+                                   load_odometry.pose.pose.orientation.y,\
+                                   load_odometry.pose.pose.orientation.z,\
+                                   load_odometry.pose.pose.orientation.w])  
+
+            rotation_matrix  = uts.rot_from_quaternion(quaternion)
+
+            vM = numpy.dot(rotation_matrix,v_body)
+
+        # if uav_odometry.child_frame_id == 'world_frame':
+        else:
+            # velocity is in the body reference frame
+            vM = numpy.array([load_odometry.twist.twist.linear.x,\
+                          load_odometry.twist.twist.linear.y,\
+                          load_odometry.twist.twist.linear.z]) 
+
+
         # current LOAD position
-        pM  = state[0:3]
+        #pM  = state[0:3]
         self.data['load_position'] = pM
         # current LOAD velocity
-        vM  = state[3:6]
+        #vM  = state[3:6]
         self.data['load_velocity'] = vM
         # current QUAD position
-        pm  = state[6:9]
+        #pm  = state[6:9]
         self.data['uav_position'] = pm
         # current QUAD velocity
-        vm  = state[9:12]
+        #vm  = state[9:12]
         self.data['uav_velocity'] = vm
 
         # DESIRED LOAD position
@@ -296,28 +351,43 @@ class LinearController(SingleLoadTransportationController):
         ep = pM - pd
         ev = vM - vd
 
-        # direction of cable
-        n = (pm - pM)/numpy.linalg.norm(pm - pM)
+        if numpy.linalg.norm(pm - pM)>0.1:
+            # direction of cable
+            n = (pm - pM)/numpy.linalg.norm(pm - pM)
 
-        # alpha = 10.0*3.142/180.0
-        # if numpy.dot(n,e3)<numpy.cos(alpha):
-        #     naux = numpy.dot(uts.ort_proj(e3),n)
-        #     n    = numpy.cos(alpha)*e3 + numpy.sin(alpha)*naux/numpy.linalg.norm(naux)
+            # alpha = 10.0*3.142/180.0
+            # if numpy.dot(n,e3)<numpy.cos(alpha):
+            #     naux = numpy.dot(uts.ort_proj(e3),n)
+            #     n    = numpy.cos(alpha)*e3 + numpy.sin(alpha)*naux/numpy.linalg.norm(naux)
 
-        # angular velocity of cable
-        w  = dot(skew(n),(vm - vM)/numpy.linalg.norm(pM - pm))
+            # angular velocity of cable
+            w  = dot(skew(n),(vm - vM)/numpy.linalg.norm(pM - pm))
 
-        self.data['unit_vector'] = n
-        self.data['angular_velocity'] = w
+            # direction of cable
+            phi   =  -numpy.arcsin(n[[1]])
+            theta =  numpy.arctan(n[[0]]/n[[2]])
 
-        # direction of cable
-        phi   =  -numpy.arcsin(n[[1]])
-        theta =  numpy.arctan(n[[0]]/n[[2]])
+            # angular velocity of cable
+            w_phi   = w[0]/numpy.cos(theta) - w[1]*numpy.tan(phi)*numpy.tan(theta)
+            w_theta = w[1]/(numpy.cos(theta)**2)
 
-        # angular velocity of cable
-        w_phi   = w[0]/numpy.cos(theta) - w[1]*numpy.tan(phi)*numpy.tan(theta)
-        w_theta = w[1]/(numpy.cos(theta)**2)
+        else:
+            # direction of cable
+            n = numpy.zeros(3)
+            # angular velocity of cable
+            w = numpy.zeros(3)
 
+            self.data['unit_vector'] = n
+            self.data['angular_velocity'] = w
+
+
+            # direction of cable
+            phi   =  [0.0]
+            theta =  [0.0]
+
+            # angular velocity of cable
+            w_phi   = [0.0]
+            w_theta = [0.0]
 
         u,u_p,u_v,u_p_p,u_v_v,u_p_v,Vpv,VpvD,V_p,V_v,V_v_p,V_v_v = self.z_double_integrator_ctr.output(ep[2],ev[2])
         uz = (m+M)*g + (m + M)*(u - self.disturbance_estimate)

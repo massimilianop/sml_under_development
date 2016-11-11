@@ -20,20 +20,16 @@
 
 
     <!-- Iris 2 parameters -->
-    <param name="proportional_gain_xy" type="double" value="1.0"/>
-    <!-- <param name="proportional_gain_xy" type="double" value="6.0"/> -->
-    <param name="derivative_gain_xy" type="double" value="1.42"/>
+    <param name="natural_frequency_xy" type="double" value="1.0"/>
+    <param name="damping_xy" type="double" value="0.7"/>
+    <param name="position_saturation_xy" type="double" value="1.0"/>
+    <param name="velocity_saturation_xy" type="double" value="1.0"/>
     <param name="integral_gain_xy" type="double" value="0.0"/>
     <param name="bound_integral_xy" type="double" value="0.0"/>
 
-    <param name="natural_frequency_xy" type="double" value="2.0"/>
-    <param name="damping_xy" type="double" value="1.5"/>
-    <param name="position_saturation_xy" type="double" value="1.0"/>
-    <param name="velocity_saturation_xy" type="double" value="1.0"/>
 
-
-    <param name="proportional_gain_z" type="double" value="2.0"/>
-    <param name="derivative_gain_z" type="double" value="3.0"/>
+    <param name="natural_frequency_z" type="double" value="1.4"/>
+    <param name="damping_z" type="double" value="1.0"/>
     <!-- <param name="integral_gain_z" type="double" value="0.4"/> -->
     <!-- <param name="bound_integral_z" type="double" value="0.0"/> -->
     <param name="integral_gain_z" type="double" value="0.0"/>
@@ -79,8 +75,8 @@
 
     <!-- <param name="quadrotor_mass" value="1.442"/> -->
     <param name="quadrotor_mass" value="1.56779"/>
-    <!-- <param name="total_mass" type="double" value="1.56779"/> -->
-    <param name="total_mass" type="double" value="1.66779"/>
+    <param name="total_mass" type="double" value="1.56779"/>
+    <!-- <param name="total_mass" type="double" value="1.66779"/> -->
     
 
     <!-- load lifting: cable length in meters -->
@@ -102,6 +98,11 @@
     <!-- This runs rqt and we have to select plugin manually -->
     <!-- similar to rosrun rqt_gui rqt_gui -->
     <!-- <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui"/> -->
+
+    <!-- for the GUI -->
+    <param name="bound_counter_plot_uav_real_pose" type="int" value="10"/>
+    <!-- <remap from="uav_real_odometry" to="$(arg uav_odometry)"/> -->
+    <remap from="uav_real_odometry" to="uav_odometry"/>
     <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui" args="--standalone  tabbedGUI --args '' 'gazebo'" output="screen"/>
 
 </launch>
