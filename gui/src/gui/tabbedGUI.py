@@ -21,13 +21,13 @@ from positionPlot import positionPlotPlugin
 
 from choose_mission import ChooseMissionPlugin
 
-from choose_system import ChooseSystemPlugin
+#from choose_system import ChooseSystemPlugin
 
-from choose_simulator import ChooseSimulatorPlugin
+#from choose_simulator import ChooseSimulatorPlugin
 
-from choose_gazebo import ChooseGazeboPlugin
+#from choose_gazebo import ChooseGazeboPlugin
 
-from choose_mocap import ChooseMocapPlugin
+#from choose_mocap import ChooseMocapPlugin
 
 import argparse
 
@@ -39,7 +39,7 @@ rospack = rospkg.RosPack()
 import sys
 sys.path.insert(0, rospack.get_path('quad_control'))
 
-from src.simulators import simulators_dictionary
+#from src.simulators import simulators_dictionary
 
 class tabbedGUIPlugin(Plugin):
 
@@ -93,27 +93,27 @@ class tabbedGUIPlugin(Plugin):
         self.ChooseMission   = ChooseMissionPlugin(context,self.namespace)
         self.positionPlot    = positionPlotPlugin(context,self.namespace)
         
-        # self.ChooseSystem    = ChooseSystemPlugin(context,self.namespace)
-        if system_type == 'gazebo':
-            self.ChooseSystem    = ChooseGazeboPlugin(context,self.namespace)
-        if system_type == 'rviz':
-            # self.ChooseSystem    = ChooseSimulatorPlugin(context,self.namespace)            
+        # # self.ChooseSystem    = ChooseSystemPlugin(context,self.namespace)
+        # if system_type == 'gazebo':
+        #     self.ChooseSystem    = ChooseGazeboPlugin(context,self.namespace)
+        # if system_type == 'rviz':
+        #     # self.ChooseSystem    = ChooseSimulatorPlugin(context,self.namespace)            
             
-            EXAMPLE_DICTIONARY = {}
-            EXAMPLE_DICTIONARY["name_main_tab"] = "simulator"
-            EXAMPLE_DICTIONARY["strServiceChangeName"] = "ServiceChangeSimulator"
-            EXAMPLE_DICTIONARY["DICTIONARY_OF_OPTIONS"] = simulators_dictionary.simulators_dictionary
-            EXAMPLE_DICTIONARY["name_service_sequence_provider"] = 'simulator/ServiceSequencer'
+            # EXAMPLE_DICTIONARY = {}
+            # EXAMPLE_DICTIONARY["name_main_tab"] = "simulator"
+            # EXAMPLE_DICTIONARY["strServiceChangeName"] = "ServiceChangeSimulator"
+            # EXAMPLE_DICTIONARY["DICTIONARY_OF_OPTIONS"] = simulators_dictionary.simulators_dictionary
+            # EXAMPLE_DICTIONARY["name_service_sequence_provider"] = 'simulator/ServiceSequencer'
 
-            self.ChooseSystem  = ChooseMissionPlugin(context,self.namespace,dictionary_options = EXAMPLE_DICTIONARY)
+            # self.ChooseSystem  = ChooseMissionPlugin(context,self.namespace,dictionary_options = EXAMPLE_DICTIONARY)
         
-        if system_type == 'mocap':
-            self.ChooseSystem    = ChooseMocapPlugin(context,self.namespace)
+        # if system_type == 'mocap':
+        #     self.ChooseSystem    = ChooseMocapPlugin(context,self.namespace)
 
 
         self._widget.tabWidget.addTab(self.ChooseMission._widget  ,'Select Mission')
         # if system_type == 'gazebo' or system_type == 'rviz':
-        self._widget.tabWidget.addTab(self.ChooseSystem._widget   ,'Select System')
+        #self._widget.tabWidget.addTab(self.ChooseSystem._widget   ,'Select System')
         self._widget.tabWidget.addTab(self.positionPlot._widget   ,'Check Data')
 
         self._widget.tabWidget.show()

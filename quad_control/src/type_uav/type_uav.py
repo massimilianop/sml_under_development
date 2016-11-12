@@ -225,7 +225,7 @@ class TypeUAV(js.Jsonable):
         # third column of rotation matrix
         self.rotation_matrix = tf.transformations.quaternion_matrix(quat)[0:3,0:3]
         # unit_vector = tf.transformations.quaternion_matrix(quat)[2,0:3]
-        throttle_unit_vector = self.rotation_matrix[2,:]
+        #throttle_unit_vector = self.rotation_matrix[2,:]
         psi_angle = tf.transformations.euler_from_quaternion(quat, axes='sxyz')[2]
 
         #---------------------------------------------------------------------#
@@ -374,7 +374,7 @@ firefly_parameters['matrix_motor_speeds'] = matrix_motor_speeds
 
 # this decorator will also create the database
 # add class to database
-@js.add_to_database(default=True)
+@js.add_to_database()
 class FireflyGazebo(TypeUAV):
     """This class creates the publisher for a Firefly UAV"""
 
@@ -1086,7 +1086,7 @@ MISSIONS_DATABASE = mission.NEO.database
 # import mav_msgs
 
 # add class to database
-@js.add_to_database()
+@js.add_to_database(default=True)
 class NEO(TypeUAV):
     """This class creates the publisher for a NEO UAV"""
 
@@ -1099,12 +1099,12 @@ class NEO(TypeUAV):
 
     def __init__(self,
         throttle_neutral = rospy.get_param("throttle_neutral",1.0),
-        total_mass = rospy.get_param("total_mass",1.442)
+        total_mass = rospy.get_param("uav_mass",2.75)
     ):
 
         self.throttle_neutral = throttle_neutral
         self.total_mass       = total_mass
-
+        print(self.total_mass)
         # TODO: correct this
         self.time_instant_t0 = 0.0
 
@@ -1114,7 +1114,7 @@ class NEO(TypeUAV):
 
         # publisher: publish PWM signals for IRIS
         self.pub_rc_override = rospy.Publisher(
-            name = '/kth_neo1/command/roll_pitch_yawrate_thrust',
+            name = 'neo_input',
             data_class = mav_msgs.msg.RollPitchYawrateThrust,
             queue_size = 1)
 
@@ -1140,6 +1140,7 @@ class NEO(TypeUAV):
 
     def publish(self):
 
+
         time_instant = rospy.get_time() - self.time_instant_t0
 
         # it is the job of the mission to compute the 3d_force and yaw_rate
@@ -1152,14 +1153,14 @@ class NEO(TypeUAV):
             uav_odometry = self.uav_odometry)
 
         message = self.input_conveter( 
-            uav_odometry = uav_odometry,
+            uav_odometry = self.uav_odometry,
             desired_3d_force = desired_3d_force, 
             yaw_rate_desired = desired_yaw_rate)
 
         self.pub_rc_override.publish(message)
 
         message = self.to_RollPitchYawrateThrust(
-            uav_odometry = uav_odometry,
+            uav_odometry = self.uav_odometry,
             desired_3d_force = desired_3d_force, 
             yaw_rate_desired = desired_yaw_rate)
         self.pub_roll_pitch_yawrate_thrust.publish(message)
@@ -1177,7 +1178,7 @@ class NEO(TypeUAV):
         # third column of rotation matrix
         self.rotation_matrix = tf.transformations.quaternion_matrix(quat)[0:3,0:3]
         # unit_vector = tf.transformations.quaternion_matrix(quat)[2,0:3]
-        throttle_unit_vector = self.rotation_matrix[2,:]
+        throttle_unit_vector = self.rotation_matrix[:,2]
         psi_angle = tf.transformations.euler_from_quaternion(quat, axes='sxyz')[2]
 
         #---------------------------------------------------------------------#
@@ -1212,6 +1213,7 @@ class NEO(TypeUAV):
         message.pitch    = pitch_desired
         message.yaw_rate = yaw_rate_desired
         message.thrust.z = Throttle
+        message.header.frame_id = "base_link"
 
         return message
 

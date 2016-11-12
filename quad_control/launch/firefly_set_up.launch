@@ -10,16 +10,20 @@
 
   <!-- SYSTEM -->
   <group unless="$(arg playing_back)">
-    <include file="$(find quad_control)/launch/firefly_example.launch">
+    <include file="$(find qualisys)/launch/qualisys.launch">
       <!-- all vars that included.launch requires must be set -->
     </include>
+    <include file="$(find qualisys)/launch/qualisys_odom.launch">
+      <arg name="model" value="Neo"/>
+    </include>
+
   </group>
 
   <group ns="firefly1">
   <!-- <group ns="firefly"> -->
 
     <!-- remap topic name -->
-    <remap from="$(arg uav_odometry)" to="/firefly/ground_truth/odometry"/>
+    <remap from="$(arg uav_odometry)" to="/Neo/odom"/>
     <!-- <remap from="$(arg uav_odometry)" to="ground_truth/odometry"/> -->
     <remap from="firefly_motor_speed" to="/firefly/command/motor_speed"/>
     <!-- <remap from="firefly_motor_speed" to="command/motor_speed"/> -->

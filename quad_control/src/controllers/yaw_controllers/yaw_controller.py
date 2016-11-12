@@ -7,6 +7,7 @@ from utilities import jsonable as js
 
 import tf
 import nav_msgs.msg
+import rospy
 
 class YawController(js.Jsonable):
     
@@ -38,7 +39,7 @@ class SimpleTrackingYawController(YawController):
     def description(cls):
         return "Simple yaw tracking controller, based on <b>feedback linearization of yaw rate equation</b>"
 
-    def __init__(self, gain = 4.0):
+    def __init__(self, gain = rospy.get_param("yaw_rate_gain",1.0) ):
         self.gain = gain
     
     

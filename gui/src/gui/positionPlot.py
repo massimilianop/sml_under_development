@@ -569,7 +569,6 @@ class positionPlotPlugin(Plugin):
         
 
     def callback_uav_real_odometry(self,msg = nav_msgs.msg.Odometry()):
-
         # increase or reset counter plot data saving
         if self.counter_plot_uav_real_odometry <= self.bound_counter_plot_uav_real_odometry:
             self.counter_plot_uav_real_odometry += 1
@@ -578,7 +577,6 @@ class positionPlotPlugin(Plugin):
 
             self.time_uav_real_odometry[:-1] = self.time_uav_real_odometry[1:]
             self.time_uav_real_odometry[-1]  = rospy.get_time() - self.time0
-
             self.data_uav_real_odometry.emit(msg)
 
     def callback_uav_desired_pose(self,msg = geometry_msgs.msg.Pose()):
