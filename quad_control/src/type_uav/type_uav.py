@@ -1098,7 +1098,7 @@ class NEO(TypeUAV):
         return string
 
     def __init__(self,
-        throttle_neutral = rospy.get_param("throttle_neutral",1.0),
+        throttle_neutral = rospy.get_param("throttle_neutral",0.759892503),
         total_mass = rospy.get_param("uav_mass",2.75)
     ):
 
@@ -1190,7 +1190,9 @@ class NEO(TypeUAV):
 
         # computing desired Throttle, desired roll angle, pitch angle, and desired yaw rate
         # throttle will be smaller when tilted (compensates for adjustsments done onboard)
-        Throttle = numpy.dot(desired_3d_force,throttle_unit_vector)
+        #Throttle = numpy.dot(desired_3d_force,throttle_unit_vector)
+        Throttle = numpy.linalg.norm(desired_3d_force)
+        Throttle = numpy.clip(Throttle,0.0,1.2*20.5) # STOP DOING HARDCODED STUFF BRO!
         # TODO: remark here
         # Throttle = numpy.linalg.norm(desired_3d_force)
 

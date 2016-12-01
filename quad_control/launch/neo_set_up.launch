@@ -1,5 +1,5 @@
   <launch>
-  
+  <arg name="uav_name" default="Neo"/> 
   <arg name="file_name" default="file"/>
   <arg name="playing_back" default="false"/>
   <arg name="record" default="true" />
@@ -14,7 +14,7 @@
       <!-- all vars that included.launch requires must be set -->
     </include>
     <include file="$(find qualisys)/launch/qualisys_odom.launch">
-      <arg name="model" value="Neo"/>
+      <arg name="model" value="$(arg uav_name)"/>
     </include>
 
   </group>
@@ -23,7 +23,7 @@
   <!-- <group ns="firefly"> -->
 
     <!-- remap topic name -->
-    <remap from="$(arg uav_odometry)" to="/Neo/odom"/>
+    <remap from="$(arg uav_odometry)" to="/$(arg uav_name)/odom"/>
     <!-- <remap from="$(arg uav_odometry)" to="ground_truth/odometry"/> -->
     <remap from="neo_input" to="/kth_neo1/command/roll_pitch_yawrate_thrust"/>
     <!-- <remap from="firefly_motor_speed" to="command/motor_speed"/> -->
@@ -46,7 +46,7 @@
 
     <group unless="$(arg playing_back)">
       <node pkg="rosbag" type="record" name="rosbag_record"
-        args="-O $(find quad_control)/experimental_data/rosbag/$(arg file_name) ServiceSequencer $(arg uav_odometry) uav_roll_pitch_yawrate_thrust $(arg fa_disturbance_estimate) $(arg reference_position)"
+        args="-o $(find quad_control)/experimental_data/rosbag/$(arg file_name) ServiceSequencer $(arg uav_odometry) uav_roll_pitch_yawrate_thrust $(arg fa_disturbance_estimate) $(arg reference_position)"
         if="$(arg record)"/>  
     </group>
 

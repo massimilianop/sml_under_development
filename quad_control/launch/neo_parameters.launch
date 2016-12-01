@@ -1,6 +1,7 @@
 <launch>
 
-    <param name="uav_mass" value="2.75"/>
+    <!-- <param name="uav_mass" value="2.75"/> -->
+    <param name="uav_mass" value="2.089704383"/>
     <param name="extra_mass" type="double" value="0.0"/>
 
 </launch>

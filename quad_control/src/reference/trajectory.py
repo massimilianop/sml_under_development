@@ -171,7 +171,7 @@ class FixedPointTrajectory(Trajectory):
     def description(cls):
         return "<b>Stay at rest at speficied point</b>"
         
-    def __init__(self, point=np.array([0.0, 0.0, 1.0])):
+    def __init__(self, point=np.array([0.0, 0.0, 0.4])):
         self.point = point
         Trajectory.__init__(self, offset=point, rotation=np.zeros(3))
         

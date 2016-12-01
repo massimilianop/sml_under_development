@@ -3,7 +3,7 @@
     <param name="gravity" value="9.81"/>
 
     <!-- NEO parameters -->
-    <param name="natural_frequency_xy" type="double" value="1.0"/>
+    <param name="natural_frequency_xy" type="double" value="1.2"/>
     <param name="damping_xy" type="double" value="0.7"/>
     <param name="position_saturation_xy" type="double" value="1.0"/>
     <param name="velocity_saturation_xy" type="double" value="1.0"/>
@@ -11,7 +11,7 @@
     <param name="bound_integral_xy" type="double" value="0.0"/>
     <param name="yaw_rate_gain" type="double" value="1.0"/>
 
-    <param name="natural_frequency_z" type="double" value="2.0"/>
+    <param name="natural_frequency_z" type="double" value="1.0"/>
     <param name="damping_z" type="double" value="1.0"/>
     <!-- <param name="integral_gain_z" type="double" value="0.4"/> -->
     <!-- <param name="bound_integral_z" type="double" value="0.0"/> -->
