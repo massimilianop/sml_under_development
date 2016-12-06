@@ -128,3 +128,19 @@ After having built the workspace, if the plugin doesn't show up in rqt, consider
 ```Bash
 run "rqt --force-discover"
 ```
+
+# GUI: choose_jsonable
+
+"Methods" button is necessary, because we may want to select same jsonable object, but with different parameters, in which case, we must unselect "Methods" button
+
+
+# Bugs
+
+If error 
+```
+QSpiAccessible::accessibleEvent not handled:  "8008"  obj:  QObject(0x0)  " invalid interface!"
+```
+appears when clicking on items in the GUI, do
+```
+sudo dpkg --purge qt-at-spi
+```

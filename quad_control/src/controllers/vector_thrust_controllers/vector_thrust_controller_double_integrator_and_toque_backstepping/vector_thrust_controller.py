@@ -10,6 +10,7 @@ from numpy import *
 from numpy import zeros as zeros
 
 from controllers.double_integrator_controllers import double_integrator_controller_database
+DI_CONTROLLERS_DATABASE = double_integrator_controller_database.database
 
 from .. import vector_thrust_controller
 
@@ -18,22 +19,21 @@ from utilities.utility_functions import OP as OP
 # import skew symmetric matrix
 from utilities.utility_functions import skew as skew
 
+import utilities.jsonable as js
+
 class BacksteppingVectorThrustController(vector_thrust_controller.VectorThrustController): 
 
-    inner = {}
-    # import dictionary with different double integrator controller classes
-    inner["di_controller"]     = double_integrator_controller_database.database    
+    js.Jsonable.add_inner('di_controller',DI_CONTROLLERS_DATABASE)
 
     # The class "constructor" - It's actually an initializer
     def __init__(self,
-    di_controller = double_integrator_controller_database.database["Default"](),
     ktt           = 200.0,
     ktt2          = 0.5,
     kw            = 200.0,
     kw2           = 0.5
     ):
 
-        self.di_controller = di_controller
+        self.add_inner_defaults()
 
         self.ktt     = ktt
         self.ktt2    = ktt2

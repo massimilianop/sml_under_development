@@ -20,4 +20,5 @@ from zero_simulator.zero_simulator import ZeroSimulator
 simulators_dictionary["ZeroSimulator"] = ZeroSimulator
 
 
-simulators_dictionary["Default"] = double_integrator_simulator.double_integrator_simulator.DoubleIntegratorSimulator
+# simulators_dictionary["Default"] = double_integrator_simulator.double_integrator_simulator.DoubleIntegratorSimulator
+simulators_dictionary["Default"] = ZeroSimulator

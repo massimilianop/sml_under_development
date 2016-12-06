@@ -43,6 +43,10 @@ def unskew(X):
 # def OP(x):
 #     return -skew(x).dot(skew(x))
 
+def ort_proj(x):
+    out = np.identity(3) - np.outer(x,x)
+    return out
+
 def OP(x):
     out = np.zeros((3,3))
     I   = np.identity(3)
@@ -116,7 +120,8 @@ def rot_from_euler_rad(ee_rad):
 def rot_from_euler_deg(ee_deg):
     return rot_from_euler_rad(ee_deg*np.pi/180.0)
 
-
+# test
+#print(euler_deg_from_rot(rot_from_euler_deg(np.array([11,-21,-13]))))
 
 # testing skew matrix    
 # print skew(np.array([1,2,3]))
@@ -132,6 +137,18 @@ def rot_from_quaternion(quaternion):
 
     return R
 
+def quaternion_from_rot(rotation_matrix):
+
+    q_n = np.sqrt(1 + np.trace(rotation_matrix))/2.0
+    q_v = unskew(rotation_matrix - np.transpose(rotation_matrix))/(4*q_n)
+
+    quaternion = np.concatenate([q_v,[q_n]])
+
+    return quaternion
+
+# test
+# print(np.array([0.5*(0.5),0.5*(0.5*np.sqrt(3)),0.5*(0.0),0.5*np.sqrt(3)]))
+# print(quaternion_from_rot(rot_from_quaternion(np.array([0.5*(0.5),0.5*(0.5*np.sqrt(3)),0.5*(0.0),0.5*np.sqrt(3)]))))
 
 def quaternion_from_unit_vector_and_yaw_rad(unit_vector, psi):
 
@@ -153,9 +170,14 @@ def roll_and_pitch_from_full_actuation_and_yaw_rad(full_actuation, psi):
     # Rz(psi)*Ry(theta_des)*Rx(phi_des) = n_des
 
     # desired roll and pitch angles
-    n_des     = full_actuation/np.linalg.norm(full_actuation)
-    n_des_rot = Rz(-psi).dot(n_des)
-
+    norm = np.linalg.norm(full_actuation)
+    # TODO: replace 0.1 by 10% of weight
+    if norm > 0.1:
+        n_des     = full_actuation/norm
+        n_des_rot = rot_z(-psi).dot(n_des)
+    else:
+        n_des     = np.array([0.0,0.0,1.0])
+        n_des_rot = rot_z(-psi).dot(n_des)        
 
     sin_phi   = -n_des_rot[1]
     sin_phi   = np.clip(sin_phi,-1,1)
@@ -176,9 +198,9 @@ def roll_and_pitch_from_full_actuation_and_yaw_rad(full_actuation, psi):
 
 class MedianFilter:
     # N is order of median filter
-    def __init__(self, N):
+    def __init__(self, N,data_initial = 0.0):
         self.N = N
-        self.data = np.zeros(N)
+        self.data = data_initial*np.ones(N)
     
     def update_data(self,new_data):
         N = self.N
@@ -196,11 +218,22 @@ class MedianFilter:
 
 class MedianFilter3D:
     # N is order of median filter
-    def __init__(self, N):
+    def __init__(self, N,data_initial=np.zeros(3)):
         self.N = N
-        self.Dx =  MedianFilter(N)
-        self.Dy =  MedianFilter(N)
-        self.Dz =  MedianFilter(N)
+        self.Dx =  MedianFilter(N,data_initial[0])
+        self.Dy =  MedianFilter(N,data_initial[1])
+        self.Dz =  MedianFilter(N,data_initial[2])
+
+    def update_data(self,new_data):
+        self.Dx.update_data(new_data[0])
+        self.Dy.update_data(new_data[1])
+        self.Dz.update_data(new_data[2])
+
+    def output(self):
+        out1 = self.Dx.output()
+        out2 = self.Dy.output()
+        out3 = self.Dz.output()
+        return np.array([out1,out2,out3])
 
     def up_and_out(self,new_data):
         Dx_new = self.Dx.up_and_out(new_data[0])

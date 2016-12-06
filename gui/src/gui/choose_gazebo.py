@@ -62,10 +62,10 @@ class ChooseGazeboPlugin(Plugin):
                       dest="quiet",
                       help="Put plugin in silent mode")
         args, unknowns = parser.parse_known_args(context.argv())
-        if not args.quiet:
-            print 'arguments: ', args
-            print 'unknowns: ', unknowns
-        
+        # TODO: I commented this out
+        # if not args.quiet:
+        #     print 'arguments: ', args
+        #     print 'unknowns: ', unknowns        
         
         
         # Create QWidget
@@ -84,8 +84,9 @@ class ChooseGazeboPlugin(Plugin):
         # tell from pane to pane.
         if context.serial_number() > 1:
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
+        
         # Add widget to the user interface
-        context.add_widget(self._widget)
+        #context.add_widget(self._widget)
 
 
         # Button to start gazebo
@@ -98,7 +99,7 @@ class ChooseGazeboPlugin(Plugin):
     #@Slot(bool)
     def start_gazebo(self):
         #os.system('roslaunch quad_control mav_hovering_example.launch')
-        #subprocess.call('roslaunch quad_control mav_hovering_example.launch &', shell=True)
+        # subprocess.call('roslaunch quad_control mav_hovering_example.launch &', shell=True)
         subprocess.call('roslaunch quad_control mav_with_load_example.launch &', shell=True)
         # subprocess.call('roslaunch quad_control firefly_example.launch &', shell=True)
         return 

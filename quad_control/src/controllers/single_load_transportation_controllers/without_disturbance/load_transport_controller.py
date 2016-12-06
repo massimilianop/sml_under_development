@@ -10,9 +10,11 @@ from numpy import *
 import rospy
 
 from controllers.vector_thrust_controllers import vector_thrust_controllers_database
-
+VT_CONTROLLERS_DATABASE = vector_thrust_controllers_database.database
 
 from .. import single_load_transportation_controller
+
+import utilities.jsonable as js
 
 def skew(x):
     out = numpy.zeros((3,3))
@@ -27,29 +29,20 @@ def skew(x):
 
 class SingleLoadTransportController(single_load_transportation_controller.SingleLoadTransportationController):   
 
-    inner = {}
-    # import dictionary with different vector thrusted controller classes
-    inner["vector_thrust_controller"] = vector_thrust_controllers_database.database
+    js.Jsonable.add_inner('vector_thrust_controller',VT_CONTROLLERS_DATABASE)
 
     @classmethod
     def description(cls):
         return "Controller for a **single aerial vehicle transporating load** attached by cable"
 
 
-    def __init__(self,   \
-        vector_thrust_controller   = vector_thrust_controllers_database.database["Default"](),
+    def __init__(self, 
         load_mass    = rospy.get_param("load_mass",0.1),
         quad_mass    = rospy.get_param("quadrotor_mass",1.442),
         cable_length = rospy.get_param("cable_length",0.6),
         ):
-    # def __init__(self,   \
-    #     load_mass    = rospy.get_param("load_mass",0.1),
-    #     quad_mass    = rospy.get_param("quadrotor_mass",1.442),
-    #     cable_length = rospy.get_param("cable_length",0.6),
-    #     ):
 
-        # self.vector_thrust_controller      = vector_thrust_controllers_database.database["Default"]()
-        self.vector_thrust_controller = vector_thrust_controller
+        self.add_inner_defaults()
 
         self.quad_mass    = quad_mass
         self.load_mass    = load_mass
@@ -57,6 +50,8 @@ class SingleLoadTransportController(single_load_transportation_controller.Single
         # TODO import this later from utilities
         self.g            = 9.81
 
+    def get_total_weight(self):
+        return (self.quad_mass+self.load_mass)*self.g
 
     def output(self,time_instant,state,stated):
 

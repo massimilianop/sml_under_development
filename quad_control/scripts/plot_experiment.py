@@ -3,6 +3,7 @@
 import rospy
 
 import missions.missions_database
+MISSIONS_DATABASE = missions.missions_database.database2
 
 from utilities import jsonable
 
@@ -41,21 +42,16 @@ def handle_plot_service(request):
 
         data = read_file.pop(0)
 
-        MissionClass   = missions.missions_database.database[name]
+        MissionClass   = MISSIONS_DATABASE[name]
         mission_active = MissionClass.from_string(constructing_string)
 
-        # mission_description = mission_active.description()
         mission_description = mission_active.object_combined_description()
-        # mission_description = mission_active.object_combined_description()
 
         pdfkit.from_string(mission_description, data_file[:-4]+".pdf")
         merger.append(PdfFileReader(file(data_file[:-4]+".pdf","rb")))
 
         fig = plt.figure()
-        plt.suptitle(mission_description)
         pdf = matplotlib.backends.backend_pdf.PdfPages(data_file[:-4]+".pdf")
-        pdf.savefig(fig)
-        plt.close(fig)
 
         for fig in mission_active.plot_from_string(data):
             pdf.savefig(fig)

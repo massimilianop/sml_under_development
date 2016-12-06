@@ -20,7 +20,10 @@ setup_args = generate_distutils_setup(
         'yaw_trajectories',
         'missions',
         'converters'
-        'coverage_planners'
+        'coverage_planners',
+        'type_uav',
+        'mission_mission',
+        'reference'
         ],
     package_dir={'': 'src'},
 )

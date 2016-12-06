@@ -3,29 +3,19 @@
 
 import rospy
 
-# controller node publishes message of this type so that GUI can plot stuff
-from quad_control.msg import quad_state_and_cmd
-
-# node will publish controller state if requested
-from quad_control.msg import Controller_State
-
 # import services defined in quad_control
-# Four SERVICES ARE BEING USED: SaveData, ServiceTrajectoryDesired, Mocap_Id, StartSim
 # SaveData is for saving data in txt file
-# TrajDes is for selecting trajectory
-# Mocap_Id for body detection from QUALISYS
-# StartSim stop simulator
 from quad_control.srv import *
 
 # to work with directories relative to ROS packages
 from rospkg import RosPack
 
-
-
 import numpy
-from numpy import *
 
-import missions.missions_database
+import type_uav.type_uav
+MISSIONS_DATABASE = type_uav.type_uav.database
+
+import json
 
 class QuadController():
 
@@ -33,14 +23,6 @@ class QuadController():
 
         # frequency of controlling action!!
         self.frequency = 35.0
-
-        # initialize counter for publishing to GUI
-        # we only publish when self.PublishToGUI =1
-        self.PublishToGUI = 1
-        # Frequency of publishing to GUI (Hz)
-        frequency_PubToGui = 10
-        # we reset counter when self.PublishToGUI >= PublishToGUIBound
-        self.PublishToGUIBound = int(self.frequency/frequency_PubToGui)
 
         # for saving data
         # determine ROS workspace directory
@@ -70,10 +52,10 @@ class QuadController():
             # note that "_" is necessary because time_stamp is a number (and file name cannot start with numbers)
             self.file_handle  = file(self.package_save_path+'_'+time_stamp+'_'+file_name+namespace+'.txt', 'w')
 
+            self._add_header_mission(flag=True)
+
             # if GUI request data to be saved, set flag to true
             self.SaveDataFlag = True
-
-            self._add_header_mission()
 
         else:
             # if GUI request data NOT to be saved, set falg to False
@@ -82,278 +64,85 @@ class QuadController():
         # return message to Gui, to let it know resquest has been fulfilled
         return SaveDataResponse(True)
 
-    # callback for when "reseting iris plus neutral value" is requested
-    def _handle_iris_plus_reset_neutral(self,req):
-        # return message to GUI, to let it know resquest has been fulfilled
-        # IrisPlusResetNeutral: service type
-        median_force = self.mission_object.DesiredZForceMedian.output()
-        rospy.logwarn('median force = '+ str(median_force))
-        self.mission_object.iris_plus_converter_object_mission.reset_k_trottle_neutral(median_force)
-
-        # new neutral value
-        k_trottle_neutral = self.mission_object.iris_plus_converter_object_mission.get_k_throttle_neutral()
-        return IrisPlusResetNeutralResponse(received = True, k_trottle_neutral = k_trottle_neutral)
-
-    # callback for when "seting iris plus neutral value" is requested
-    def _handle_iris_plus_set_neutral(self,req):
-        # return message to GUI, to let it know resquest has been fulfilled
-        # IrisPlusSetNeutral: service type
-        self.mission_object.iris_plus_converter_object_mission.set_k_trottle_neutral(req.k_trottle_neutral)
-        return IrisPlusSetNeutralResponse(True)
-
-
-    # callback for publishing state of controller (or stop publishing)
-    def handle_Controller_State_Srv(self,req):
-
-        # if controller belongs to list of controllers that have a state
-        if req.flag_controller in controllers_with_state:
-            # if GUI request for state of controller, parameters = 0
-            if int(req.parameters[0]) == 0:
-
-                    # if publishging already, stop publish
-                    # if not publishing, start publishing
-                    self.flagPublish_ctr_st = not self.flagPublish_ctr_st
-
-            # if GUI request for reseting state of controller, parameters = 1
-            elif int(req.parameters[0]) == 1:
-                self.ControllerObject.reset_estimate_xy()
-            elif int(req.parameters[0]) == 2:
-                self.ControllerObject.reset_estimate_z()
-
-        # return message to Gui, to let it know resquest has been fulfilled
-        return Controller_SrvResponse(True)
-
-
-    # callback for when changing controller is requested
-    def _handle_service_change_controller(self,req):
-        self.mission_object.change_controller(req.jsonable_name,req.string_parameters)
-        
-        self._add_header_mission()
-
-        # return message to Gui, to let it know resquest has been fulfilled
-        return SrvCreateJsonableObjectByStrResponse(received = True)
-
-    # callback for when changing controller is requested
-    def _handle_service_change_reference(self,req):
-
-        self.mission_object.change_reference(req.jsonable_name,req.string_parameters)
-        
-        self._add_header_mission()
-
-        # return message to Gui, to let it know resquest has been fulfilled
-        return SrvCreateJsonableObjectByStrResponse(received = True)
-
-    # callback for when changing controller is requested
-    def _handle_service_change_yaw_controller(self,req):
-        self.mission_object.change_yaw_controller(req.jsonable_name,req.string_parameters)
-        
-        self._add_header_mission()
-        
-        # return message to Gui, to let it know resquest has been fulfilled
-        return SrvCreateJsonableObjectByStrResponse(received = True)
-
-    # callback for when changing controller is requested
-    def _handle_service_change_yaw_reference(self,req):
-        self.mission_object.change_yaw_reference(req.jsonable_name,req.string_parameters)
-
-        self._add_header_mission()
-
-        # return message to Gui, to let it know resquest has been fulfilled
-        return SrvCreateJsonableObjectByStrResponse(received = True)      
-
-    # callback for when changing mission is requested
+    # callback for when changing mission
     def _handle_service_change_mission(self,req):
 
-        self.mission_name = req.jsonable_name
+        # dictionary = '{"sequence_inner_key":"","key":"","input_string":""}'
+        dictionary = json.loads(req.dictionary)
 
-        # class_name = req.jsonable_name
-        # chosen class taken from dictionary
-        MissionClass = missions.missions_database.database[req.jsonable_name]
+        sequence_of_inners = dictionary["sequence_inner_key"]
+
+        if sequence_of_inners:
+
+            self.mission.change_inner_of_inner(**dictionary)
+            if rospy.get_param('playing_back',True):
+                self.message += "\n\n" + 'At ' + str(rospy.get_time() - self.message_time) + ' seconds'
+                dictionary = json.loads(req.dictionary)
+                sequence_of_inners = dictionary["sequence_inner_key"]      
+
+                jsonable = self.mission.get_inner(sequence_of_inners)
+                msg = jsonable.object_combined_description()
+                self.message += "\n\n" + msg
+
+        else:
+            # change mission, if sequence is empty
+
+            # mission name
+            self.mission_name = dictionary["key"]
+
+            # chosen class taken from dictionary
+            MissionClass = MISSIONS_DATABASE[dictionary["key"]]
         
-        self.mission_object = MissionClass.from_string(req.string_parameters)
-        #rospy.logwarn(self.mission_object.__class__.__name__)
+            self.mission.to_do_before_finishing() 
+            self.mission = MissionClass.from_string(dictionary["input_string"])            
+
+            if rospy.get_param('playing_back',True):
+                self.message += "\n\n" + 'At ' + str(rospy.get_time() - self.message_time) + ' seconds'
+                self.message += "\n\n" + self.mission.object_combined_description()
+
 
         self._add_header_mission()
 
         # return message to Gui, to let it know resquest has been fulfilled
-        return SrvCreateJsonableObjectByStrResponse(received = True)        
+        return SrvChangeJsonableObjectByStrResponse(received = True)   
 
 
-    # callback for when changing desired trajectory is requested
-    def _handle_service_trajectory_des(self, req):
- 
-        # trajectory_class_name = req.trajectory
-        # update class for TrajectoryGenerator
-        self.mission_object.change_trajectory(req.trajectory,req.parameters)
+    # callback for when changing mission
+    def _handle_service_call_mission_method(self,req):
+
+        # dictionary = '{"sequence_inner_key":"","func_name":"","input_to_func":""}'
+        dictionary = json.loads(req.dictionary)
+
+        msg = self.mission.call_method_inner_of_inner(**dictionary)
+        
+        self._add_header_mission()
+
+        if rospy.get_param('playing_back',True):
+            self.message += "\n\n" + 'At ' + str(rospy.get_time() - self.message_time) + ' seconds'
+            self.message += "\n\n" + str(msg)
 
         # return message to Gui, to let it know resquest has been fulfilled
-        return SrvTrajectoryDesiredResponse(True)
+        return SrvChangeJsonableObjectByStrResponse(received = True)     
 
-    def _add_header_mission(self):
 
-        # parametric description is a method of jsonable
-        string = self.mission_object.parametric_description(self.mission_name)
+    def _add_header_mission(self,flag=False):
+        """Print string to file that may be used to reconstruct mission object.
+        Only print to file, if saving_mode is ON.
+        It might be the case that the mode is turned ON after the header, and for that use flag=True, but self.file_handle must be created before
+        """
+        
+        if self.SaveDataFlag == True or flag:
 
-        if self.SaveDataFlag == True:
-            rospy.logwarn(string)
+            # parametric description is a method of jsonable
+            string = self.mission.parametric_description(self.mission_name)
+
             # if data is being saved, append mission header
             numpy.savetxt(self.file_handle, [string], fmt="%s")
-
-    #callback for turning ON/OFF Mocap and turning OFF/ON the subscription to the simulator
-    def handle_Mocap(self,req):
-        pass
-        # # if mocap is turned on
-        # if self.flagMOCAP_On == True:
-
-        #     # request to turn OFF Mocap, and turn on subscription to Simulator messages
-        #     if req.On == False:
-
-        #         # in case Qs is not defined yet
-        #         try: 
-        #             # close mocap connection
-        #             # self.Qs._stop_measurement()
-        #             del self.Qs
-
-        #             self.flagMOCAP_On = False
-
-        #             # set flag to OFF
-        #             self.flagMOCAP = False
-
-        #             # subscribe again to simultor messages
-        #             self.SubToSim = rospy.Subscriber("quad_state", quad_state, self.get_state_from_simulator) 
-
-        #             # service has been provided
-        #             return Mocap_IdResponse(True,True)
-        #         except:
-        #             # service was NOT provided
-        #             return Mocap_IdResponse(True,False) 
-
-        #     # if we are requested to change the body Id
-        #     if req.change_id == True:
-
-        #         # see list of available bodies
-        #         bodies = self.Qs.get_updated_bodies()
-
-        #         # check if body_id available
-        #         body_indice = -1
-
-        #         # Get the corresponding id of the body
-        #         if isinstance(bodies,list):
-        #             for i in range(0,len(bodies)):
-        #                 rospy.logwarn(bodies[i]['id'])
-        #                 if(bodies[i]['id']==req.id):
-        #                     body_indice=i
-
-        #         # save body id
-        #         self.body_id = req.id                        
-
-
-        #         if body_indice == -1:
-
-        #             # body does not exist
-        #             self.flagMOCAP = False
-
-        #             # body does not exist, but service was provided
-        #             return Mocap_IdResponse(False,True)
-        #         else:
-        #             # body exists
-                    
-        #             # set flag to on
-        #             self.flagMOCAP = True
-
-        #             # body EXISTS, and service was provided
-        #             return Mocap_IdResponse(True,True)
-
-        # else:
-        #     # if Mocap is turned off, and we are requested to turn it on
-        #     if req.On == True:
-        #         # establish connection to qualisys
-        #         self.Qs = mocap_source.Mocap(info=0)
-
-        #         # stop subscription to data from simulator
-        #         # unsubscribe to topic
-        #         self.SubToSim.unregister()
-
-        #         self.flagMOCAP_On = True
-
-        #         # service was provided
-        #         return Mocap_IdResponse(False,True)
-
-    # return list of bodies detected by mocap or numbers 1 to 99 if not available
-    def handle_available_bodies(self, dummy):
-        pass
-        # if self.flagMOCAP_On:
-        #     try: # sometimes mocap causes unpredictable errors
-        #         bodies = self.Qs.find_available_bodies(False)
-        #         if len(bodies) > 0:
-        #             return {"bodies": bodies[0]}
-        #     except:
-        #         pass
-
-        # return {"bodies": range(0,100)}
-
-
-    def PublishToGui(self):
-
-        # WE ONLY PUBLIS TO TO GUI AT A CERTAIN FREQEUNCY
-        # WHICH IS NOT NECESSARILY THE FREQUENCY OF THE NODE
-        if self.PublishToGUI <= self.PublishToGUIBound:
-            # if we dont publish, we increase counter
-            self.PublishToGUI = self.PublishToGUI + 1
-        else:
-            # if we publish, we increase counter
-            self.PublishToGUI = 1
-
-            # create a message of type quad_state_and_cmd
-            st_cmd = quad_state_and_cmd()
-
-            # get current time
-            st_cmd.time  = rospy.get_time()
-
-            position_velocity = self.mission_object.get_pv()
-
-            # state of quad comes from QUALISYS, or other sensor
-            st_cmd.x     = position_velocity[0]; st_cmd.y     = position_velocity[1]; st_cmd.z     = position_velocity[2]
-            st_cmd.vx    = position_velocity[3]; st_cmd.vy    = position_velocity[4]; st_cmd.vz    = position_velocity[5]
-
-            euler_angle  = self.mission_object.get_euler_angles()
-
-            st_cmd.roll  = euler_angle[0]; st_cmd.pitch = euler_angle[1]; st_cmd.yaw   = euler_angle[2]
-            ea_desired = self.mission_object.get_ea_desired()            
-            st_cmd.roll_d  = ea_desired[0]; st_cmd.pitch_d = ea_desired[1]; st_cmd.yaw_d   = ea_desired[2]
-
-            position_velocity_desired = self.mission_object.get_pv_desired()
-
-            st_cmd.xd    = position_velocity_desired[0]; st_cmd.yd    = position_velocity_desired[1]; st_cmd.zd    = position_velocity_desired[2]
-            st_cmd.vxd   = position_velocity_desired[3]; st_cmd.vyd   = position_velocity_desired[4]; st_cmd.vzd   = position_velocity_desired[5]
-
-            rc_input_to_quad = self.mission_object.rc_output
-            st_cmd.cmd_1 = rc_input_to_quad[0]; st_cmd.cmd_2 = rc_input_to_quad[1]; st_cmd.cmd_3 = rc_input_to_quad[2]; st_cmd.cmd_4 = rc_input_to_quad[3]
-
-            st_cmd.cmd_5 = 1500.0; st_cmd.cmd_6 = 1500.0; st_cmd.cmd_7 = 1500.0; st_cmd.cmd_8 = 1500.0
-
-            self.pub.publish(st_cmd)
-
-            # controller state is supposed to be published
-            if self.flagPublish_ctr_st:
-                # publish controller state
-                msg       = Controller_State()
-                msg.time  = rospy.get_time()
-                msg.d_est = self.ControllerObject.d_est
-                self.pub_ctr_st.publish(msg) 
 
     def control_compute(self):
 
         # node will be named quad_control (see rqt_graph)
         rospy.init_node('quad_control', anonymous=True)
-
-        # message published by quad_control to GUI 
-        self.pub = rospy.Publisher('quad_state_and_cmd', quad_state_and_cmd, queue_size=10)
-
-        # for publishing state of the controller
-        self.pub_ctr_st = rospy.Publisher('ctr_state', Controller_State, queue_size=10)
-        # initialize flag for publishing controller state at false
-        self.flagPublish_ctr_st = False
 
         #-----------------------------------------------------------------------#
         # TO SAVE DATA FLAG
@@ -365,57 +154,49 @@ class QuadController():
         # Service is created, so that data is saved when GUI requests
         Save_data_service = rospy.Service('SaveDataFromGui', SaveData, self._handle_save_data)
 
-
         #-----------------------------------------------------------------------#
-        # service for selecting desired trajectory
-        # by default, staying still in origin is desired trajectory
-        TrajDes_service = rospy.Service('ServiceTrajectoryDesired', SrvTrajectoryDesired, self._handle_service_trajectory_des)
-
-
+        rospy.Service('ServiceChangeMission', SrvChangeJsonableObjectByStr, self._handle_service_change_mission)
+        rospy.Service('ServiceChangeMissionCallMethod', SrvChangeJsonableObjectByStr, self._handle_service_call_mission_method)
+        
         #-----------------------------------------------------------------------#
-        # Service is created, so that Mocap is turned ON or OFF whenever we want
-        Save_MOCAP_service = rospy.Service('Mocap_Set_Id', Mocap_Id, self.handle_Mocap)
-
-        # Service for providing list of available mocap bodies to GUI
-        mocap_available_bodies = rospy.Service('MocapBodies', MocapBodies, self.handle_available_bodies)
-
-        #-----------------------------------------------------------------------#
-        # Services are created, so that user can change controller, reference, yaw_controller and yaw reference on GUI
-        rospy.Service('ServiceChangeController'   , SrvCreateJsonableObjectByStr, self._handle_service_change_controller)
-        rospy.Service('ServiceChangeReference'    , SrvCreateJsonableObjectByStr, self._handle_service_change_reference)
-        rospy.Service('ServiceChangeYawController', SrvCreateJsonableObjectByStr, self._handle_service_change_yaw_controller)
-        rospy.Service('ServiceChangeYawReference' , SrvCreateJsonableObjectByStr, self._handle_service_change_yaw_reference)
-
-        rospy.Service('ServiceChangeMission', SrvCreateJsonableObjectByStr, self._handle_service_change_mission)
-
-        #-----------------------------------------------------------------------#
-        # Service: change neutral value that guarantees that a quad remains at a desired altitude
-        rospy.Service('IrisPlusResetNeutral', IrisPlusResetNeutral, self._handle_iris_plus_reset_neutral)
-        rospy.Service('IrisPlusSetNeutral', IrisPlusSetNeutral, self._handle_iris_plus_set_neutral)
-        #-----------------------------------------------------------------------#
-
         self.mission_name  = 'Default'
         # Default Mission Class
-        MissionClass = missions.missions_database.database['Default']        
+        MissionClass = MISSIONS_DATABASE['Default']        
         # construct a default object
-        self.mission_object = MissionClass()
+        self.mission = MissionClass()
+
+        # self.mission = missions.type_uav_mission.MissionGeneral().get_mission()
 
         rate = rospy.Rate(self.frequency)
 
+        if rospy.get_param('playing_back',True):
+            self.message_time = rospy.get_time()
+            self.message  = 'At 0 seconds:'
+            self.message += "\n\n" + self.mission.object_combined_description()
+
+        self.emergency_flag = False
+
         while not rospy.is_shutdown():
 
-            self.mission_object.publish()
-
-            # publish to GUI (it also contains publish state of Control to GUI)
-            self.PublishToGui()
-
+            # this may come after the publish, but beware that it affects the delta_t
             if self.SaveDataFlag == True:
                 # if we want to save data
-                numpy.savetxt(self.file_handle, [self.mission_object.get_complete_data()], delimiter=' ')
+                numpy.savetxt(self.file_handle, [numpy.array(self.mission.get_complete_data())], delimiter=' ')
+                # see if we save time by saving like this
+                # numpy.savetxt(self.file_handle, [numpy.array(self.mission.get_complete_data())], delimiter=' ', fmt='%.3f')
+                # see if we save time by saving like this
+                # numpy.savetxt(self.file_handle, [numpy.array([rospy.get_time()])], delimiter=' ', fmt='%.3f')
+
+            self.mission.publish()
+
+            if self.mission.test_emergency():
+                if not self.emergency_flag:
+                    self.emergency_flag = True
+                    self.mission.trigger_emergency()
+                    print(4*'EMERGENGY TRIGGERED\n')
             
             # go to sleep
             rate.sleep()
-
 
 if __name__ == '__main__':
     AQuadController = QuadController()
@@ -423,4 +204,10 @@ if __name__ == '__main__':
         AQuadController.control_compute()
     except rospy.ROSInterruptException:
         pass
- 
+
+    if rospy.get_param('playing_back',True):
+        import pdfkit
+        pdfkit.from_string(AQuadController.message, "/home/pedrootao/SML_CODE/src/quad_control/experimental_data/data.pdf")
+        AQuadController.mission.print_all_plots("/home/pedrootao/SML_CODE/src/quad_control/experimental_data/data.pdf")
+        #AQuadController.mission.to_do_before_finishing()
+

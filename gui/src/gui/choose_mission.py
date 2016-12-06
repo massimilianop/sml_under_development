@@ -8,9 +8,11 @@ from python_qt_binding.QtGui import QWidget
 from PyQt4.QtCore import QObject, pyqtSignal
 
 # import services defined in quad_control; service being used: SrvCreateJsonableObjectByStr
-from quad_control.srv import SrvCreateJsonableObjectByStr,IrisPlusResetNeutral,IrisPlusSetNeutral,ServiceSequence
+from quad_control.srv import SrvCreateJsonableObjectByStr,IrisPlusResetNeutral,IrisPlusSetNeutral,ServiceSequence,SrvChangeJsonableObjectByStr
 
 import argparse
+
+import collections
 
 
 import rospkg
@@ -20,8 +22,19 @@ rospack = rospkg.RosPack()
 import sys
 sys.path.insert(0, rospack.get_path('quad_control'))
 
+# # no need to get quad_control path, since it is package; import missions dictionary
+# from src.missions import missions_database
+# # from src.missions import type_uav_mission
+# DICTIONARY_OF_OPTIONS = missions_database.database2
+# # DICTIONARY_OF_OPTIONS = {"Mission":type_uav_mission.MissionGeneral}
+
 # no need to get quad_control path, since it is package; import missions dictionary
-from src.missions import missions_database
+from src.type_uav import type_uav
+# from src.missions import type_uav_mission
+DICTIONARY_OF_OPTIONS = type_uav.database
+# DICTIONARY_OF_OPTIONS = {"Mission":type_uav_mission.MissionGeneral}
+
+
 
 from src.utilities import jsonable
 
@@ -29,16 +42,24 @@ from choose_jsonable import ChooseJsonablePlugin
 
 import json
 
+EXAMPLE_DICTIONARY = {}
+EXAMPLE_DICTIONARY["name_main_tab"] = "type_uav"
+EXAMPLE_DICTIONARY["strServiceChangeName"] = "ServiceChangeMission"
+EXAMPLE_DICTIONARY["DICTIONARY_OF_OPTIONS"] = DICTIONARY_OF_OPTIONS
+EXAMPLE_DICTIONARY["name_service_sequence_provider"] = 'ServiceSequencer'
 
 class ChooseMissionPlugin(Plugin):
 
-    def __init__(self, context,namespace = None):
+    def __init__(self, context,namespace = None, dictionary_options = EXAMPLE_DICTIONARY):
 
-        # "global variables"
+        for (key,item) in dictionary_options.items():
+            setattr(self,key,item)
+
+        # "global variables" in dictionary
         self.dic_sequence_services = {}
         self.dic_sequence_services['last_trigger_time']            = 0.0
-        self.dic_sequence_services['checked_sequence_of_missions'] = True
         self.dic_sequence_services['list_sequence_services']       = []
+        self.dic_sequence_services['set_jsonable_extra_callback']  = self.update_detailed_description
 
         # it is either "" or the input given at creation of plugin
         self.namespace = self._parse_args(context.argv())
@@ -56,9 +77,10 @@ class ChooseMissionPlugin(Plugin):
                       dest="quiet",
                       help="Put plugin in silent mode")
         args, unknowns = parser.parse_known_args(context.argv())
-        if not args.quiet:
-            print 'arguments: ', args
-            print 'unknowns: ', unknowns
+        # TODO: I commented this out
+        # if not args.quiet:
+        #     print 'arguments: ', args
+        #     print 'unknowns: ', unknowns
         
                
         # Create QWidget
@@ -77,69 +99,324 @@ class ChooseMissionPlugin(Plugin):
         # tell from pane to pane.
         if context.serial_number() > 1:
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
+        
+        # commment this, otherwise form is included when gui is opened
         # Add widget to the user interface
-        context.add_widget(self._widget)
+        #context.add_widget(self._widget)
+
+        self._widget.labelVehicle.setText("Vehicle = " + rospy.get_namespace())
 
         # ---------------------------------------------- #
         # ---------------------------------------------- #
-
-        self._widget.ResetIrisNeutralValue.clicked.connect(self.reset_iris_neutral_value)
-        self._widget.SetIrisNeutralValue.clicked.connect(self.set_iris_neutral_value)
-
 
         self._widget.SetSequenceMissions.clicked.connect(self.send_list_of_services)
+        self._widget.pushButtonClearSequenceMissions.clicked.connect(self.clear_list_of_services)
         # ---------------------------------------------- #
         
-        # button to request service for setting new controller, with new parameters
-        self._widget.SetControllerButton.clicked.connect(self.__get_new_controller_parameters)
+        # determine ROS workspace directory where data is saved
+        package_path = rospkg.RosPack().get_path('quad_control')
+        self.data_file_path = package_path+'/src/type_uav/sequence_missions.txt' 
 
-        # if item in list is selected, print corresponding message
-        self._widget.ListControllersWidget.itemDoubleClicked.connect(self.__controller_item_clicked)
-        self._widget.ListControllersWidget.itemClicked.connect(self.__print_controller_item_clicked)
-
-        self.__reset_controllers_widget()
-
-        # button for resetting list of available controllers
-        self._widget.ResetControllersList.clicked.connect(self.__reset_controllers_widget)
+        self._widget.save_new_sequence.clicked.connect(self.save_new_sequence)
+        self._widget.new_sequence.clicked.connect(self.new_sequence)
 
 
-        self.choose_reference  = ChooseJsonablePlugin(context,\
-            self.namespace,\
-            name_tab = "Reference",
-            dictionary_of_options = {},\
-            service_name = 'ServiceChangeReference',\
-            ServiceClass = SrvCreateJsonableObjectByStr)
-        self.choose_reference.dic_sequence_services = self.dic_sequence_services
+        # if item in list is clicked twice selected, print corresponding message
+        self._widget.available_mission_sequences.itemDoubleClicked.connect(self.select_chosen_sequence)
+
+        # if item in list is clicked once, print corresponding message
+        self._widget.available_mission_sequences.itemClicked.connect(self.print_sequence_mission_description)
+
+        
+        self._widget.textEdit_detailed_description.itemDoubleClicked.connect(self.print_mission_step_description)
+        self._widget.pushButtonUpdate.clicked.connect(self.modify_mission_step_description)
+
+        self.reset_sequence_missions()
 
 
-        self.choose_yaw_reference  = ChooseJsonablePlugin(context,\
-            self.namespace,\
-            name_tab = "YawReference",
-            dictionary_of_options = {},\
-            service_name = 'ServiceChangeYawReference',\
-            ServiceClass = SrvCreateJsonableObjectByStr)        
-        self.choose_yaw_reference.dic_sequence_services = self.dic_sequence_services
+        name_tab   = self.name_main_tab
+        dictionary = {}
+        dictionary["context"]  = self.context
+        dictionary["name_tab"] = name_tab
+        # dictionary["dictionary_of_options"] = missions_database.database
+        dictionary["dictionary_of_options"] = self.DICTIONARY_OF_OPTIONS
+        # dictionary["service_name"]  = "ServiceChangeMission"
+        dictionary["service_name"]  = self.strServiceChangeName
+        dictionary["ServiceClass"]  = SrvChangeJsonableObjectByStr
+        dictionary["sequence_tabs"] = []
+
+        setattr(self,name_tab,ChooseJsonablePlugin(**dictionary))
+        setattr(getattr(self,name_tab),"dic_sequence_services",self.dic_sequence_services)
+
+        #getattr(self,name_tab).change_dictionary_of_options(self.__HeadClass.inner[inner_key])
+        self._widget.tabWidget.addTab(getattr(self,name_tab)._widget,name_tab)
+        #self.mission_inner_keys.append(inner_key)
+
+    def print_mission_step_description(self):
+        
+        self._widget.mission_sequence_description.clear()
+
+        item_number = self._widget.textEdit_detailed_description.currentRow()
+
+        description = self.dic_sequence_services['list_sequence_services'][item_number]
+
+        simplified_dictionary = collections.OrderedDict()
+        simplified_dictionary['trigger_instant'] = description['trigger_instant']
+
+        dictionary = json.loads(description['inputs_service']['dictionary'])
+        if 'key' in dictionary.keys():
+            simplified_dictionary['input_string'] = json.loads(dictionary['input_string'])
+        if 'func_name' in dictionary.keys():
+            simplified_dictionary['input_to_func'] = dictionary['input_to_func']
+
+        string = json.dumps(simplified_dictionary, separators=(', \n', '\t: '))
+
+        string = string.replace('"[','[')
+        string = string.replace(']"',']')
+        string = string.replace('{','{\n')
+        string = string.replace('}','\n}')
+        for i in range(10):
+            string = string.replace(', \n'+str(i),', '+str(i))
+            string = string.replace(', \n'+str(-i),', '+str(-i))
+
+        self._widget.mission_sequence_description.setText(string)
 
 
-        self.choose_yaw_controller  = ChooseJsonablePlugin(context,\
-            self.namespace,\
-            name_tab = "YawController",
-            dictionary_of_options = {},\
-            service_name = 'ServiceChangeYawController',\
-            ServiceClass = SrvCreateJsonableObjectByStr)
-        self.choose_yaw_controller.dic_sequence_services = self.dic_sequence_services
+    def modify_mission_step_description(self):
+        
+        item_number = self._widget.textEdit_detailed_description.currentRow()
+
+        description = self.dic_sequence_services['list_sequence_services'][item_number]
+
+        string = self._widget.mission_sequence_description.toPlainText()
+
+        simplified_dictionary = json.loads(string)
+        
+        description['trigger_instant'] = simplified_dictionary['trigger_instant']
+
+        dictionary = json.loads(description['inputs_service']['dictionary'])
+        if 'key' in dictionary.keys():
+            dictionary['input_string'] = json.dumps(simplified_dictionary['input_string']) 
+        if 'func_name' in dictionary.keys():
+            dictionary['input_to_func'] = simplified_dictionary['input_to_func']
+
+        description['inputs_service']['dictionary'] = json.dumps(dictionary)
+
+        # since trigger_instant might have changed, print again
+        self.update_detailed_description()
+
+    def select_chosen_sequence(self):
+
+        sequence_selected = self._widget.available_mission_sequences.currentItem().text()
+
+        data_file = open(self.data_file_path, 'r+') 
+        list_sequence_services = data_file.read()
+        list_sequence_services = json.loads(list_sequence_services)
+        data_file.close()
+
+        self._widget.mission_sequence_description.clear()
+
+        for item in list_sequence_services:
+            # item is a dictionary
+            item = json.loads(item)
+            if item["name"] == sequence_selected:
+                item_selected        = item
+                sequence_description = item_selected["description"]
+                sequence_description = json.dumps(sequence_description)
+                self._widget.mission_sequence_description.setText(sequence_description)
 
 
-        self.choose_controller  = ChooseJsonablePlugin(context,\
-            self.namespace,\
-            name_tab = "Controller",
-            dictionary_of_options = {},\
-            service_name = 'ServiceChangeController',\
-            ServiceClass = SrvCreateJsonableObjectByStr)
-        self.choose_controller.dic_sequence_services = self.dic_sequence_services
+        self.dic_sequence_services['list_sequence_services'] = item_selected["sequence_of_missions"]
+        last_service = item_selected["sequence_of_missions"][-1]
+        self.dic_sequence_services['last_trigger_time']      = last_service["trigger_instant"]
+
+        # TODO: this does not update trigger if tabs inside main tab are open
+        # update last trigger_instant in main_tab
+        getattr(self,self.name_main_tab)._widget.TriggerInstant.setValue(last_service["trigger_instant"])
+
+        self.update_detailed_description()        
+
+    def update_detailed_description(self):
+
+        # # print detailed description
+        # self._widget.textEdit_detailed_description.clear()
+        # detailed_description = ""
+        # for item in self.dic_sequence_services['list_sequence_services']:
+        #     detailed_description += str(item['trigger_instant'])+": "
+        #     dictionary = item['inputs_service']['dictionary']
+        #     dictionary = json.loads(dictionary)
+        #     if 'key' in dictionary.keys():
+        #         detailed_description += dictionary['key'] +'\n'
+        #     if 'func_name' in dictionary.keys():
+        #         detailed_description += dictionary['func_name'] +'\n'
+
+        #self._widget.textEdit_detailed_description.setText(detailed_description)
+
+        # print detailed description
+        self._widget.textEdit_detailed_description.clear()
+        for item in self.dic_sequence_services['list_sequence_services']:
+            detailed_description = str(item['trigger_instant'])+": "
+            dictionary = item['inputs_service']['dictionary']
+            dictionary = json.loads(dictionary)
+            if 'key' in dictionary.keys():
+                detailed_description += dictionary['key'] +'\n'
+                self._widget.textEdit_detailed_description.addItem(detailed_description)
+            if 'func_name' in dictionary.keys():
+                detailed_description += dictionary['func_name'] +'\n'
+                self._widget.textEdit_detailed_description.addItem(detailed_description)
+
+    def new_sequence(self):
+
+        if self._widget.new_sequence.text() == "New":
+
+            self._widget.available_mission_sequences.clear()
+
+            self._widget.mission_sequence_description.setText('{"name":"","description":""}')
+
+            self._widget.new_sequence.setText("Reset")
+
+            return 
+
+        if self._widget.new_sequence.text() == "Reset":
+
+            self.reset_sequence_missions()
+
+            self._widget.new_sequence.setText("New")
+
+            return
+
+    def reset_sequence_missions(self):
+
+        self.print_available_sequence_of_missions()
+
+        self._widget.mission_sequence_description.setText('')
+
+        return
+
+    def request_sequence_mission(self):
+
+        sequence_selected = self._widget.available_mission_sequences.currentItem().text()
+
+        data_file = open(self.data_file_path, 'r+') 
+        list_sequence_services = data_file.read()
+        list_sequence_services = json.loads(list_sequence_services)
+        data_file.close()
+
+        for item in list_sequence_services:
+            # item is a dictionary
+            item = json.loads(item)
+            if item["name"] == sequence_selected:
+                sequence_description = item["sequence_of_missions"]
+                sequence_description = json.dumps(sequence_description)
+                self.send_list_of_services_2(sequence_description)
+        
+        self.reset_sequence_missions()
+
+    def print_sequence_mission_description(self):
+
+        sequence_selected = self._widget.available_mission_sequences.currentItem().text()
+
+        data_file = open(self.data_file_path, 'r+') 
+        list_sequence_services = data_file.read()
+        list_sequence_services = json.loads(list_sequence_services)
+        data_file.close()
+
+        self._widget.mission_sequence_description.clear()
+
+        for item in list_sequence_services:
+            # item is a dictionary
+            item = json.loads(item)
+            if item["name"] == sequence_selected:
+                sequence_description = item["description"]
+                sequence_description = json.dumps(sequence_description)
+                self._widget.mission_sequence_description.setText(sequence_description)
+
+    def save_new_sequence(self):
+
+        if self._widget.new_sequence.text() == "Reset":
+
+            dictionary_string  = self._widget.mission_sequence_description.toPlainText()
+
+            dictionary         = json.loads(dictionary_string)        
+            # dictionary  = {"name":"","description":""}
+
+            dictionary["sequence_of_missions"] = self.dic_sequence_services['list_sequence_services']
+
+            dictionary_string = json.dumps(dictionary)
+
+            # TODO: see if we want to print this
+            # print(dictionary_string)
+
+            # read mode by default
+            data_file = open(self.data_file_path, 'r+') 
+            list_sequence_services = data_file.read()
+            list_sequence_services = json.loads(list_sequence_services)
+
+            list_sequence_services.append(dictionary_string)
+            list_sequence_services = json.dumps(list_sequence_services)
+
+            data_file.close()
+            data_file = open(self.data_file_path, 'w+')
+            data_file.write(list_sequence_services)
+            data_file.close()
+
+            self.reset_sequence_missions()
+            
+            return
+
+        if self._widget.new_sequence.text() == "New":
+            return
 
 
-        self._widget.tabWidget.currentChanged.connect(self.update_last_trigger_instant)
+    def print_available_sequence_of_missions(self):
+
+        data_file = open(self.data_file_path, 'r+') 
+        list_sequence_services = data_file.read()
+        list_sequence_services = json.loads(list_sequence_services)
+        data_file.close()
+
+        self._widget.mission_sequence_description.clear()
+
+        self._widget.available_mission_sequences.clear()
+        for sequence in list_sequence_services:
+            sequence = json.loads(sequence)
+            self._widget.available_mission_sequences.addItem(sequence['name'])
+
+        return
+
+    def send_list_of_services_2(self,service_sequence_str):
+        # # debug
+        # for service in self.dic_sequence_services['list_sequence_services']:
+        #     print(service)
+        #     print('\n\n')
+
+        # request service
+        try: 
+            # time out of one second for waiting for service
+            rospy.wait_for_service(self.namespace+self.name_service_sequence_provider,1.0)
+            
+            try:
+                request = rospy.ServiceProxy(self.namespace+self.name_service_sequence_provider, ServiceSequence)
+
+                reply = request(service_sequence = service_sequence_str)
+
+                if reply.received == True:
+                    # if controller receives message
+                    # print('Success')
+                    pass
+
+            except rospy.ServiceException as exc:
+                rospy.logwarn("Service did not process request: " + str(exc))
+            
+        except rospy.ServiceException as exc:
+            rospy.logwarn("Service did not process request: " + str(exc))
+
+
+    def clear_list_of_services(self):
+        self.dic_sequence_services['list_sequence_services'] = []
+        self.dic_sequence_services['last_trigger_time'] = 0
+
+        self._widget.textEdit_detailed_description.clear()
 
     def send_list_of_services(self):
         # # debug
@@ -150,330 +427,24 @@ class ChooseMissionPlugin(Plugin):
         # request service
         try: 
             # time out of one second for waiting for service
-            rospy.wait_for_service(self.namespace+'ServiceSequencer',1.0)
+            rospy.wait_for_service(self.namespace+self.name_service_sequence_provider,1.0)
             
             try:
-                request = rospy.ServiceProxy(self.namespace+'ServiceSequencer', ServiceSequence)
+                request = rospy.ServiceProxy(self.namespace+self.name_service_sequence_provider, ServiceSequence)
 
                 service_sequence = json.dumps(self.dic_sequence_services['list_sequence_services'])
                 reply = request(service_sequence = service_sequence)
 
                 if reply.received == True:
                     # if controller receives message
-                    print('Success')
+                    # print('Success')
+                    pass
 
             except rospy.ServiceException as exc:
                 rospy.logwarn("Service did not process request: " + str(exc))
             
         except rospy.ServiceException as exc:
             rospy.logwarn("Service did not process request: " + str(exc))
-
-    def update_last_trigger_instant(self):
-
-        index = self._widget.tabWidget.currentIndex()
-
-        tab_name = self._widget.tabWidget.tabText(index)
-        
-        time_instant = self.dic_sequence_services['last_trigger_time']
-
-
-        if tab_name == "Mission":
-            self._widget.TriggerInstant.setValue(time_instant)
-
-        if tab_name == "Reset":
-            self._widget.TriggerInstantNeutral.setValue(time_instant)
-        
-        if tab_name == "Controller":
-            self.choose_controller._widget.TriggerInstant.setValue(time_instant)
-
-        if tab_name == "Reference":
-            self.choose_reference._widget.TriggerInstant.setValue(time_instant)
-
-        if tab_name == "YawController":
-            self.choose_yaw_controller._widget.TriggerInstant.setValue(time_instant)
-
-        if tab_name == "YawReference":
-            self.choose_yaw_reference._widget.TriggerInstant.setValue(time_instant)
-
-    def __print_controller_item_clicked(self):
-
-        if self.__head_class_set == False:
-            
-            key_class_name_selected = self._widget.ListControllersWidget.currentItem().text()
-            ClassSelected           = missions_database.database[key_class_name_selected]
-
-            # message to be printed
-            string = ClassSelected.description()
-
-            # print message on GUI
-            self._widget.ItemClickedMessage.setText(string)
-        else:
-            key_class_name_selected = self._widget.ListControllersWidget.currentItem().text()
-            ClassSelected           = self.dic_to_print[key_class_name_selected]
-
-            # message to be printed
-            string = ClassSelected.description() 
-
-            # print message on GUI
-            self._widget.ItemClickedMessage.setText(string)
-
-        pass            
-
-
-    def __reset_controllers_widget(self):
-        """ Clear widget with missions list and print it again """
-
-        # clear items from widget
-        self._widget.ListControllersWidget.clear()
-
-        # create list of available controller classes based on **imported dictionary**
-        for key in missions_database.database.keys():
-            # print all elements in dictionary
-            self._widget.ListControllersWidget.addItem(key)
-
-        self.__head_class_set       = False
-        self.dic_to_print           = {}
-        self.__head_class_completed = False
-
-        self.__remove_tabs()
-
-    def __remove_tabs(self):
-
-        for index in range(self._widget.tabWidget.count()-2):
-            # every time I remove a tab, I get a new tabWidget
-            # with one less tab; hence, I remove tab with index 1  
-            # until I get tabWidget, with just one tab
-            self._widget.tabWidget.removeTab(2)
-
-    def __add_tab(self):
-
-        if 'controller' in self.__HeadClass.inner.keys():
-            self.choose_controller.change_dictionary_of_options(self.__HeadClass.inner['controller'])
-            self._widget.tabWidget.addTab(self.choose_controller._widget,'Controller')
-
-        if 'reference' in self.__HeadClass.inner.keys():  
-            self.choose_reference.change_dictionary_of_options(self.__HeadClass.inner['reference'])
-            self._widget.tabWidget.addTab(self.choose_reference._widget,'Reference')
-
-        if 'yaw_controller' in self.__HeadClass.inner.keys():
-            self.choose_yaw_controller.change_dictionary_of_options(self.__HeadClass.inner['yaw_controller'])
-            self._widget.tabWidget.addTab(self.choose_yaw_controller._widget,'YawController')
-
-        if 'yaw_reference' in self.__HeadClass.inner.keys():
-            self.choose_yaw_reference.change_dictionary_of_options(self.__HeadClass.inner['yaw_reference'])
-            self._widget.tabWidget.addTab(self.choose_yaw_reference._widget,'YawReference')            
-
-
-    def __controller_item_clicked(self):
-
-        if self.__head_class_set == False:
-
-            self.__head_class_set = True
-            self.__head_class_key = self._widget.ListControllersWidget.currentItem().text()
-            # notice this is a class, not an object
-            self.__HeadClass      = missions_database.database[self.__head_class_key]
-
-            head_class_input_dic = {}
-            for key in self.__HeadClass.inner.keys():
-                head_class_input_dic[key] = []
-            self.__head_class_input_dic = head_class_input_dic
-
-            if jsonable.check_completeness(self.__head_class_input_dic):
-                self.__print_controller_message()
-            else:
-                self.__list_keys = self.__head_class_input_dic.keys()            
-                self.print_new_list()
-
-        else:   
-            
-            chosen_class = self._widget.ListControllersWidget.currentItem().text()
-            ChosenClass  = self.dic_to_print[chosen_class]
-            # chosen_class_list_of_keys = ChosenClass.inner.keys()
-
-            nested_dictionary = {}
-            for key in ChosenClass.inner.keys():
-                nested_dictionary[key] = []
-
-            list_of_keys_appended = self.__list_keys[0]
-
-            input_dictionary  = self.__head_class_input_dic
-            list_keys         = list_of_keys_appended.split(':')
-            
-            #rospy.logwarn(self.__head_class_input_dic)
-            jsonable.update_input_dictionary(input_dictionary,list_keys,chosen_class,nested_dictionary)
-            self.__head_class_input_dic = input_dictionary
-
-            if jsonable.check_completeness(self.__head_class_input_dic):
-                self.__print_controller_message()
-            else:
-                list_of_keys_appended = self.__list_keys[0]
-                self.__list_keys      = self.__list_keys[1:]
-                
-                for chosen_class_key in ChosenClass.inner.keys():
-                    self.__list_keys.insert(0,list_of_keys_appended+':'+chosen_class_key)
-                
-                self.print_new_list()
-
-    def print_new_list(self):
-
-        input_dictionary  = self.__head_class_input_dic
-        list_of_keys      = self.__list_keys[0]
-        list_of_keys      = list_of_keys.split(':')
-        self.dic_to_print = self.__HeadClass.get_dic_recursive(input_dictionary,list_of_keys)
-
-        #rospy.logwarn(self.dic_to_print)
-
-        # clear items from widget
-        self._widget.ListControllersWidget.clear()
-        for key in self.dic_to_print.keys():
-            # add item
-            self._widget.ListControllersWidget.addItem(key)
-
-    def __print_controller_message(self):
-        """Print message with parameters associated to chosen controller class"""
-
-        self.__head_class_completed = True
-
-        # rospy.logwarn(self.__head_class_input_dic)
-
-        string = self.__HeadClass.to_string(self.__head_class_input_dic)
-        # print message on GUI
-        self._widget.ControllerMessageInput.setPlainText(string)
-
-        # clear items from widget
-        self._widget.ListControllersWidget.clear()
-
-        # print message on GUI
-        #self._widget.ItemClickedMessage.setText('Selected Mission: '+self.__HeadClass.description())
-        self._widget.ItemClickedMessage.setText('<p>Selected Mission:</p>'+self.__HeadClass.combined_description(self.__head_class_input_dic))
-
-        self.__add_tab()
-
-        return 
-
-    def __get_new_controller_parameters(self):
-        """Request service for new controller with parameters chosen by user"""
-
-
-        if self.__head_class_completed == True:
-        
-            if self.dic_sequence_services['checked_sequence_of_missions'] == True:
-
-                # get string that user modified with new parameters
-                string              = self._widget.ControllerMessageInput.toPlainText()
-                # get new parameters from string
-                parameters          = string
-
-
-                new_service = {}
-
-                trigger_instant = self._widget.TriggerInstant.value()
-                new_service['trigger_instant'] = trigger_instant
-
-                # we are changing the last_trigger_time for all objects that share dictionary
-                self.dic_sequence_services['last_trigger_time'] = trigger_instant
-
-                new_service['service_name']    = 'ServiceChangeMission'
-                new_service['inputs_service']  = {'jsonable_name':self.__head_class_key, 'string_parameters': parameters}
-                self.dic_sequence_services['list_sequence_services'].append(new_service)
-
-            else:
-
-                # get string that user modified with new parameters
-                string              = self._widget.ControllerMessageInput.toPlainText()
-                # get new parameters from string
-                parameters          = string
-
-                # rospy.logwarn(parameters)
-
-                # request service
-                try: 
-                    # time out of one second for waiting for service
-                    rospy.wait_for_service("/"+self.namespace+'ServiceChangeMission',2.0)
-                    
-                    try:
-                        RequestingMission = rospy.ServiceProxy("/"+self.namespace+'ServiceChangeMission', SrvCreateJsonableObjectByStr)
-                        reply = RequestingMission(jsonable_name = self.__head_class_key, string_parameters = parameters)
-
-                        if reply.received == True:
-                            # if controller receives message
-                            self._widget.Success.setChecked(True) 
-                            self._widget.Failure.setChecked(False) 
-
-
-                    except rospy.ServiceException as exc:
-                        rospy.logwarn("Service did not process request: " + str(exc))
-                        rospy.logwarn('Proxy for service that sets mission FAILED')
-                        self._widget.Success.setChecked(False) 
-                        self._widget.Failure.setChecked(True) 
-                        # print "Service call failed: %s"%e
-                    
-                except rospy.ServiceException as exc:
-                    rospy.logwarn("Service did not process request: " + str(exc))
-                    rospy.logwarn('Timeout for service that sets mission')
-                    self._widget.Success.setChecked(False) 
-                    self._widget.Failure.setChecked(True) 
-                    # print "Service not available ..."        
-                    pass
-        else:
-            # print message on GUI
-            self._widget.ItemClickedMessage.setText('<b>Service cannot be completed: finish choosing</b>')    
-
-        pass
-
-
-    def reset_iris_neutral_value(self):
-
-        if self.dic_sequence_services['checked_sequence_of_missions'] == True:
-
-                new_service = {}
-                trigger_instant = self._widget.TriggerInstantNeutral.value()
-                new_service['trigger_instant'] = trigger_instant
-                self.dic_sequence_services['last_trigger_time'] = trigger_instant
-
-                new_service['service_name']    = 'IrisPlusResetNeutral'
-                new_service['inputs_service']  = {}
-                self.dic_sequence_services['list_sequence_services'].append(new_service)
-
-        else:
-            try: 
-                # time out of one second for waiting for service
-                rospy.wait_for_service(self.namespace+'IrisPlusResetNeutral',1.0)
-                try:
-                    # request reseting neutral value for iris+ (implicit, with keywords)
-                    ResetingNeutral = rospy.ServiceProxy(self.namespace+'IrisPlusResetNeutral', IrisPlusResetNeutral)
-                    reply = ResetingNeutral()
-                    if reply.received == True:
-                        self._widget.ThrottleNeutralValue.setValue(reply.k_trottle_neutral)
-                        rospy.logwarn('Service for reseting neutral value succeded')
-                except rospy.ServiceException as exc:
-                    rospy.logwarn("Service did not process request: " + str(exc))
-                    rospy.logwarn('Service for reseting neutral value failed')
-                    pass
-            except rospy.ServiceException as exc:
-                rospy.logwarn("Service did not process request: " + str(exc))
-                rospy.logwarn('Service for reseting neutral value failed')      
-                pass
-
-
-    def set_iris_neutral_value(self):
-        try: 
-            # time out of one second for waiting for service
-            rospy.wait_for_service(self.namespace+'IrisPlusSetNeutral',1.0)
-            try:
-                # request reseting neutral value for iris+ (implicit, with keywords)
-                ResetingNeutral = rospy.ServiceProxy(self.namespace+'IrisPlusSetNeutral', IrisPlusSetNeutral)
-                reply = ResetingNeutral(k_trottle_neutral = self._widget.ThrottleNeutralValue.value())
-                if reply.received == True:
-                    rospy.logwarn('Service for seting neutral value succeded')
-            except rospy.ServiceException as exc:
-                rospy.logwarn("Service did not process request: " + str(exc))
-                rospy.logwarn('Service for seting neutral value failed')
-                pass
-        except rospy.ServiceException as exc:
-            rospy.logwarn("Service did not process request: " + str(exc))
-            rospy.logwarn('Service for seting neutral value failed')      
-            pass            
 
     def _parse_args(self, argv):
 

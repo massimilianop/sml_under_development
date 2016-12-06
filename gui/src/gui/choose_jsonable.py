@@ -22,9 +22,15 @@ sys.path.insert(0, rospack.get_path('quad_control'))
 # no need to get quad_control path, since it is package; import controllers dictionary
 from src.utilities import jsonable
 
+import json
+
+import inspect
+
 class ChooseJsonablePlugin(Plugin):
 
-    def __init__(self, context,namespace = None, name_tab = "", dictionary_of_options = {}, service_name = "", ServiceClass = None):
+    def __init__(self, context,namespace = None, name_tab = "", dictionary_of_options = {}, service_name = "", ServiceClass = None, sequence_tabs = []):
+
+        self.context = context
 
         # it is either "" or the input given at creation of plugin
         self.namespace = self._parse_args(context.argv())
@@ -32,9 +38,11 @@ class ChooseJsonablePlugin(Plugin):
         # DO NOT COPY DICTIONARY
         self.dictionary_of_options = dictionary_of_options
 
-        self.name_tab     = name_tab
-        self.service_name = service_name
-        self.ServiceClass = ServiceClass
+        self.name_tab      = name_tab
+        self.sequence_tabs = sequence_tabs
+        
+        self.service_name  = service_name
+        self.ServiceClass  = ServiceClass
 
         super(ChooseJsonablePlugin, self).__init__(context)
         # Give QObjects reasonable names
@@ -48,10 +56,10 @@ class ChooseJsonablePlugin(Plugin):
                       dest="quiet",
                       help="Put plugin in silent mode")
         args, unknowns = parser.parse_known_args(context.argv())
-        if not args.quiet:
-            print 'arguments: ', args
-            print 'unknowns: ', unknowns
-        
+        # TODO: I commented this out
+        # if not args.quiet:
+        #     print 'arguments: ', args
+        #     print 'unknowns: ', unknowns
                
         # Create QWidget
         self._widget = QWidget()
@@ -69,9 +77,10 @@ class ChooseJsonablePlugin(Plugin):
         # tell from pane to pane.
         if context.serial_number() > 1:
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
+        
+        # If this is uncomment, a form in opened everytime I add an object of class ChooseJsonablePlugin 
         # Add widget to the user interface
-        context.add_widget(self._widget)
-
+        # context.add_widget(self._widget)
 
         # ---------------------------------------------- #
 
@@ -86,12 +95,61 @@ class ChooseJsonablePlugin(Plugin):
         
         # button to request service for setting new jsonable object
         self._widget.SetJsonableButton.clicked.connect(self.__service_jsonable_object)
+        self._widget.SetJsonableButton.setEnabled(False)
 
 
         # button for resetting list of available jsonable objects
         self._widget.ResetListJsonable.clicked.connect(self.__reset_jsonable_widget)
 
         self.__reset_jsonable_widget()
+
+        # description window to display html formatted text
+        self._widget.JsonableDescription.setAcceptRichText(True)
+
+        self._widget.tabWidget.setTabText(0,self.name_tab)
+
+        self._widget.tabWidget.currentChanged.connect(self.update_last_trigger_instant)
+
+        
+        self._widget.radioButtonMethods.clicked.connect(self.print_available_methods) 
+        self._widget.radioButtonMethods.setEnabled(False)   
+
+    def print_available_methods(self):
+        """This method is triggered only when user clicks on 'radioButtonMethods'"""
+
+        if self._widget.radioButtonMethods.isChecked():
+            # when user clicks on button
+
+            # get string that user modified with new parameters
+            string              = self._widget.JsonableMessageInput.toPlainText()
+            
+            # Class selected by user
+            ClassSelected = self.dictionary_of_options[self.__head_class_key]
+            # construct object as specified by user
+            object_selected = ClassSelected.from_string(string)
+            
+            # clear items from widget
+            self._widget.ListJsonableWidget.clear()
+            if hasattr(object_selected,"methods_list"):
+                for function_name in object_selected.methods_list:
+                    # add item
+                    self._widget.ListJsonableWidget.addItem(function_name)
+            else:
+                print("IMPLEMENT")
+
+            # when user clicks on button for methods
+            # list with methods is present
+            # and label warns user to choose one of the available methods
+            self._widget.labelJsonableAvailable.setText('Choose Method')
+        else:
+            # when user unclicks the button
+
+            # we print the message associated to the chosen jsonable
+            self.__print_jsonable_message()
+
+            # jsonable class is already chosen 
+            # (user may want to change some parameters though)          
+            self._widget.labelJsonableAvailable.setText('Choosen!')
 
     # PUBLIC FUNCTION:
     def change_dictionary_of_options(self,dictionary_of_options):
@@ -113,6 +171,49 @@ class ChooseJsonablePlugin(Plugin):
         self.__head_class_completed = False
         self.dic_to_print           = {}
 
+        self.jsonable_inner_keys     = []
+
+        self.__remove_tabs()
+        self._widget.radioButtonMethods.setEnabled(False)
+        self._widget.radioButtonMethods.setChecked(False)        
+        self._widget.SetJsonableButton.setEnabled(False)
+
+        # Warn user that it should choose one of the available jsonables classes
+        self._widget.labelJsonableAvailable.setText('Choose ' + self.name_tab)
+
+    def __remove_tabs(self):
+
+        number_of_tabs_to_preserve = 1
+
+        for index in range(self._widget.tabWidget.count()-number_of_tabs_to_preserve):
+            # every time I remove a tab, I get a new tabWidget
+            # with one less tab; hence, I remove tab with index 1
+            # until I get tabWidget, with just one tab
+            # tab_name = self._widget.tabWidget.tabText(3)
+            self._widget.tabWidget.removeTab(number_of_tabs_to_preserve)
+            # inner_key = tab_name (see __add_tab())
+            # delattr(self,tab_name)        
+
+    def __add_tab(self):
+
+        for inner_key in self.__HeadClass.inner.keys():
+
+            if not hasattr(self,inner_key):
+                dictionary = {}
+                dictionary["context"]  = self.context
+                dictionary["name_tab"] = inner_key
+                dictionary["dictionary_of_options"] = {}
+                dictionary["service_name"]  = "ServiceChangeMission"
+                dictionary["ServiceClass"]  = SrvChangeJsonableObjectByStr
+                dictionary["sequence_tabs"] = self.sequence_tabs + [inner_key]
+
+                setattr(self,inner_key,ChooseJsonablePlugin(**dictionary))
+                setattr(getattr(self,inner_key),"dic_sequence_services",self.dic_sequence_services)
+
+            getattr(self,inner_key).change_dictionary_of_options(self.__HeadClass.inner[inner_key])
+            self._widget.tabWidget.addTab(getattr(self,inner_key)._widget,inner_key)
+            self.jsonable_inner_keys.append(inner_key)
+
     def __print_list(self):
         # clearwindow
         self._widget.ListJsonableWidget.clear()
@@ -122,27 +223,66 @@ class ChooseJsonablePlugin(Plugin):
 
     def __print_jsonable_description(self):
 
-        if self.__head_class_set == False:
-            
-            key_class_name_selected = self._widget.ListJsonableWidget.currentItem().text()
-            ClassSelected           = self.dictionary_of_options[key_class_name_selected]
+        if not self._widget.radioButtonMethods.isChecked():
 
-            # message to be printed
-            string = ClassSelected.description()
+            if self.__head_class_set == False:
+                
+                key_class_name_selected = self._widget.ListJsonableWidget.currentItem().text()
+                ClassSelected           = self.dictionary_of_options[key_class_name_selected]
 
-            # print message on GUI
-            self._widget.JsonableDescription.setPlainText(string)
+                # message to be printed
+                string = ClassSelected.description()
+
+                # print message on GUI
+                self._widget.JsonableDescription.setText(string)
+            else:
+                key_class_name_selected = self._widget.ListJsonableWidget.currentItem().text()
+                ClassSelected           = self.dic_to_print[key_class_name_selected]
+
+                # message to be printed
+                string = ClassSelected.description() 
+
+                # print message on GUI
+                self._widget.JsonableDescription.setText(string)
+
+            return
+
         else:
-            key_class_name_selected = self._widget.ListJsonableWidget.currentItem().text()
-            ClassSelected           = self.dic_to_print[key_class_name_selected]
+            func_name = self._widget.ListJsonableWidget.currentItem().text()
+            self.func_name_selected = func_name
 
-            # message to be printed
-            string = ClassSelected.description() 
+            # function description taken from SelectedClass function
+            func_description = getattr(self.__HeadClass,func_name).__doc__
+            self._widget.JsonableDescription.setText(func_description)
 
-            # print message on GUI
-            self._widget.JsonableDescription.setPlainText(string)
+            func_args = inspect.getargspec(getattr(self.__HeadClass,func_name))
+            if func_args.defaults:
+                input_dictionary = dict(zip(func_args.args[-len(func_args.defaults):],func_args.defaults))
+                input_dictionary = json.dumps(input_dictionary)
+                print(input_dictionary)
+            else:
+                input_dictionary = json.dumps(dict())
 
-        pass 
+            self._widget.JsonableMessageInput.setPlainText(input_dictionary)
+
+
+
+    def update_last_trigger_instant(self):
+
+        index = self._widget.tabWidget.currentIndex()
+        print("Tab index:"+str(index)+"\n")
+
+        tab_name = self._widget.tabWidget.tabText(index)
+        
+        time_instant = self.dic_sequence_services['last_trigger_time']
+        
+        if tab_name == self.name_tab:
+            self._widget.TriggerInstant.setValue(time_instant)
+            return
+
+        if tab_name in self.jsonable_inner_keys:
+            getattr(self,tab_name)._widget.TriggerInstant.setValue(time_instant)
+            getattr(self,tab_name).update_last_trigger_instant()
         
     def __jsonable_item_clicked(self):
 
@@ -177,7 +317,9 @@ class ChooseJsonablePlugin(Plugin):
             input_dictionary  = self.__head_class_input_dic
             list_keys         = list_of_keys_appended.split(':')
             
-            rospy.logwarn(self.__head_class_input_dic)
+            # TODO: see if we want to print this
+            # rospy.logwarn(self.__head_class_input_dic)
+            
             jsonable.update_input_dictionary(input_dictionary,list_keys,chosen_class,nested_dictionary)
             self.__head_class_input_dic = input_dictionary
 
@@ -205,6 +347,10 @@ class ChooseJsonablePlugin(Plugin):
             # add item
             self._widget.ListJsonableWidget.addItem(key)
 
+        # warn user that he should choose between the available classes
+        # that are concernce with a specific inner, namely list_of_keys[-1]
+        self._widget.labelJsonableAvailable.setText('Choose '+list_of_keys[-1])
+
     def __print_jsonable_message(self):
         """Print message with parameters associated to chosen controller class"""
 
@@ -221,75 +367,90 @@ class ChooseJsonablePlugin(Plugin):
         self._widget.ListJsonableWidget.clear()
 
         # print message on GUI
-        self._widget.JsonableDescription.setPlainText('Selected ' + self.name_tab + ' : ' + self.__HeadClass.description())        
+        #self._widget.JsonableDescription.setText('Selected ' + self.name_tab + ' : ' + self.__HeadClass.description()) 
+        # TODO    
+        self._widget.JsonableDescription.setText('<p>Selected Mission:</p>'+self.__HeadClass.combined_description(self.__head_class_input_dic))       
 
-        return 
+        # make it possible to Set chosen class
+        self._widget.SetJsonableButton.setEnabled(True)
+        #cannot make methods available yet since, class hasnt been chosen yet    
+        #self._widget.radioButtonMethods.setEnabled(True) 
+
+        # jsonable class is completely chosen
+        # (now user may only change the parameters of that class)
+        self._widget.labelJsonableAvailable.setText('Choosen!')
+
+        return         
 
     def __service_jsonable_object(self):
         """Request service for new jsonable object with parameters chosen by user"""
 
         if self.__head_class_completed == True:
 
-            if self.dic_sequence_services['checked_sequence_of_missions'] == True:
+            if not self._widget.radioButtonMethods.isChecked():
 
                 # get string that user modified with new parameters
                 string              = self._widget.JsonableMessageInput.toPlainText()
                 # get new parameters from string
                 parameters          = string
 
+                # new_service = {'trigger_instant':...,"service_name":...,"","input_service":...}
                 new_service = {}
 
                 trigger_instant = self._widget.TriggerInstant.value()
                 new_service['trigger_instant'] = trigger_instant
 
-                # we are changing the last_trigger_time for all objects that share dictionary 
+                # we are changing the last_trigger_time for all objects that share dictionary
                 self.dic_sequence_services['last_trigger_time'] = trigger_instant
 
                 new_service['service_name']    = self.service_name
-                new_service['inputs_service']  = {'jsonable_name':self.__head_class_key, 'string_parameters': parameters}
+                # new_service['inputs_service']  = {'jsonable_name':self.__head_class_key, 'string_parameters': parameters}
+                # input_service = {"inner_key":self.name_tab,"key":self.__head_class_key,"input_string":parameters}
+                input_service = {"sequence_inner_key":self.sequence_tabs,"key":self.__head_class_key,"input_string":parameters}
+                input_service = json.dumps(input_service) 
+                
+                # TODO: see if we want to print this
+                # print(input_service)
+                
+                new_service['inputs_service']  = {'dictionary':input_service}
+
                 self.dic_sequence_services['list_sequence_services'].append(new_service)
 
+                self.__add_tab()
+                self._widget.radioButtonMethods.setEnabled(True) 
             else:
+
                 # get string that user modified with new parameters
-                string              = self._widget.JsonableMessageInput.toPlainText()
-                # get new parameters from string
-                parameters          = string
+                func_string_input = self._widget.JsonableMessageInput.toPlainText()
+                func_input        = json.loads(func_string_input)
 
-                # request service
-                try: 
-                    # time out of one second for waiting for service
-                    rospy.wait_for_service("/"+self.namespace+self.service_name,2.0)
-                    
-                    try:
-                        Requesting = rospy.ServiceProxy("/"+self.namespace+self.service_name, self.ServiceClass)
+                # new_service = {'trigger_instant':...,"service_name":...,"","input_service":...}
+                new_service = {}
 
-                        reply = Requesting(jsonable_name = self.__head_class_key, string_parameters = parameters)
+                trigger_instant = self._widget.TriggerInstant.value()
+                new_service['trigger_instant'] = trigger_instant
 
-                        if reply.received == True:
-                            # if controller receives message
-                            self._widget.Success.setChecked(True) 
-                            self._widget.Failure.setChecked(False) 
+                # we are changing the last_trigger_time for all objects that share dictionary
+                self.dic_sequence_services['last_trigger_time'] = trigger_instant
+
+                new_service['service_name']    = self.service_name+"CallMethod"
+                # new_service['inputs_service']  = {'jsonable_name':self.__head_class_key, 'string_parameters': parameters}
+                # dictionary = '{"sequence_inner_key":"","func_name":"","input_string":""}'
+                input_service = {"sequence_inner_key":self.sequence_tabs,"func_name":self.func_name_selected,"input_to_func":func_input}
+                input_service = json.dumps(input_service) 
+                print(input_service)
+                new_service['inputs_service']  = {'dictionary':input_service}
+
+                self.dic_sequence_services['list_sequence_services'].append(new_service)                    
 
 
-                    except rospy.ServiceException as exc:
-                        rospy.logwarn("Service did not process request: " + str(exc))
-                        rospy.logwarn('Proxy for service that sets controller FAILED')
-                        self._widget.Success.setChecked(False) 
-                        self._widget.Failure.setChecked(True) 
-                        # print "Service call failed: %s"%e
-                    
-                except rospy.ServiceException as exc:
-                    rospy.logwarn("Service did not process request: " + str(exc))
-                    rospy.logwarn('Timeout for service that sets controller')
-                    self._widget.Success.setChecked(False) 
-                    self._widget.Failure.setChecked(True) 
-                    # print "Service not available ..."        
-                    pass
+            self.dic_sequence_services["set_jsonable_extra_callback"]()
+
         else:
             # print message on GUI
             self._widget.JsonableDescription.setText('<b>Service cannot be completed: finish choosing </b>')                         
 
-        pass       
+        pass
 
     def _parse_args(self, argv):
 

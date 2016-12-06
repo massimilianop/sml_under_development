@@ -1,4 +1,13 @@
 <launch>
+
+  <!-- necessary argumets: no defaults-->
+  <arg name="uav_odometry"/>
+  <arg name="load_odometry"/>
+
+  <!-- remap topic name -->
+  <remap from="/firefly/ground_truth/odometry" to="$(arg uav_odometry)"/>
+  <remap from="/firefly/ground_truth/odometry_load" to="$(arg load_odometry)"/>
+
   <arg name="mav_name" default="firefly"/>
   <arg name="enable_logging" default="false" />
   <arg name="enable_ground_truth" default="true" />

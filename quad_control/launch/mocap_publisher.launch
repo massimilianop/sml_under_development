@@ -1,0 +1,8 @@
+<launch>
+
+    <param name="publishing_frequency" type="double" value="50"/>
+
+    <!-- Mocap publisher -->
+    <node pkg="quad_control" name="mocap_publisher" type="mocap_publisher.py" output="screen"/>
+
+</launch>
