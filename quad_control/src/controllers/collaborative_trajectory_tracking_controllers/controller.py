@@ -70,9 +70,11 @@ class SimplePIDController(Controller):
     derivative_gain_z    = 2*rospy.get_param("damping_z",1.0)*rospy.get_param("natural_frequency_z",1.0),
     integral_gain_z      = rospy.get_param("integral_gain_z",0.0),
     bound_integral_z     = rospy.get_param("bound_integral_z",0.0),
-    quad_mass            = rospy.get_param("uav_mass",1.442) + rospy.get_param("extra_mass",0.0)
+    quad_mass            = rospy.get_param("uav_mass",1.442) + rospy.get_param("extra_mass",0.0),
+    uav_id               = rospy.get_param("uav_id",1)
     ):
 
+        self.uav_id               = uav_id
         self.proportional_gain_xy = proportional_gain_xy
         self.derivative_gain_xy   = derivative_gain_xy
         self.integral_gain_xy     = integral_gain_xy
@@ -120,6 +122,31 @@ class SimplePIDController(Controller):
         bar_odometry = nav_msgs.msg.Odometry(),
         reference = np.zeros(6)):
 
+        reference = nav_msgs.msg.Path()
+
+        posestamped = geometry_msgs.msg.PoseStamped()
+        r = posestamped.pose.position
+        r.x = 0
+        r.y = 0
+        r.z = 1
+
+        # 0001?
+        q = posestamped.pose.orientation
+        q.x = 1
+        q.y = 0
+        q.z = 0
+        q.w = 0
+
+        #print(posestamped)
+        r = reference.poses.append(posestamped)
+        #print(r)
+
+        reference = np.zeros(9)
+        if self.uav_id==1:
+            reference[0:3] = np.array([0.0,0.0,1.0])
+        else:
+            reference[0:3] = np.array([1.0,0.0,1.0])
+
         x,v = position_and_velocity_from_odometry(uav_odometry)
 
         # third canonical basis vector
@@ -143,11 +170,49 @@ class SimplePIDController(Controller):
         ep = x - xd
         ev = v - vd
 
-        u, V_v = self.input_and_gradient_of_lyapunov(ep,ev)
+        #u, V_v = self.input_and_gradient_of_lyapunov(ep,ev)
+        u = self.ucl_i(ep,ev)
 
         Full_actuation = self.MASS*(ad + u + self.GRAVITY*e3)
 
         return Full_actuation
+
+    def ucl_i(self,ep,ev):
+
+        # IMPORTANT: All of these parameters need to be confirmed through testing.
+        # Also, the masses, cable lenghts and payload dimention should be given as input somewhere!
+
+        # Proportional gains
+        kpx     = 1.0
+        kpy     = 1.0
+        kpz     = 1.0
+
+        # Derivative gains
+        kvx     = 1.4
+        kvy     = 1.4
+        kvz     = 1.4
+
+        #this mass MUST be obtained as input!
+        mass_load = 0.4
+
+        # Equilibrium term of the control law
+        u_EQ    = numpy.array([0.0,0.0,0.0])
+        #LOW priority this law could be made to be more generic
+        u_EQ[2] = self.MASS + 0.5 * mass_load
+
+        # PD term of the control law
+        u_PD    = numpy.array([0.0,0.0,0.0])
+        u_PD[0] = -kpx*ep[0] - kvx*ev[0]
+        u_PD[1] = -kpy*ep[1] - kvy*ev[1]
+        u_PD[2] = -kpz*ep[2] - kvz*ev[2]
+
+        # Corrective term of the control law
+        u_corr  = numpy.array([0.0,0.0,0.0])
+        # I will LATER define the additional corrective term
+
+        u = u_EQ + u_PD + u_corr
+
+        return u
 
 
     def input_and_gradient_of_lyapunov(self,ep,ev):
