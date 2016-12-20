@@ -83,7 +83,8 @@ class SimplePIDController(Controller):
         self.derivative_gain_z    = derivative_gain_z
         self.integral_gain_z      = integral_gain_z
         self.bound_integral_z     = bound_integral_z
-        self.quad_mass            = quad_mass
+        #self.quad_mass            = quad_mass
+        self.quad_mass            = 1.53
 
         #TODO get from utilities?
         self.MASS = quad_mass
@@ -143,9 +144,9 @@ class SimplePIDController(Controller):
 
         reference = np.zeros(9)
         if self.uav_id==1:
-            reference[0:3] = np.array([0.0,0.0,1.0])
+            reference[0:3] = np.array([0.0,0.0,2.0])
         else:
-            reference[0:3] = np.array([1.0,0.0,1.0])
+            reference[0:3] = np.array([1.0,0.0,2.0])
 
         x,v = position_and_velocity_from_odometry(uav_odometry)
 
