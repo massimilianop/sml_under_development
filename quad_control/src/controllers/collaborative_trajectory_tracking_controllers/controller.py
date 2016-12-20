@@ -173,7 +173,8 @@ class SimplePIDController(Controller):
         #u, V_v = self.input_and_gradient_of_lyapunov(ep,ev)
         u = self.ucl_i(ep,ev)
 
-        Full_actuation = self.MASS*(ad + u + self.GRAVITY*e3)
+        #Full_actuation = self.MASS*(ad + u + self.GRAVITY*e3)
+        Full_actuation = u + self.MASS*ad
 
         return Full_actuation
 
@@ -193,12 +194,12 @@ class SimplePIDController(Controller):
         kvz     = 1.4
 
         #this mass MUST be obtained as input!
-        mass_load = 0.4
+        mass_load = 0.1
 
         # Equilibrium term of the control law
         u_EQ    = numpy.array([0.0,0.0,0.0])
         #LOW priority this law could be made to be more generic
-        u_EQ[2] = self.MASS + 0.5 * mass_load
+        u_EQ[2] = (self.MASS + 0.5 * mass_load ) * self.GRAVITY
 
         # PD term of the control law
         u_PD    = numpy.array([0.0,0.0,0.0])
