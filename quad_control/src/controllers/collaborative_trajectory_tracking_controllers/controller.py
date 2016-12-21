@@ -28,7 +28,7 @@ def position_and_velocity_from_odometry(odometry):
                   odometry.pose.pose.position.z])
 
     # TODO: naming of child_frame_id
-    if odometry.child_frame_id == 'firefly/base_link':
+    if odometry.child_frame_id == 'firefly/base_link' or odometry.child_frame_id == 'firefly_2/base_link': # IS THIS PART I ADDED CORRECT? -- Max
 
         # velocity is in the body reference frame
         v_body = np.array([odometry.twist.twist.linear.x,\
@@ -52,6 +52,34 @@ def position_and_velocity_from_odometry(odometry):
                       odometry.twist.twist.linear.z])
 
     return x,v
+
+
+def payload_odometry(odometry):
+    position = np.array([odometry.pose.pose.position.x,\
+                  odometry.pose.pose.position.y,\
+                  odometry.pose.pose.position.z])
+
+    quaternion = np.array([odometry.pose.pose.orientation.x,\
+                           odometry.pose.pose.orientation.y,\
+                           odometry.pose.pose.orientation.z,\
+                           odometry.pose.pose.orientation.w])
+
+    linear_vel_body = np.array([odometry.twist.twist.linear.x,\
+                  odometry.twist.twist.linear.y,\
+                  odometry.twist.twist.linear.z])
+
+    angular_vel_body = np.array([odometry.twist.twist.angular.x,\
+                  odometry.twist.twist.angular.y,\
+                  odometry.twist.twist.angular.z])
+
+    rotation_matrix  = uts.rot_from_quaternion(quaternion)
+
+    #IS THIS ROTATION RIGHT?
+    linear_vel = np.dot(rotation_matrix,linear_vel_body)
+    angular_vel = np.dot(rotation_matrix,angular_vel_body)
+
+    return position, rotation_matrix , linear_vel, angular_vel
+
 
 @js.add_to_database(default=True)
 class SimplePIDController(Controller):
@@ -123,6 +151,16 @@ class SimplePIDController(Controller):
         bar_odometry = nav_msgs.msg.Odometry(),
         reference = np.zeros(6)):
 
+        # These print statements allow us to check that the reference frames are set up correctly
+        '''
+        print "UAV_%i says: I am" % (self.uav_id),
+        print uav_odometry.child_frame_id ,
+        print "the other is",
+        print partner_uav_odometry.child_frame_id ,
+        print "and the bar is",
+        print bar_odometry.child_frame_id
+        '''
+
         reference = nav_msgs.msg.Path()
 
         posestamped = geometry_msgs.msg.PoseStamped()
@@ -144,12 +182,47 @@ class SimplePIDController(Controller):
 
         reference = np.zeros(9)
         if self.uav_id==1:
-            reference[0:3] = np.array([0.0,0.0,1.0])
-        else:
             reference[0:3] = np.array([1.0,0.0,1.0])
+        else:
+            reference[0:3] = np.array([0.0,0.0,1.0])
 
-        # Position and velocitu of the UAV
-        p,v = position_and_velocity_from_odometry(uav_odometry)
+        # THIS CODE CAN BE IMPROVED, THE BAR LENGHT SHOULD BE AN INPUT
+        #################################################################
+        if self.uav_id==1:                                              #
+            d_i = 0.5                                                   #
+        else:                                                           #
+            d_i = -0.5                                                  #
+        #################################################################
+
+        # Position and velocity of the UAV
+        p_i,v_i = position_and_velocity_from_odometry(uav_odometry)
+
+        # Position and orientation of the payload
+        p_bar, r_matrix_bar, v_bar, omega_bar = payload_odometry(bar_odometry)
+
+        # Unit vector expressing the orientation of the payload
+        ##################################################
+        euler_angles_bar = uts.euler_rad_from_rot(r_matrix_bar)
+        n_bar = uts.unit_vector_from_euler_angles(euler_angles_bar[2], euler_angles_bar[1])
+        #print n_bar
+        ##################################################
+
+        # Position of the edge of the payload, it coincides with the anchorage point for the respective cable
+        p_Bi = p_bar + d_i * n_bar
+        # print "UAV_%i says: My p_Bi value is " % (self.uav_id),
+        # print p_Bi
+
+        # Linear velocity of p_Bi
+        v_Bi = v_bar + d_i * np.cross(omega_bar, n_bar)
+
+        # Unit vector expressing the orientation of the cable
+        n_Ci = (p_i- p_Bi) / 0.7                                        #CABLE LENGTH!
+        # print "UAV_%i says: My n_Ci value is " % (self.uav_id),
+        # print n_Ci
+
+        # Angular velocity of n_Ci
+        v_auxiliary = (v_i - v_Bi) / 0.7                                #CABLE LENGTH!
+        omega_Ci = np.cross(n_Ci, v_auxiliary)
 
         # third canonical basis vector
         e3 = numpy.array([0.0,0.0,1.0])        
@@ -168,21 +241,21 @@ class SimplePIDController(Controller):
         ad = reference[6:9]
         
         #--------------------------------------#
-        # position error and velocity error
-        ep = p - pd
-        ev = v - vd
+        # Position error and velocity error of the UAV
+        ep = p_i - pd
+        ev = v_i - vd
 
         #print "UAV_%i position error: %.3f %.3f %.3f" % (self.uav_id, float(ep[0]), float(ep[1]), float(ep[2]))
 
         #u, V_v = self.input_and_gradient_of_lyapunov(ep,ev)
-        u = self.ucl_i(ep,ev)
+        u = self.ucl_i(ep,ev,d_i,n_Ci,omega_Ci,n_bar,omega_bar)
 
         #Full_actuation = self.MASS*(ad + u + self.GRAVITY*e3)
         Full_actuation = u + self.MASS*ad
 
         return Full_actuation
 
-    def ucl_i(self,ep,ev):
+    def ucl_i(self,ep,ev,d_i,n_Ci,omega_Ci,n_bar,omega_bar):
 
         # IMPORTANT: All of these parameters need to be confirmed through testing.
         # Also, the masses, cable lenghts and payload dimention should be given as input somewhere!
@@ -196,6 +269,16 @@ class SimplePIDController(Controller):
         kvx     = 1.4
         kvy     = 1.4
         kvz     = 2
+
+        # Gains for the corrective term
+        k_dth   = 3
+        k_dps   = 2
+        k_dps2  = 0
+        k_theta = 1
+        k_omega = 2.5
+
+        inertia_L = 0.4/12                                  #USE ACTUAL VALUE!!!
+        xtra_term = self.MASS *d_i + (inertia_L / (2*d_i))  #TO DO: check how it influences stability
 
         #this mass MUST be obtained as input!
         mass_load = 0.4
@@ -213,31 +296,33 @@ class SimplePIDController(Controller):
 
         # Corrective term of the control law
         u_corr  = numpy.array([0.0,0.0,0.0])
-        # I will LATER define the additional corrective term
+        u_corr[0] = - k_dth * n_Ci[0]                       #this seems to DESTABILIZE!
+        u_corr[1] = k_dps * omega_Ci[0] - k_dps2 * n_Ci[1]
+        u_corr[2] = xtra_term * (- k_theta * n_bar[2] + k_omega * omega_bar[1])
 
         u = u_EQ + u_PD + u_corr
 
         return u
 
 
-    def input_and_gradient_of_lyapunov(self,ep,ev):
+    # def input_and_gradient_of_lyapunov(self,ep,ev):
 
-        u    = numpy.array([0.0,0.0,0.0])
-        V_v  = numpy.array([0.0,0.0,0.0])
+    #     u    = numpy.array([0.0,0.0,0.0])
+    #     V_v  = numpy.array([0.0,0.0,0.0])
 
-        kp     = self.proportional_gain_xy
-        kv     = self.derivative_gain_xy
-        u[0]   = -kp*ep[0] - kv*ev[0]
-        u[1]   = -kp*ep[1] - kv*ev[1]
-        V_v[0] = (kp/2*ep[0] + ev[0])
-        V_v[1] = (kp/2*ep[1] + ev[1])
+    #     kp     = self.proportional_gain_xy
+    #     kv     = self.derivative_gain_xy
+    #     u[0]   = -kp*ep[0] - kv*ev[0]
+    #     u[1]   = -kp*ep[1] - kv*ev[1]
+    #     V_v[0] = (kp/2*ep[0] + ev[0])
+    #     V_v[1] = (kp/2*ep[1] + ev[1])
 
-        kp     = self.proportional_gain_z
-        kv     = self.derivative_gain_z
-        u[2]   = -kp*ep[2] - kv*ev[2]
-        V_v[2] = (kp/2*ep[2] + ev[2])
+    #     kp     = self.proportional_gain_z
+    #     kv     = self.derivative_gain_z
+    #     u[2]   = -kp*ep[2] - kv*ev[2]
+    #     V_v[2] = (kp/2*ep[2] + ev[2])
 
-        return u, V_v
+    #     return u, V_v
 
 
     def reset_estimate_xy(self):
