@@ -144,32 +144,35 @@ class SimplePIDController(Controller):
 
         reference = np.zeros(9)
         if self.uav_id==1:
-            reference[0:3] = np.array([0.0,0.0,2.0])
+            reference[0:3] = np.array([0.0,0.0,1.0])
         else:
-            reference[0:3] = np.array([1.0,0.0,2.0])
+            reference[0:3] = np.array([1.0,0.0,1.0])
 
-        x,v = position_and_velocity_from_odometry(uav_odometry)
+        # Position and velocitu of the UAV
+        p,v = position_and_velocity_from_odometry(uav_odometry)
 
         # third canonical basis vector
         e3 = numpy.array([0.0,0.0,1.0])        
         
         #--------------------------------------#
         # position and velocity
-        #x  = state[0:3]
+        #p  = state[0:3]
         #v  = state[3:6]
         # thrust unit vector and its angular velocity
         # R  = state[6:15]; R  = numpy.reshape(R,(3,3))
 
         #--------------------------------------#
         # desired quad trajectory
-        xd = reference[0:3]
+        pd = reference[0:3]
         vd = reference[3:6]
         ad = reference[6:9]
         
         #--------------------------------------#
         # position error and velocity error
-        ep = x - xd
+        ep = p - pd
         ev = v - vd
+
+        #print "UAV_%i position error: %.3f %.3f %.3f" % (self.uav_id, float(ep[0]), float(ep[1]), float(ep[2]))
 
         #u, V_v = self.input_and_gradient_of_lyapunov(ep,ev)
         u = self.ucl_i(ep,ev)
@@ -192,10 +195,10 @@ class SimplePIDController(Controller):
         # Derivative gains
         kvx     = 1.4
         kvy     = 1.4
-        kvz     = 1.4
+        kvz     = 2
 
         #this mass MUST be obtained as input!
-        mass_load = 0.1
+        mass_load = 0.4
 
         # Equilibrium term of the control law
         u_EQ    = numpy.array([0.0,0.0,0.0])
