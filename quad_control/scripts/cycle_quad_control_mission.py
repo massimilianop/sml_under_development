@@ -189,11 +189,11 @@ class QuadController():
 
             self.mission.publish()
 
-            if self.mission.test_emergency():
-                if not self.emergency_flag:
-                    self.emergency_flag = True
-                    self.mission.trigger_emergency()
-                    print(4*'EMERGENGY TRIGGERED\n')
+            # if self.mission.test_emergency():
+            #     if not self.emergency_flag:
+            #         self.emergency_flag = True
+            #         self.mission.trigger_emergency()
+            #         print(4*'EMERGENGY TRIGGERED\n')
             
             # go to sleep
             rate.sleep()
