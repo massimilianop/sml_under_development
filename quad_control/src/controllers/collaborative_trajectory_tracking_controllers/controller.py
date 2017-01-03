@@ -250,7 +250,7 @@ class SimplePIDController(Controller):
         #u, V_v = self.input_and_gradient_of_lyapunov(ep,ev)
 
         # First control law
-        u = self.ucl_i(ep,ev,d_i,n_Ci,omega_Ci,n_bar,omega_bar)
+        #u = self.ucl_i(ep,ev,d_i,n_Ci,omega_Ci,n_bar,omega_bar)
 
         # Second control law
         u = self.ucl_iMax(ep,ev,v_Bi)
