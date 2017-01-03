@@ -248,7 +248,12 @@ class SimplePIDController(Controller):
         #print "UAV_%i position error: %.3f %.3f %.3f" % (self.uav_id, float(ep[0]), float(ep[1]), float(ep[2]))
 
         #u, V_v = self.input_and_gradient_of_lyapunov(ep,ev)
+
+        # First control law
         u = self.ucl_i(ep,ev,d_i,n_Ci,omega_Ci,n_bar,omega_bar)
+
+        # Second control law
+        u = self.ucl_iMax(ep,ev,v_Bi)
 
         #Full_actuation = self.MASS*(ad + u + self.GRAVITY*e3)
         Full_actuation = u + self.MASS*ad
@@ -271,7 +276,7 @@ class SimplePIDController(Controller):
         kvz     = 2
 
         # Gains for the corrective term
-        k_dth   = 3
+        k_dth   = 1
         k_dps   = 2
         k_dps2  = 0
         k_theta = 1
@@ -301,6 +306,47 @@ class SimplePIDController(Controller):
         u_corr[2] = xtra_term * (- k_theta * n_bar[2] + k_omega * omega_bar[1])
 
         u = u_EQ + u_PD + u_corr
+
+        return u
+
+#                       ---> New controller <---
+
+    def ucl_iMax(self,ep,ev,v_Bi):
+
+        # Proportional gain
+        kp      = 1.0
+        kpx     = kp
+        kpy     = kp
+        kpz     = kp
+
+        # Derivative gains
+        kd      = 3.0
+        kdx     = kd
+        kdy     = kd
+        kdz     = kd
+
+        # Gains for the corrective term
+        kv      = 0.7
+
+        #this mass MUST be obtained as input!
+        mass_load = 0.4
+
+        # Equilibrium term of the control law
+        u_EQ    = numpy.array([0.0,0.0,0.0])
+        #LOW priority this law could be made to be more generic
+        u_EQ[2] = (self.MASS + 0.5 * mass_load ) * self.GRAVITY
+
+        # PD term of the control law
+        u_PD    = numpy.array([0.0,0.0,0.0])
+        u_PD[0] = -kpx*ep[0] - kdx*ev[0]
+        u_PD[1] = -kpy*ep[1] - kdy*ev[1]
+        u_PD[2] = -kpz*ep[2] - kdz*ev[2]
+
+        # Corrective term of the control law
+        #u_osc  = numpy.array([0.0,0.0,0.0])
+        u_osc  = kv * v_Bi
+
+        u = u_EQ + u_PD + u_osc
 
         return u
 
