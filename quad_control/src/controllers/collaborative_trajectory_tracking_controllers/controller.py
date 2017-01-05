@@ -99,10 +99,16 @@ class SimplePIDController(Controller):
     integral_gain_z      = rospy.get_param("integral_gain_z",0.0),
     bound_integral_z     = rospy.get_param("bound_integral_z",0.0),
     quad_mass            = rospy.get_param("uav_mass",1.442) + rospy.get_param("extra_mass",0.0),
-    uav_id               = rospy.get_param("uav_id",1)
+    uav_id               = rospy.get_param("uav_id",1),
+    d_i                  = rospy.get_param("d_i"),
+    l_i                  = rospy.get_param("cable_length"),
+    mL                  = rospy.get_param("payload_mass")
     ):
 
         self.uav_id               = uav_id
+        self.d_i                  = d_i
+        self.l_i                  = l_i
+        self.mL                   = mL
         self.proportional_gain_xy = proportional_gain_xy
         self.derivative_gain_xy   = derivative_gain_xy
         self.integral_gain_xy     = integral_gain_xy
@@ -111,8 +117,8 @@ class SimplePIDController(Controller):
         self.derivative_gain_z    = derivative_gain_z
         self.integral_gain_z      = integral_gain_z
         self.bound_integral_z     = bound_integral_z
-        #self.quad_mass            = quad_mass
-        self.quad_mass            = 1.53
+        self.quad_mass            = quad_mass
+        #self.quad_mass            = 1.53
 
         #TODO get from utilities?
         self.MASS = quad_mass
@@ -186,13 +192,6 @@ class SimplePIDController(Controller):
         else:
             reference[0:3] = np.array([0.0,0.0,1.0])
 
-        # THIS CODE CAN BE IMPROVED, THE BAR LENGHT SHOULD BE AN INPUT
-        #################################################################
-        if self.uav_id==1:                                              #
-            d_i = 0.5                                                   #
-        else:                                                           #
-            d_i = -0.5                                                  #
-        #################################################################
 
         # Position and velocity of the UAV
         p_i,v_i = position_and_velocity_from_odometry(uav_odometry)
@@ -201,13 +200,12 @@ class SimplePIDController(Controller):
         p_bar, r_matrix_bar, v_bar, omega_bar = payload_odometry(bar_odometry)
 
         # Unit vector expressing the orientation of the payload
-        ##################################################
         euler_angles_bar = uts.euler_rad_from_rot(r_matrix_bar)
         n_bar = uts.unit_vector_from_euler_angles(euler_angles_bar[2], euler_angles_bar[1])
         #print n_bar
-        ##################################################
 
         # Position of the edge of the payload, it coincides with the anchorage point for the respective cable
+        d_i = self.d_i
         p_Bi = p_bar + d_i * n_bar
         # print "UAV_%i says: My p_Bi value is " % (self.uav_id),
         # print p_Bi
@@ -216,15 +214,16 @@ class SimplePIDController(Controller):
         v_Bi = v_bar + d_i * np.cross(omega_bar, n_bar)
 
         # Unit vector expressing the orientation of the cable
-        n_Ci = (p_i- p_Bi) / 0.7                                        #CABLE LENGTH!
+        l_i = self.l_i
+        n_Ci = (p_i- p_Bi) / l_i
         # print "UAV_%i says: My n_Ci value is " % (self.uav_id),
         # print n_Ci
 
         # Angular velocity of n_Ci
-        v_auxiliary = (v_i - v_Bi) / 0.7                                #CABLE LENGTH!
+        v_auxiliary = (v_i - v_Bi) / l_i
         omega_Ci = np.cross(n_Ci, v_auxiliary)
 
-        # third canonical basis vector
+        # Third canonical basis vector
         e3 = numpy.array([0.0,0.0,1.0])        
         
         #--------------------------------------#
@@ -247,71 +246,15 @@ class SimplePIDController(Controller):
 
         #print "UAV_%i position error: %.3f %.3f %.3f" % (self.uav_id, float(ep[0]), float(ep[1]), float(ep[2]))
 
-        #u, V_v = self.input_and_gradient_of_lyapunov(ep,ev)
+        u = self.ucl_i(ep,ev,p_Bi,v_Bi)
+        # u = self.ucl_i_Old(ep,ev,d_i,n_Ci,omega_Ci,n_bar,omega_bar)
 
-        # First control law
-        #u = self.ucl_i(ep,ev,d_i,n_Ci,omega_Ci,n_bar,omega_bar)
-
-        # Second control law
-        u = self.ucl_iMax(ep,ev,v_Bi)
-
-        #Full_actuation = self.MASS*(ad + u + self.GRAVITY*e3)
         Full_actuation = u + self.MASS*ad
 
         return Full_actuation
 
-    def ucl_i(self,ep,ev,d_i,n_Ci,omega_Ci,n_bar,omega_bar):
 
-        # IMPORTANT: All of these parameters need to be confirmed through testing.
-        # Also, the masses, cable lenghts and payload dimention should be given as input somewhere!
-
-        # Proportional gains
-        kpx     = 1.0
-        kpy     = 1.0
-        kpz     = 1.0
-
-        # Derivative gains
-        kvx     = 1.4
-        kvy     = 1.4
-        kvz     = 2
-
-        # Gains for the corrective term
-        k_dth   = 1
-        k_dps   = 2
-        k_dps2  = 0
-        k_theta = 1
-        k_omega = 2.5
-
-        inertia_L = 0.4/12                                  #USE ACTUAL VALUE!!!
-        xtra_term = self.MASS *d_i + (inertia_L / (2*d_i))  #TO DO: check how it influences stability
-
-        #this mass MUST be obtained as input!
-        mass_load = 0.4
-
-        # Equilibrium term of the control law
-        u_EQ    = numpy.array([0.0,0.0,0.0])
-        #LOW priority this law could be made to be more generic
-        u_EQ[2] = (self.MASS + 0.5 * mass_load ) * self.GRAVITY
-
-        # PD term of the control law
-        u_PD    = numpy.array([0.0,0.0,0.0])
-        u_PD[0] = -kpx*ep[0] - kvx*ev[0]
-        u_PD[1] = -kpy*ep[1] - kvy*ev[1]
-        u_PD[2] = -kpz*ep[2] - kvz*ev[2]
-
-        # Corrective term of the control law
-        u_corr  = numpy.array([0.0,0.0,0.0])
-        u_corr[0] = - k_dth * n_Ci[0]                       #this seems to DESTABILIZE!
-        u_corr[1] = k_dps * omega_Ci[0] - k_dps2 * n_Ci[1]
-        u_corr[2] = xtra_term * (- k_theta * n_bar[2] + k_omega * omega_bar[1])
-
-        u = u_EQ + u_PD + u_corr
-
-        return u
-
-#                       ---> New controller <---
-
-    def ucl_iMax(self,ep,ev,v_Bi):
+    def ucl_i(self,ep,ev,p_Bi,v_Bi):
 
         # Proportional gain
         kp      = 1.0
@@ -328,13 +271,9 @@ class SimplePIDController(Controller):
         # Gains for the corrective term
         kv      = 0.7
 
-        #this mass MUST be obtained as input!
-        mass_load = 0.4
-
         # Equilibrium term of the control law
         u_EQ    = numpy.array([0.0,0.0,0.0])
-        #LOW priority this law could be made to be more generic
-        u_EQ[2] = (self.MASS + 0.5 * mass_load ) * self.GRAVITY
+        u_EQ[2] = (self.MASS + 0.5 * self.mL ) * self.GRAVITY
 
         # PD term of the control law
         u_PD    = numpy.array([0.0,0.0,0.0])
@@ -342,13 +281,63 @@ class SimplePIDController(Controller):
         u_PD[1] = -kpy*ep[1] - kdy*ev[1]
         u_PD[2] = -kpz*ep[2] - kdz*ev[2]
 
-        # Corrective term of the control law
+        # Oscillation term of the control law
         #u_osc  = numpy.array([0.0,0.0,0.0])
-        u_osc  = kv * v_Bi
+        u_osc   = kv * v_Bi
 
         u = u_EQ + u_PD + u_osc
 
         return u
+
+
+    # def ucl_i_Old(self,ep,ev,d_i,n_Ci,omega_Ci,n_bar,omega_bar):
+
+    #     # IMPORTANT: All of these parameters need to be confirmed through testing.
+    #     # Also, the masses, cable lenghts and payload dimention should be given as input somewhere!
+
+    #     # Proportional gains
+    #     kpx     = 1.0
+    #     kpy     = 1.0
+    #     kpz     = 1.0
+
+    #     # Derivative gains
+    #     kvx     = 1.4
+    #     kvy     = 1.4
+    #     kvz     = 2
+
+    #     # Gains for the corrective term
+    #     k_dth   = 1
+    #     k_dps   = 2
+    #     k_dps2  = 0
+    #     k_theta = 1
+    #     k_omega = 2.5
+
+    #     inertia_L = 0.4/12                                  #USE ACTUAL VALUE!!!
+    #     xtra_term = self.MASS *d_i + (inertia_L / (2*d_i))  #TO DO: check how it influences stability
+
+    #     #this mass MUST be obtained as input!
+    #     mass_load = 0.4
+
+    #     # Equilibrium term of the control law
+    #     u_EQ    = numpy.array([0.0,0.0,0.0])
+    #     #LOW priority this law could be made to be more generic
+    #     u_EQ[2] = (self.MASS + 0.5 * mass_load ) * self.GRAVITY
+
+    #     # PD term of the control law
+    #     u_PD    = numpy.array([0.0,0.0,0.0])
+    #     u_PD[0] = -kpx*ep[0] - kvx*ev[0]
+    #     u_PD[1] = -kpy*ep[1] - kvy*ev[1]
+    #     u_PD[2] = -kpz*ep[2] - kvz*ev[2]
+
+    #     # Corrective term of the control law
+    #     u_corr  = numpy.array([0.0,0.0,0.0])
+    #     u_corr[0] = - k_dth * n_Ci[0]                       #this seems to DESTABILIZE!
+    #     u_corr[1] = k_dps * omega_Ci[0] - k_dps2 * n_Ci[1]
+    #     u_corr[2] = xtra_term * (- k_theta * n_bar[2] + k_omega * omega_bar[1])
+
+    #     u = u_EQ + u_PD + u_corr
+
+    #     return u
 
 
     # def input_and_gradient_of_lyapunov(self,ep,ev):
