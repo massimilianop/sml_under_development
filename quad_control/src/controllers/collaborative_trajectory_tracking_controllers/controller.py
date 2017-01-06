@@ -246,7 +246,7 @@ class SimplePIDController(Controller):
 
         #print "UAV_%i position error: %.3f %.3f %.3f" % (self.uav_id, float(ep[0]), float(ep[1]), float(ep[2]))
 
-        u = self.ucl_i(ep,ev,p_Bi,v_Bi)
+        u = self.ucl_i(ep,ev,p_Bi,v_Bi,p_i,v_i)
         # u = self.ucl_i_Old(ep,ev,d_i,n_Ci,omega_Ci,n_bar,omega_bar)
 
         Full_actuation = u + self.MASS*ad
@@ -254,13 +254,13 @@ class SimplePIDController(Controller):
         return Full_actuation
 
 
-    def ucl_i(self,ep,ev,p_Bi,v_Bi):
+    def ucl_i(self,ep,ev,p_Bi,v_Bi,p_i,v_i):
 
-        # Proportional gain
+        # Proportional gains
         kp      = 1.0
         kpx     = kp
         kpy     = kp
-        kpz     = kp
+        kpz     = 3*kp
 
         # Derivative gains
         kd      = 3.0
@@ -270,6 +270,18 @@ class SimplePIDController(Controller):
 
         # Gains for the corrective term
         kv      = 0.7
+
+        # Proportional gains for the cab term
+        kCp      = 1.0
+        kCpx     = kCp
+        kCpy     = kCp
+        kCpz     = kCp
+
+        # Derivative gains for the cab term
+        kCd      = 3.0
+        kCdx     = kCd
+        kCdy     = kCd
+        kCdz     = kCd
 
         # Equilibrium term of the control law
         u_EQ    = numpy.array([0.0,0.0,0.0])
@@ -282,10 +294,22 @@ class SimplePIDController(Controller):
         u_PD[2] = -kpz*ep[2] - kdz*ev[2]
 
         # Oscillation term of the control law
-        #u_osc  = numpy.array([0.0,0.0,0.0])
         u_osc   = kv * v_Bi
+        # u_osc  = numpy.array([0.0,0.0,0.0])
 
-        u = u_EQ + u_PD + u_osc
+        # Term to keep the cable straight00
+        e_Li    = numpy.array([0.0,0.0,self.l_i])
+        u_cab   = - kCp * (p_i - p_Bi - e_Li) - kCd * (v_i - v_Bi)
+
+        #u = u_EQ + u_PD + u_osc
+        u = u_EQ + u_PD + u_cab
+
+        if abs(ep[0])<0.1 and abs(ep[1])<0.1 :
+            u = u_EQ + u_PD + u_osc
+            print "switch ON"
+        else :
+            print "switch OFF"
+        
 
         return u
 
