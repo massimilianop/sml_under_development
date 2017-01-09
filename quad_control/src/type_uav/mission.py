@@ -13,6 +13,7 @@ import numpy
 import rospy
 
 import nav_msgs.msg
+import geometry_msgs.msg
 
 #node will subscribe to uav_odometry measurements
 from nav_msgs.msg import Odometry
@@ -436,12 +437,27 @@ class BarLiftingUAV(Mission):
             callback   = self.update_partner_uav_odometry)
         self.partner_uav_odometry = nav_msgs.msg.Odometry()
 
+        self.sub_bar_reference_pose_path = rospy.Subscriber(
+            name       = 'bar_reference_pose_path',
+            data_class = nav_msgs.msg.Path,
+            callback   = self.update_bar_reference_pose_path)
+        self.bar_reference_pose_path = nav_msgs.msg.Path()
+        self.bar_reference_pose_path.poses = [geometry_msgs.msg.PoseStamped()]
+        print('print bar reference')
+        print(self.bar_reference_pose_path)
+        print('print bar reference[0].pose')
+        print(self.bar_reference_pose_path.poses[0].pose)
 
     def update_bar_odometry(self,msg = nav_msgs.msg.Odometry()):
         self.bar_odometry = msg
 
     def update_partner_uav_odometry(self,msg = nav_msgs.msg.Odometry()):
         self.partner_uav_odometry = msg
+
+    def update_bar_reference_pose_path(self,msg = nav_msgs.msg.Path()):
+        self.bar_reference_pose_path = msg
+        print('print bar reference')
+        print(self.bar_reference_pose_path)
 
     def object_description(self):
         string = """No parameters"""
@@ -473,8 +489,8 @@ class BarLiftingUAV(Mission):
         # compute reference
         # all controllers receive reference of the form
         # position^(0),...,position^(4)
-        reference = self.reference.output(time_instant)
-        self.current_reference = reference
+        # reference = self.reference.output(time_instant)
+        # self.current_reference = reference
 
         # # compute 3d_force, which is what all controllers provide
         # self.desired_3d_force = self.controller.output(time_instant, 
@@ -486,7 +502,7 @@ class BarLiftingUAV(Mission):
             uav_odometry = uav_odometry,
             partner_uav_odometry = self.partner_uav_odometry,
             bar_odometry = self.bar_odometry,
-            reference = reference)
+            reference = self.bar_reference_pose_path)
 
         return desired_3d_force
 

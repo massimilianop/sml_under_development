@@ -155,7 +155,7 @@ class SimplePIDController(Controller):
         uav_odometry = nav_msgs.msg.Odometry(),
         partner_uav_odometry = nav_msgs.msg.Odometry(),
         bar_odometry = nav_msgs.msg.Odometry(),
-        reference = np.zeros(6)):
+        reference = nav_msgs.msg.Path()):
 
         # These print statements allow us to check that the reference frames are set up correctly
         '''
@@ -167,24 +167,32 @@ class SimplePIDController(Controller):
         print bar_odometry.child_frame_id
         '''
 
-        reference = nav_msgs.msg.Path()
+        #reference_pose = reference
 
-        posestamped = geometry_msgs.msg.PoseStamped()
-        r = posestamped.pose.position
-        r.x = 0
-        r.y = 0
-        r.z = 1
+        # #reference = nav_msgs.msg.Path()
 
-        # 0001?
-        q = posestamped.pose.orientation
-        q.x = 1
-        q.y = 0
-        q.z = 0
-        q.w = 0
+        # posestamped = geometry_msgs.msg.PoseStamped()
+        # r = posestamped.pose.position
+        # r.x = 0
+        # r.y = 0
+        # r.z = 1
 
-        #print(posestamped)
-        r = reference.poses.append(posestamped)
-        #print(r)
+        # # 0001?
+        # q = posestamped.pose.orientation
+        # q.x = 1
+        # q.y = 0
+        # q.z = 0
+        # q.w = 0
+
+        # #print(posestamped)
+        # r = reference.poses.append(posestamped)
+        # #print(r)
+
+        # reference = np.zeros(9)
+        # if self.uav_id==1:
+        #     reference[0:3] = np.array([1.0,0.0,1.0])
+        # else:
+        #     reference[0:3] = np.array([0.0,0.0,1.0])
 
         reference = np.zeros(9)
         if self.uav_id==1:
@@ -278,7 +286,7 @@ class SimplePIDController(Controller):
         kCpz     = kCp
 
         # Derivative gains for the cab term
-        kCd      = 3.0
+        kCd      = 0.0
         kCdx     = kCd
         kCdy     = kCd
         kCdz     = kCd
@@ -304,11 +312,11 @@ class SimplePIDController(Controller):
         #u = u_EQ + u_PD + u_osc
         u = u_EQ + u_PD + u_cab
 
-        if abs(ep[0])<0.1 and abs(ep[1])<0.1 :
-            u = u_EQ + u_PD + u_osc
-            print "switch ON"
-        else :
-            print "switch OFF"
+        # if abs(ep[0])<0.1 and abs(ep[1])<0.1 :
+        #     u = u_EQ + u_PD + u_osc
+        #     print "switch ON"
+        # else :
+        #     print "switch OFF"
         
 
         return u
