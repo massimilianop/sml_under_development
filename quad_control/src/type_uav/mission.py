@@ -443,10 +443,12 @@ class BarLiftingUAV(Mission):
             callback   = self.update_bar_reference_pose_path)
         self.bar_reference_pose_path = nav_msgs.msg.Path()
         self.bar_reference_pose_path.poses = [geometry_msgs.msg.PoseStamped()]
-        print('print bar reference')
-        print(self.bar_reference_pose_path)
-        print('print bar reference[0].pose')
-        print(self.bar_reference_pose_path.poses[0].pose)
+        # print('TESTING: print bar reference')
+        # print(self.bar_reference_pose_path)
+        # print('TESTING: print length of poses vector')
+        # print(len(self.bar_reference_pose_path.poses))
+        # print('TESTING: print timestamp   '),
+        # print(self.bar_reference_pose_path.poses[0].header.stamp.to_sec())
 
     def update_bar_odometry(self,msg = nav_msgs.msg.Odometry()):
         self.bar_odometry = msg
@@ -456,8 +458,8 @@ class BarLiftingUAV(Mission):
 
     def update_bar_reference_pose_path(self,msg = nav_msgs.msg.Path()):
         self.bar_reference_pose_path = msg
-        print('print bar reference')
-        print(self.bar_reference_pose_path)
+        # print('print bar reference')
+        # print(self.bar_reference_pose_path)
 
     def object_description(self):
         string = """No parameters"""
