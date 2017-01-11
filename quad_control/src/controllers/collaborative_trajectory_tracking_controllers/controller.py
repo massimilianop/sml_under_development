@@ -173,46 +173,6 @@ class SimplePIDController(Controller):
         # TESTING: This statement prints the current time in seconds
         # print rospy.get_time()
 
-
-        # -------------------------- CURRENT DESTINATION --------------------------
-
-        # Initializing ref_pose as an empty geometry_msgs/Pose
-        ref_pose = geometry_msgs.msg.Pose()
-
-        # This FOR decides which pose in the path is the current destination
-        for pose_stamped in reference.poses :            
-            # Confront the current time with the time associated to each pose
-            if rospy.get_time() >= pose_stamped.header.stamp.to_sec() :
-                ref_pose = pose_stamped.pose
-
-        # TESTING: This print statement allows us to check that the reference pose is the correct one
-        # print ref_pose
-
-        r = ref_pose.position
-        q = ref_pose.orientation
-
-        p_ref = np.array([r.x,r.y,r.z])
-
-        # TODO : find a better way to get unit vector from quaternion #############
-        q_vector = np.array([q.x,q.y,q.z,q.w])
-        R_temp = uts.rot_from_quaternion(q_vector)
-        ea_temp = uts.euler_rad_from_rot(R_temp)
-        nB_ref = uts.unit_vector_from_euler_angles(ea_temp[2], ea_temp[1])
-        # #########################################################################
-
-        # TODO : maybe allow different nCi other than e3?
-        nCi_ref = e3
-
-        # Computing the reference position for the UAV
-        p_i_ref = p_ref + nB_ref * d_i + nCi_ref * l_i
-
-        # Setting the reference velocity
-        v_i_ref = np.array([0.0,0.0,0.0])
-
-        # Setting the reference acceleration
-        a_i_ref = np.array([0.0,0.0,0.0])
-
-
         # ---------------------------- CURRENT ODOMETRY ----------------------------
 
         # Position and velocity of the UAV
@@ -223,7 +183,9 @@ class SimplePIDController(Controller):
 
         # Unit vector expressing the orientation of the payload
         euler_angles_bar = uts.euler_rad_from_rot(r_matrix_bar)
-        n_bar = uts.unit_vector_from_euler_angles(euler_angles_bar[2], euler_angles_bar[1])
+        psi   = euler_angles_bar[2]
+        theta = euler_angles_bar[1]
+        n_bar = uts.unit_vector_from_euler_angles(psi, theta)
 
         # Position of the edge of the payload, it coincides with the anchorage point for the respective cable
         p_Bi = p_bar + d_i * n_bar
@@ -247,15 +209,65 @@ class SimplePIDController(Controller):
         omega_Ci = np.cross(n_Ci, v_auxiliary)
 
 
-        # OLD CODE
-        # reference = np.zeros(9)
-        # if self.uav_id==1:
-        #     reference[0:3] = np.array([1.0,0.0,1.0])
-        # else:
-        #     reference[0:3] = np.array([0.0,0.0,1.0])
-        # p_i_ref = reference[0:3]
-        # v_i_ref = reference[3:6]
-        # a_i_ref = reference[6:9]
+        # -------------------------- CURRENT DESTINATION --------------------------
+
+        # Initializing ref_pose as an empty geometry_msgs/Pose
+        ref_pose = geometry_msgs.msg.Pose()
+
+        # This FOR decides which pose in the path is the current destination
+        for pose_stamped in reference.poses :            
+            # Confront the current time with the time associated to each pose
+            if rospy.get_time() >= pose_stamped.header.stamp.to_sec() :
+                ref_pose = pose_stamped.pose
+
+        # TESTING: This print statement allows us to check that the reference pose is the correct one
+        # print ref_pose
+
+        r = ref_pose.position
+        q = ref_pose.orientation
+
+        p_ref = np.array([r.x,r.y,r.z])
+
+        # TODO : tf instead of utf ?
+        q_vector = np.array([q.x,q.y,q.z,q.w])
+        R_temp = uts.rot_from_quaternion(q_vector)
+        ea_temp = uts.euler_rad_from_rot(R_temp)
+
+        psi_ref   = ea_temp[2]
+        theta_ref = ea_temp[1]
+
+        # This IF statement ensures that psi varies in small steps
+        psi_bound = 0.53        # pi/6 rad = 30 deg
+        if abs(psi_ref-psi)>psi_bound :
+            tmpPsi  = psi + np.sign(psi_ref-psi) * psi_bound
+            psi_ref = tmpPsi
+
+        # TODO: ADDITIONAL TESTING WITH PRINT STATEMENTS
+
+        nB_ref = uts.unit_vector_from_euler_angles(psi_ref, theta_ref)
+
+        # TODO : maybe allow different nCi other than e3?
+        nCi_ref = e3
+
+        # Computing the reference position for the UAV
+        p_i_ref = p_ref + nB_ref * d_i + nCi_ref * l_i
+
+        # Setting the reference velocity
+        v_i_ref = np.array([0.0,0.0,0.0])
+
+        # Setting the reference acceleration
+        a_i_ref = np.array([0.0,0.0,0.0])
+
+
+        # TESTING: the reference is set as a constant and overrides the path in the topic /bar_reference_pose_path
+        reference = np.zeros(9)
+        if self.uav_id==1:
+            reference[0:3] = np.array([1.0,0.0,1.0])
+        else:
+            reference[0:3] = np.array([0.0,0.0,1.0])
+        p_i_ref = reference[0:3]
+        v_i_ref = reference[3:6]
+        a_i_ref = reference[6:9]
 
 
         #--------------------------------------#
@@ -264,21 +276,21 @@ class SimplePIDController(Controller):
         ev = v_i - v_i_ref
 
         # TESTING:
-        print ""
-        print "Reference position for bar: ",
-        print p_ref
-        print "Reference position for UAV_%i: " %(self.uav_id),
-        print p_i_ref
-        print "Current position of the bar",
-        print p_bar
-        np.set_printoptions(precision=2)
-        np.set_printoptions(suppress=True)
-        print "Current position of UAV_%i: " %(self.uav_id),
-        print p_i
-        #print "UAV_%i position error: %.3f %.3f %.3f" % (self.uav_id, float(ep[0]), float(ep[1]), float(ep[2]))
-        print "UAV_%i position error: " %(self.uav_id),
-        print ep
-        print ""
+        # print ""
+        # print "Reference position for bar: ",
+        # print p_ref
+        # print "Reference position for UAV_%i: " %(self.uav_id),
+        # print p_i_ref
+        # print "Current position of the bar",
+        # print p_bar
+        # np.set_printoptions(precision=2)
+        # np.set_printoptions(suppress=True)
+        # print "Current position of UAV_%i: " %(self.uav_id),
+        # print p_i
+        # #print "UAV_%i position error: %.3f %.3f %.3f" % (self.uav_id, float(ep[0]), float(ep[1]), float(ep[2]))
+        # print "UAV_%i position error: " %(self.uav_id),
+        # print ep
+        # print ""
 
         u = self.ucl_i(ep,ev,p_Bi,v_Bi,p_i,v_i)
         # u = self.ucl_i_Old(ep,ev,d_i,n_Ci,omega_Ci,n_bar,omega_bar)
