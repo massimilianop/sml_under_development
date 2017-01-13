@@ -236,13 +236,18 @@ class SimplePIDController(Controller):
         psi_ref   = ea_temp[2]
         theta_ref = ea_temp[1]
 
-        # This IF statement ensures that psi varies in small steps
-        psi_bound = 0.53        # pi/6 rad = 30 deg
-        if abs(psi_ref-psi)>psi_bound :
-            tmpPsi  = psi + np.sign(psi_ref-psi) * psi_bound
-            psi_ref = tmpPsi
+        # # ####################################################################
+        # # This IF statement ensures that psi varies in small steps
+        # psi_bound = 0.53        # pi/6 rad = 30 deg
+        # if abs(psi_ref-psi)>psi_bound :
+        #     tmpPsi  = psi + np.sign(psi_ref-psi) * psi_bound
+        #     psi_ref = tmpPsi
 
-        # TODO: ADDITIONAL TESTING WITH PRINT STATEMENTS
+        # # TEST: check if the angle is correct
+        # psiDeg = psi *180.0 / 3.14
+        # #print psiDeg
+        # # TODO: ADDITIONAL TESTING WITH PRINT STATEMENTS
+        # # ####################################################################
 
         nB_ref = uts.unit_vector_from_euler_angles(psi_ref, theta_ref)
 
@@ -292,7 +297,7 @@ class SimplePIDController(Controller):
         # print ep
         # print ""
 
-        u = self.ucl_i(ep,ev,p_Bi,v_Bi,p_i,v_i)
+        u = self.ucl_i(ep,ev,p_Bi,v_Bi,p_i,v_i,omega_bar,v_bar)
         # u = self.ucl_i_Old(ep,ev,d_i,n_Ci,omega_Ci,n_bar,omega_bar)
 
         Full_actuation = u + self.MASS*a_i_ref
@@ -300,34 +305,34 @@ class SimplePIDController(Controller):
         return Full_actuation
 
 
-    def ucl_i(self,ep,ev,p_Bi,v_Bi,p_i,v_i):
+    def ucl_i(self,ep,ev,p_Bi,v_Bi,p_i,v_i,omega_bar,v_bar):
 
         # Proportional gains
-        kp      = 1.0
-        kpx     = kp
-        kpy     = kp
-        kpz     = 3*kp
+        #kp      = 1.0
+        kpx     = 2.5
+        kpy     = 2.5
+        kpz     = 5.0
 
         # Derivative gains
-        kd      = 3.0
-        kdx     = kd
-        kdy     = kd
-        kdz     = kd
+        #kd      = 3.0
+        kdx     = 4.25
+        kdy     = 4.25
+        kdz     = 6.0
 
         # Gains for the corrective term
-        kv      = 0.7
+        kv      = 1.0
 
         # Proportional gains for the cab term
-        kCp      = 1.0
-        kCpx     = kCp
-        kCpy     = kCp
-        kCpz     = kCp
+        #kCp      = 1.0
+        kCpx     = 1.5
+        kCpy     = 1.5
+        kCpz     = 1.5
 
         # Derivative gains for the cab term
-        kCd      = 0.0
-        kCdx     = kCd
-        kCdy     = kCd
-        kCdz     = kCd
+        #kCd      = 3.0
+        kCdx     = 4.0
+        kCdy     = 4.0
+        kCdz     = 4.0
 
         # Equilibrium term of the control law
         u_EQ    = numpy.array([0.0,0.0,0.0])
@@ -345,16 +350,24 @@ class SimplePIDController(Controller):
 
         # Term to keep the cable straight
         e_Li    = numpy.array([0.0,0.0,self.l_i])
-        u_cab   = - kCp * (p_i - p_Bi - e_Li) - kCd * (v_i - v_Bi)
+        
+        epB     = p_i - p_Bi - e_Li
+        evB     = v_i - v_Bi
+
+        # u_cab   = - kCp * (p_i - p_Bi - e_Li) - kCd * (v_i - v_Bi)
+        u_cab    = numpy.array([0.0,0.0,0.0])
+        u_cab[0] = - kCpx * epB[0] - kCdx * evB[0]
+        u_cab[1] = - kCpy * epB[1] - kCdy * evB[1]
+        u_cab[2] = - kCpz * epB[2] - kCdz * evB[2]
 
         #u = u_EQ + u_PD + u_osc
         u = u_EQ + u_PD + u_cab
 
-        # if abs(ep[0])<0.1 and abs(ep[1])<0.1 :
-        #     u = u_EQ + u_PD + u_osc
-        #     print "switch ON"
-        # else :
-        #     print "switch OFF"
+        if abs(ep[0])<0.1 and abs(ep[1])<0.1 and abs(v_bar[0])<0.05 and abs(v_bar[1])<0.05 and abs(omega_bar[2])<0.05:
+            u = u_EQ + u_PD
+            print "STOP dampening"
+        else :
+            print "dampening ON"
 
         return u
 
