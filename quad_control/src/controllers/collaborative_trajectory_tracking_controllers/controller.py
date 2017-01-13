@@ -4,6 +4,8 @@
 import numpy
 import numpy as np
 
+import math
+
 from utilities import utility_functions as uts
 from utilities import utility_functions
 
@@ -79,6 +81,20 @@ def payload_odometry(odometry):
     angular_vel = np.dot(rotation_matrix,angular_vel_body)
 
     return position, rotation_matrix , linear_vel, angular_vel
+
+
+def intermediate_orientation(n,nstar):
+    res = np.inner(n,nstar)
+    alpha = math.radians(30)
+    pi_Eta = math.radians(175)
+    if res >= math.cos(alpha) :
+        return nstar
+    elif res <= math.cos(pi_Eta) :
+        return n
+    else :
+        n_ortho = nstar - n * res
+        n_orthonorm = n_ortho / np.linalg.norm(n_ortho)
+        return math.cos(alpha) * n + math.sin(alpha) * n_orthonorm
 
 
 @js.add_to_database(default=True)
@@ -232,24 +248,13 @@ class SimplePIDController(Controller):
         q_vector = np.array([q.x,q.y,q.z,q.w])
         R_temp = uts.rot_from_quaternion(q_vector)
         ea_temp = uts.euler_rad_from_rot(R_temp)
-
         psi_ref   = ea_temp[2]
         theta_ref = ea_temp[1]
 
-        # # ####################################################################
-        # # This IF statement ensures that psi varies in small steps
-        # psi_bound = 0.53        # pi/6 rad = 30 deg
-        # if abs(psi_ref-psi)>psi_bound :
-        #     tmpPsi  = psi + np.sign(psi_ref-psi) * psi_bound
-        #     psi_ref = tmpPsi
+        nB_ref_Temp = uts.unit_vector_from_euler_angles(psi_ref, theta_ref)
 
-        # # TEST: check if the angle is correct
-        # psiDeg = psi *180.0 / 3.14
-        # #print psiDeg
-        # # TODO: ADDITIONAL TESTING WITH PRINT STATEMENTS
-        # # ####################################################################
+        nB_ref = intermediate_orientation(n_bar,nB_ref_Temp)
 
-        nB_ref = uts.unit_vector_from_euler_angles(psi_ref, theta_ref)
 
         # TODO : maybe allow different nCi other than e3?
         nCi_ref = e3
@@ -264,15 +269,15 @@ class SimplePIDController(Controller):
         a_i_ref = np.array([0.0,0.0,0.0])
 
 
-        # TESTING: the reference is set as a constant and overrides the path in the topic /bar_reference_pose_path
-        reference = np.zeros(9)
-        if self.uav_id==1:
-            reference[0:3] = np.array([1.0,0.0,1.0])
-        else:
-            reference[0:3] = np.array([0.0,0.0,1.0])
-        p_i_ref = reference[0:3]
-        v_i_ref = reference[3:6]
-        a_i_ref = reference[6:9]
+        # # TESTING: the reference is set as a constant and overrides the path in the topic /bar_reference_pose_path
+        # reference = np.zeros(9)
+        # if self.uav_id==1:
+        #     reference[0:3] = np.array([1.0,0.0,1.0])
+        # else:
+        #     reference[0:3] = np.array([0.0,0.0,1.0])
+        # p_i_ref = reference[0:3]
+        # v_i_ref = reference[3:6]
+        # a_i_ref = reference[6:9]
 
 
         #--------------------------------------#
