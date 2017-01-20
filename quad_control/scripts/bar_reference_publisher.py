@@ -27,7 +27,9 @@ class BarReferencePublisher():
             message_instance = nav_msgs.msg.Path()
             p1 = geometry_msgs.msg.PoseStamped()
             p2 = geometry_msgs.msg.PoseStamped()
-            p2.pose.position.x = 1
+            # p2.pose.position.x = 1
+            p1.pose.position.z = 0.5
+            p2 = p1
             message_instance.poses = [p1,p2]
             publish_reference.publish(message_instance)
 
