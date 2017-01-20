@@ -29,29 +29,43 @@ def position_and_velocity_from_odometry(odometry):
                   odometry.pose.pose.position.y,\
                   odometry.pose.pose.position.z])
 
-    # TODO: naming of child_frame_id
-    if odometry.child_frame_id == 'firefly/base_link' or odometry.child_frame_id == 'firefly_2/base_link': # IS THIS PART I ADDED CORRECT? -- Max
+    # # TODO: naming of child_frame_id
+    # if odometry.child_frame_id == 'firefly/base_link' or odometry.child_frame_id == 'firefly_2/base_link': # IS THIS PART I ADDED CORRECT? -- Max
 
-        # velocity is in the body reference frame
-        v_body = np.array([odometry.twist.twist.linear.x,\
-                           odometry.twist.twist.linear.y,\
-                           odometry.twist.twist.linear.z])
+    #     # velocity is in the body reference frame
+    #     v_body = np.array([odometry.twist.twist.linear.x,\
+    #                        odometry.twist.twist.linear.y,\
+    #                        odometry.twist.twist.linear.z])
 
-        quaternion = np.array([odometry.pose.pose.orientation.x,\
-                               odometry.pose.pose.orientation.y,\
-                               odometry.pose.pose.orientation.z,\
-                               odometry.pose.pose.orientation.w])
+    #     quaternion = np.array([odometry.pose.pose.orientation.x,\
+    #                            odometry.pose.pose.orientation.y,\
+    #                            odometry.pose.pose.orientation.z,\
+    #                            odometry.pose.pose.orientation.w])
 
-        # TODO
-        rotation_matrix  = uts.rot_from_quaternion(quaternion)
+    #     # TODO
+    #     rotation_matrix  = uts.rot_from_quaternion(quaternion)
 
-        v = np.dot(rotation_matrix,v_body)
+    #     v = np.dot(rotation_matrix,v_body)
 
-    else:
-        # velocity is in the body reference frame
-        v = np.array([odometry.twist.twist.linear.x,\
-                      odometry.twist.twist.linear.y,\
-                      odometry.twist.twist.linear.z])
+    # else:
+    #     # velocity is in the body reference frame
+    #     v = np.array([odometry.twist.twist.linear.x,\
+    #                   odometry.twist.twist.linear.y,\
+    #                   odometry.twist.twist.linear.z])
+
+    # velocity is in the body reference frame
+    v_body = np.array([odometry.twist.twist.linear.x,\
+                       odometry.twist.twist.linear.y,\
+                       odometry.twist.twist.linear.z])
+
+    quaternion = np.array([odometry.pose.pose.orientation.x,\
+                           odometry.pose.pose.orientation.y,\
+                           odometry.pose.pose.orientation.z,\
+                           odometry.pose.pose.orientation.w])
+
+    rotation_matrix  = uts.rot_from_quaternion(quaternion)
+
+    v = np.dot(rotation_matrix,v_body)
 
     return x,v
 
@@ -85,7 +99,7 @@ def payload_odometry(odometry):
 
 def intermediate_orientation(n,nstar):
     res = np.inner(n,nstar)
-    alpha = math.radians(30)
+    alpha = math.radians(45)
     pi_Eta = math.radians(175)
     if res >= math.cos(alpha) :
         return nstar
@@ -213,16 +227,16 @@ class SimplePIDController(Controller):
         # Linear velocity of p_Bi
         v_Bi = v_bar + d_i * np.cross(omega_bar, n_bar)
 
-        # Unit vector expressing the orientation of the cable
-        n_Ci = (p_i- p_Bi) / l_i
+        # # Unit vector expressing the orientation of the cable
+        # n_Ci = (p_i- p_Bi) / l_i
 
         # TESTING:
         # print "UAV_%i says: My n_Ci value is " % (self.uav_id),
         # print n_Ci
 
-        # Angular velocity of n_Ci
-        v_auxiliary = (v_i - v_Bi) / l_i
-        omega_Ci = np.cross(n_Ci, v_auxiliary)
+        # # Angular velocity of n_Ci
+        # v_auxiliary = (v_i - v_Bi) / l_i
+        # omega_Ci = np.cross(n_Ci, v_auxiliary)
 
 
         # -------------------------- CURRENT DESTINATION --------------------------
@@ -255,6 +269,10 @@ class SimplePIDController(Controller):
 
         nB_ref = intermediate_orientation(n_bar,nB_ref_Temp)
 
+        # TEST #############################
+        p_ref = np.array([0.0,0.0,0.5])
+        #nB_ref = np.array([1.0,0.0,0.0])
+        # ##################################
 
         # TODO : maybe allow different nCi other than e3?
         nCi_ref = e3
@@ -267,17 +285,6 @@ class SimplePIDController(Controller):
 
         # Setting the reference acceleration
         a_i_ref = np.array([0.0,0.0,0.0])
-
-
-        # # TESTING: the reference is set as a constant and overrides the path in the topic /bar_reference_pose_path
-        # reference = np.zeros(9)
-        # if self.uav_id==1:
-        #     reference[0:3] = np.array([1.0,0.0,1.0])
-        # else:
-        #     reference[0:3] = np.array([0.0,0.0,1.0])
-        # p_i_ref = reference[0:3]
-        # v_i_ref = reference[3:6]
-        # a_i_ref = reference[6:9]
 
 
         #--------------------------------------#
@@ -293,14 +300,14 @@ class SimplePIDController(Controller):
         # print p_i_ref
         # print "Current position of the bar",
         # print p_bar
-        # np.set_printoptions(precision=2)
-        # np.set_printoptions(suppress=True)
+        np.set_printoptions(precision=5)
+        np.set_printoptions(suppress=True)
         # print "Current position of UAV_%i: " %(self.uav_id),
         # print p_i
-        # #print "UAV_%i position error: %.3f %.3f %.3f" % (self.uav_id, float(ep[0]), float(ep[1]), float(ep[2]))
-        # print "UAV_%i position error: " %(self.uav_id),
-        # print ep
-        # print ""
+        #print "UAV_%i position error: %.3f %.3f %.3f" % (self.uav_id, float(ep[0]), float(ep[1]), float(ep[2]))
+        print "UAV_%i position error: " %(self.uav_id),
+        print ep
+        print ""
 
         u = self.ucl_i(ep,ev,p_Bi,v_Bi,p_i,v_i,omega_bar,v_bar)
         # u = self.ucl_i_Old(ep,ev,d_i,n_Ci,omega_Ci,n_bar,omega_bar)
@@ -324,20 +331,35 @@ class SimplePIDController(Controller):
         kdy     = 4.25
         kdz     = 6.0
 
-        # Gains for the corrective term
-        kv      = 1.0
+        # # Gains for the corrective term
+        # kv      = 1.0
 
-        # Proportional gains for the cab term
-        #kCp      = 1.0
-        kCpx     = 1.5
-        kCpy     = 1.5
-        kCpz     = 1.5
+        # # Proportional gains for the cab term
+        # #kCp      = 1.0
+        # kCpx     = 1.5
+        # kCpy     = 1.5
+        # kCpz     = 1.5
 
-        # Derivative gains for the cab term
-        #kCd      = 3.0
-        kCdx     = 4.0
-        kCdy     = 4.0
-        kCdz     = 4.0
+        # # Derivative gains for the cab term
+        # #kCd      = 3.0
+        # kCdx     = 4.0
+        # kCdy     = 4.0
+        # kCdz     = 4.0
+
+        # TEST
+        # kpx     = 1.0
+        # kpy     = 1.0
+        # kpz     = 1.0
+        # kdx     = 1.4
+        # kdy     = 1.4
+        # kdz     = 1.4
+
+        kCpx     = 1.0
+        kCpy     = 1.0
+        kCpz     = 1.0
+        kCdx     = 3.0
+        kCdy     = 3.0
+        kCdz     = 3.0
 
         # Equilibrium term of the control law
         u_EQ    = numpy.array([0.0,0.0,0.0])
@@ -350,7 +372,7 @@ class SimplePIDController(Controller):
         u_PD[2] = -kpz*ep[2] - kdz*ev[2]
 
         # Oscillation term of the control law
-        u_osc   = kv * v_Bi
+        #u_osc   = kv * v_Bi
         # u_osc  = numpy.array([0.0,0.0,0.0])
 
         # Term to keep the cable straight
@@ -366,13 +388,13 @@ class SimplePIDController(Controller):
         u_cab[2] = - kCpz * epB[2] - kCdz * evB[2]
 
         #u = u_EQ + u_PD + u_osc
-        u = u_EQ + u_PD + u_cab
+        u = u_EQ + 0.3 * u_PD #+ u_cab
 
-        if abs(ep[0])<0.1 and abs(ep[1])<0.1 and abs(v_bar[0])<0.05 and abs(v_bar[1])<0.05 and abs(omega_bar[2])<0.05:
-            u = u_EQ + u_PD
-            print "STOP dampening"
-        else :
-            print "dampening ON"
+        # if abs(ep[0])<0.1 and abs(ep[1])<0.1 and abs(v_bar[0])<0.05 and abs(v_bar[1])<0.05 and abs(omega_bar[2])<0.05:
+        #     u = u_EQ + 0.5 * u_PD
+        #     print "STOP dampening"
+        # else :
+        #     print "dampening ON"
 
         return u
 
