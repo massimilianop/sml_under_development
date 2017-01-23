@@ -270,7 +270,7 @@ class SimplePIDController(Controller):
         nB_ref = intermediate_orientation(n_bar,nB_ref_Temp)
 
         # TEST #############################
-        p_ref = np.array([0.0,0.0,0.5])
+        p_ref = np.array([-1.0,-1.0,2])
         #nB_ref = np.array([1.0,0.0,0.0])
         # ##################################
 
@@ -305,9 +305,10 @@ class SimplePIDController(Controller):
         # print "Current position of UAV_%i: " %(self.uav_id),
         # print p_i
         #print "UAV_%i position error: %.3f %.3f %.3f" % (self.uav_id, float(ep[0]), float(ep[1]), float(ep[2]))
-        print "UAV_%i position error: " %(self.uav_id),
-        print ep
-        print ""
+
+        # print "UAV_%i position error: " %(self.uav_id),
+        # print ep
+        # print ""
 
         u = self.ucl_i(ep,ev,p_Bi,v_Bi,p_i,v_i,omega_bar,v_bar)
         # u = self.ucl_i_Old(ep,ev,d_i,n_Ci,omega_Ci,n_bar,omega_bar)
@@ -321,45 +322,31 @@ class SimplePIDController(Controller):
 
         # Proportional gains
         #kp      = 1.0
-        kpx     = 2.5
-        kpy     = 2.5
-        kpz     = 5.0
+        kpx     = 1.0
+        kpy     = 1.0
+        kpz     = 3.0 #1.6
 
         # Derivative gains
         #kd      = 3.0
-        kdx     = 4.25
-        kdy     = 4.25
-        kdz     = 6.0
+        kdx     = 2.0
+        kdy     = 2.0
+        kdz     = 3.4 #1.8
 
         # # Gains for the corrective term
         # kv      = 1.0
 
-        # # Proportional gains for the cab term
-        # #kCp      = 1.0
-        # kCpx     = 1.5
-        # kCpy     = 1.5
-        # kCpz     = 1.5
+        # Proportional gains for the cab term
+        #kCp      = 1.0
+        kCpx     = -2 * kpx
+        kCpy     = -2 * kpy
+        kCpz     = -2 * kpz
 
-        # # Derivative gains for the cab term
-        # #kCd      = 3.0
-        # kCdx     = 4.0
-        # kCdy     = 4.0
-        # kCdz     = 4.0
+        # Derivative gains for the cab term
+        #kCd      = 3.0
+        kCdx     = 0 * kdx
+        kCdy     = 0 * kdy
+        kCdz     = 0 * kdz
 
-        # TEST
-        # kpx     = 1.0
-        # kpy     = 1.0
-        # kpz     = 1.0
-        # kdx     = 1.4
-        # kdy     = 1.4
-        # kdz     = 1.4
-
-        kCpx     = 1.0
-        kCpy     = 1.0
-        kCpz     = 1.0
-        kCdx     = 3.0
-        kCdy     = 3.0
-        kCdz     = 3.0
 
         # Equilibrium term of the control law
         u_EQ    = numpy.array([0.0,0.0,0.0])
@@ -388,10 +375,15 @@ class SimplePIDController(Controller):
         u_cab[2] = - kCpz * epB[2] - kCdz * evB[2]
 
         #u = u_EQ + u_PD + u_osc
-        u = u_EQ + 0.3 * u_PD #+ u_cab
+        u = u_EQ + u_PD + u_cab
+
+        # print "u_cab ",
+        # print u_cab
+        # print "epB ",
+        # print epB
 
         # if abs(ep[0])<0.1 and abs(ep[1])<0.1 and abs(v_bar[0])<0.05 and abs(v_bar[1])<0.05 and abs(omega_bar[2])<0.05:
-        #     u = u_EQ + 0.5 * u_PD
+        #     u = u_EQ + u_PD
         #     print "STOP dampening"
         # else :
         #     print "dampening ON"

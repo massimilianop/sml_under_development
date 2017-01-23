@@ -312,7 +312,7 @@ MISSIONS_DATABASE = mission.FireflyGazebo.database
 
 firefly_parameters = {}
 
-attitude_proprotial_gain = 10
+attitude_proprotial_gain = 10 #10 orginal value, 15 works with PD, 30 and 20 work with dampening
 attitude_derivative_gain = 2*0.8*np.sqrt(attitude_proprotial_gain)
 # attitude_proprotial_gain = 3
 # attitude_derivative_gain = 0.52 
