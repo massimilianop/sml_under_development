@@ -75,6 +75,13 @@ def rot_z(tt):
 
 # print Rz(60*3.14/180)
 
+def rotation_matrix_from_euler_angles(phi,theta,psi):
+    rX = rot_x(phi)
+    rY = rot_y(theta)
+    rZ = rot_z(psi)
+    aux = rY.dot(rZ)
+    return rX.dot(aux)
+
 #--------------------------------------------------------------------------#
 # unit vector
 def unit_vector_from_euler_angles(psi, theta):
