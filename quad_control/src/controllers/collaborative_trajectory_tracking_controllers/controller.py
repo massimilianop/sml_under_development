@@ -90,7 +90,6 @@ def payload_odometry(odometry):
 
     rotation_matrix  = uts.rot_from_quaternion(quaternion)
 
-    #IS THIS ROTATION RIGHT?
     linear_vel = np.dot(rotation_matrix,linear_vel_body)
     angular_vel = np.dot(rotation_matrix,angular_vel_body)
 
@@ -155,7 +154,12 @@ class SimplePIDController(Controller):
         self.GRAVITY = 9.81
 
         self.disturbance_estimate   = numpy.array([0.0,0.0,0.0])
+
         self.t_old  = 0.0
+
+        self.errIntegral = 0.0
+        self.errIntUpper = 0.0
+        self.errIntLower = 0.0
 
     def get_total_weight(self):
         return self.MASS*self.GRAVITY
@@ -242,7 +246,7 @@ class SimplePIDController(Controller):
         # -------------------------- CURRENT DESTINATION --------------------------
 
         # Initializing ref_pose as an empty geometry_msgs/Pose
-        ref_pose = geometry_msgs.msg.Pose()
+        #ref_pose = geometry_msgs.msg.Pose()
 
         # This FOR decides which pose in the path is the current destination
         for pose_stamped in reference.poses :            
@@ -258,7 +262,7 @@ class SimplePIDController(Controller):
 
         p_ref = np.array([r.x,r.y,r.z])
 
-        # TODO : tf instead of utf ?
+        # TODO : tf instead of uts ?
         q_vector = np.array([q.x,q.y,q.z,q.w])
         R_temp = uts.rot_from_quaternion(q_vector)
         ea_temp = uts.euler_rad_from_rot(R_temp)
@@ -304,11 +308,9 @@ class SimplePIDController(Controller):
         np.set_printoptions(suppress=True)
         # print "Current position of UAV_%i: " %(self.uav_id),
         # print p_i
-        #print "UAV_%i position error: %.3f %.3f %.3f" % (self.uav_id, float(ep[0]), float(ep[1]), float(ep[2]))
-
-        # print "UAV_%i position error: " %(self.uav_id),
-        # print ep
-        # print ""
+        print "UAV_%i position error: " %(self.uav_id),
+        print ep
+        print ""
 
         u = self.ucl_i(ep,ev,p_Bi,v_Bi,p_i,v_i,omega_bar,v_bar)
         # u = self.ucl_i_Old(ep,ev,d_i,n_Ci,omega_Ci,n_bar,omega_bar)
@@ -331,6 +333,9 @@ class SimplePIDController(Controller):
         kdx     = 2.0
         kdy     = 2.0
         kdz     = 3.4 #1.8
+
+        # Integral gain
+        ki      = 0.75
 
         # # Gains for the corrective term
         # kv      = 1.0
@@ -358,6 +363,15 @@ class SimplePIDController(Controller):
         u_PD[1] = -kpy*ep[1] - kdy*ev[1]
         u_PD[2] = -kpz*ep[2] - kdz*ev[2]
 
+        # I term of the control law (Forward Euler method)
+        delta_time = rospy.get_time() - self.t_old
+        self.errIntegral = self.errIntegral  + delta_time * ep[2]
+        u_Iz = - ki * self.errIntegral
+        u_I    = numpy.array([0.0,0.0,u_Iz])
+
+        #TO DO: anti windup !!! <-----
+
+
         # Oscillation term of the control law
         #u_osc   = kv * v_Bi
         # u_osc  = numpy.array([0.0,0.0,0.0])
@@ -375,7 +389,7 @@ class SimplePIDController(Controller):
         u_cab[2] = - kCpz * epB[2] - kCdz * evB[2]
 
         #u = u_EQ + u_PD + u_osc
-        u = u_EQ + u_PD + u_cab
+        u = u_EQ + u_PD + u_I + u_cab
 
         # print "u_cab ",
         # print u_cab
@@ -384,81 +398,14 @@ class SimplePIDController(Controller):
 
         # if abs(ep[0])<0.1 and abs(ep[1])<0.1 and abs(v_bar[0])<0.05 and abs(v_bar[1])<0.05 and abs(omega_bar[2])<0.05:
         #     u = u_EQ + u_PD
-        #     print "STOP dampening"
+        #     print "Integrator ON"
         # else :
-        #     print "dampening ON"
+        #     print "integrator OFF"
+
+        # Update time instant (for the discrete intergator)
+        self.t_old = rospy.get_time()
 
         return u
-
-
-    # def ucl_i_Old(self,ep,ev,d_i,n_Ci,omega_Ci,n_bar,omega_bar):
-
-    #     # IMPORTANT: All of these parameters need to be confirmed through testing.
-    #     # Also, the masses, cable lenghts and payload dimention should be given as input somewhere!
-
-    #     # Proportional gains
-    #     kpx     = 1.0
-    #     kpy     = 1.0
-    #     kpz     = 1.0
-
-    #     # Derivative gains
-    #     kvx     = 1.4
-    #     kvy     = 1.4
-    #     kvz     = 2
-
-    #     # Gains for the corrective term
-    #     k_dth   = 1
-    #     k_dps   = 2
-    #     k_dps2  = 0
-    #     k_theta = 1
-    #     k_omega = 2.5
-
-    #     inertia_L = 0.4/12                                  #USE ACTUAL VALUE!!!
-    #     xtra_term = self.MASS *d_i + (inertia_L / (2*d_i))  #TO DO: check how it influences stability
-
-    #     #this mass MUST be obtained as input!
-    #     mass_load = 0.4
-
-    #     # Equilibrium term of the control law
-    #     u_EQ    = numpy.array([0.0,0.0,0.0])
-    #     #LOW priority this law could be made to be more generic
-    #     u_EQ[2] = (self.MASS + 0.5 * mass_load ) * self.GRAVITY
-
-    #     # PD term of the control law
-    #     u_PD    = numpy.array([0.0,0.0,0.0])
-    #     u_PD[0] = -kpx*ep[0] - kvx*ev[0]
-    #     u_PD[1] = -kpy*ep[1] - kvy*ev[1]
-    #     u_PD[2] = -kpz*ep[2] - kvz*ev[2]
-
-    #     # Corrective term of the control law
-    #     u_corr  = numpy.array([0.0,0.0,0.0])
-    #     u_corr[0] = - k_dth * n_Ci[0]                       #this seems to DESTABILIZE!
-    #     u_corr[1] = k_dps * omega_Ci[0] - k_dps2 * n_Ci[1]
-    #     u_corr[2] = xtra_term * (- k_theta * n_bar[2] + k_omega * omega_bar[1])
-
-    #     u = u_EQ + u_PD + u_corr
-
-    #     return u
-
-
-    # def input_and_gradient_of_lyapunov(self,ep,ev):
-
-    #     u    = numpy.array([0.0,0.0,0.0])
-    #     V_v  = numpy.array([0.0,0.0,0.0])
-
-    #     kp     = self.proportional_gain_xy
-    #     kv     = self.derivative_gain_xy
-    #     u[0]   = -kp*ep[0] - kv*ev[0]
-    #     u[1]   = -kp*ep[1] - kv*ev[1]
-    #     V_v[0] = (kp/2*ep[0] + ev[0])
-    #     V_v[1] = (kp/2*ep[1] + ev[1])
-
-    #     kp     = self.proportional_gain_z
-    #     kv     = self.derivative_gain_z
-    #     u[2]   = -kp*ep[2] - kv*ev[2]
-    #     V_v[2] = (kp/2*ep[2] + ev[2])
-
-    #     return u, V_v
 
 
     def reset_estimate_xy(self):
