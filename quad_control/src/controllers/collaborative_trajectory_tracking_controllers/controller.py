@@ -274,7 +274,7 @@ class SimplePIDController(Controller):
         nB_ref = intermediate_orientation(n_bar,nB_ref_Temp)
 
         # TEST #############################
-        p_ref = np.array([-1.0,-1.0,2])
+        #p_ref = np.array([-1.0,-1.0,2])
         #nB_ref = np.array([1.0,0.0,0.0])
         # ##################################
 
@@ -293,8 +293,8 @@ class SimplePIDController(Controller):
 
         #--------------------------------------#
         # Position error and velocity error of the UAV
-        ep = p_i - p_i_ref
-        ev = v_i - v_i_ref
+        ep = p_i_ref - p_i
+        ev = v_i_ref - v_i
 
         # TESTING:
         # print ""
@@ -359,9 +359,9 @@ class SimplePIDController(Controller):
 
         # PD term of the control law
         u_PD    = numpy.array([0.0,0.0,0.0])
-        u_PD[0] = -kpx*ep[0] - kdx*ev[0]
-        u_PD[1] = -kpy*ep[1] - kdy*ev[1]
-        u_PD[2] = -kpz*ep[2] - kdz*ev[2]
+        u_PD[0] = kpx*ep[0] + kdx*ev[0]
+        u_PD[1] = kpy*ep[1] + kdy*ev[1]
+        u_PD[2] = kpz*ep[2] + kdz*ev[2]
 
         # I term of the control law (Forward Euler method)
         delta_time = rospy.get_time() - self.t_old
@@ -373,7 +373,7 @@ class SimplePIDController(Controller):
         elif self.errIntegral > self.errIntUpper :
             self.errIntegral = self.errIntUpper
 
-        u_Iz = - ki * self.errIntegral
+        u_Iz = ki * self.errIntegral
         u_I    = numpy.array([0.0,0.0,u_Iz])
 
 
@@ -384,14 +384,14 @@ class SimplePIDController(Controller):
         # Dampening term of the control law
         e_Li    = numpy.array([0.0,0.0,self.l_i])
         
-        epB     = p_i - p_Bi - e_Li
-        evB     = v_i - v_Bi
+        epB     = p_Bi + e_Li - p_i
+        evB     = v_Bi - v_i
 
         # u_cab   = - kCp * (p_i - p_Bi - e_Li) - kCd * (v_i - v_Bi)
         u_cab    = numpy.array([0.0,0.0,0.0])
-        u_cab[0] = - kCpx * epB[0] - kCdx * evB[0]
-        u_cab[1] = - kCpy * epB[1] - kCdy * evB[1]
-        u_cab[2] = - kCpz * epB[2] - kCdz * evB[2]
+        u_cab[0] = kCpx * epB[0] + kCdx * evB[0]
+        u_cab[1] = kCpy * epB[1] + kCdy * evB[1]
+        u_cab[2] = kCpz * epB[2] + kCdz * evB[2]
 
         #u = u_EQ + u_PD + u_osc
         u = u_EQ + u_PD + u_I + u_cab
