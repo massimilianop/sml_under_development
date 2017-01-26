@@ -30,7 +30,7 @@ def position_and_velocity_from_odometry(odometry):
                   odometry.pose.pose.position.z])
 
     # # TODO: naming of child_frame_id
-    # if odometry.child_frame_id == 'firefly/base_link' or odometry.child_frame_id == 'firefly_2/base_link': # IS THIS PART I ADDED CORRECT? -- Max
+    # if odometry.child_frame_id == 'firefly/base_link' or odometry.child_frame_id == 'firefly_2/base_link':
 
     #     # velocity is in the body reference frame
     #     v_body = np.array([odometry.twist.twist.linear.x,\
@@ -158,8 +158,8 @@ class SimplePIDController(Controller):
         self.t_old  = 0.0
 
         self.errIntegral = 0.0
-        self.errIntUpper = 0.0
-        self.errIntLower = 0.0
+        self.errIntUpper = 2.0
+        self.errIntLower = -2.0
 
     def get_total_weight(self):
         return self.MASS*self.GRAVITY
@@ -335,7 +335,7 @@ class SimplePIDController(Controller):
         kdz     = 3.4 #1.8
 
         # Integral gain
-        ki      = 0.75
+        ki      = 0.3
 
         # # Gains for the corrective term
         # kv      = 1.0
@@ -366,17 +366,22 @@ class SimplePIDController(Controller):
         # I term of the control law (Forward Euler method)
         delta_time = rospy.get_time() - self.t_old
         self.errIntegral = self.errIntegral  + delta_time * ep[2]
+
+        # Anti wind-up
+        if self.errIntegral < self.errIntLower :
+            self.errIntegral = self.errIntLower
+        elif self.errIntegral > self.errIntUpper :
+            self.errIntegral = self.errIntUpper
+
         u_Iz = - ki * self.errIntegral
         u_I    = numpy.array([0.0,0.0,u_Iz])
-
-        #TO DO: anti windup !!! <-----
 
 
         # Oscillation term of the control law
         #u_osc   = kv * v_Bi
         # u_osc  = numpy.array([0.0,0.0,0.0])
 
-        # Term to keep the cable straight
+        # Dampening term of the control law
         e_Li    = numpy.array([0.0,0.0,self.l_i])
         
         epB     = p_i - p_Bi - e_Li
@@ -397,7 +402,7 @@ class SimplePIDController(Controller):
         # print epB
 
         # if abs(ep[0])<0.1 and abs(ep[1])<0.1 and abs(v_bar[0])<0.05 and abs(v_bar[1])<0.05 and abs(omega_bar[2])<0.05:
-        #     u = u_EQ + u_PD
+        #     u = u_EQ + u_PD + u_I + u_cab
         #     print "Integrator ON"
         # else :
         #     print "integrator OFF"
