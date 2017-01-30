@@ -5,9 +5,12 @@ import rospy
 
 import nav_msgs.msg
 import geometry_msgs.msg
+from std_msgs.msg import Bool
 
 from utilities import utility_functions as uts
 from utilities import utility_functions
+
+from quad_control.srv import ChangeFlightMode
 
 
 class BarReferencePublisher():
@@ -15,46 +18,74 @@ class BarReferencePublisher():
     def __init__(self):
         self.frequency = 0.5
 
+        self.emergency_button = False
+
         rospy.init_node('bar_reference_publisher', anonymous=True)
 
-        self.publish_reference = rospy.Publisher(
+        self.publish_bar_reference = rospy.Publisher(
             name = 'bar_reference_pose_path',
+            data_class = nav_msgs.msg.Path,
+            queue_size = 1)
+
+        self.publish_uav_1_reference = rospy.Publisher(
+            name = 'uav_1_reference_path',
+            data_class = nav_msgs.msg.Path,
+            queue_size = 1)
+
+        self.publish_uav_2_reference = rospy.Publisher(
+            name = 'uav_2_reference_path',
             data_class = nav_msgs.msg.Path,
             queue_size = 1)
 
         self.rate = rospy.Rate(hz = self.frequency)
 
+        self.subscribe_emergency_button = rospy.Subscriber(
+            name = '/arena/killswitch',
+            data_class = Bool,
+            callback =self.callback_sub_emergency_button)
+
+
+    def callback_sub_emergency_button(self, msg):
+        self.emergency_button = msg.data
+
 
     def cycle(self):
         while not rospy.is_shutdown():
 
-            message_instance = nav_msgs.msg.Path()
+            uav1_path = nav_msgs.msg.Path()
+            uav2_path = nav_msgs.msg.Path()
 
             # Lift-off sequence
-            message_instance.poses = self.liftOff()
+            self.change_flight_mode_client('lift_off')
+            uav1_path.poses = self.liftOff(1,0,0.1,5)
+            uav2_path.poses = self.liftOff(-1,0,0.1,5)
 
-            # After lift-off, go to a certain pose
-            message_instance = self.addPoseStamped(1.0,2.0,1.1,0.3,0.1,message_instance,10)
+            self.publish_uav_1_reference.publish(uav1_path)
+            self.publish_uav_2_reference.publish(uav2_path)
 
-            print message_instance
 
-            self.publish_reference.publish(message_instance)
+
+
+
+            # self.publish_bar_reference.publish(message_instance)
 
             # go to sleep
             self.rate.sleep()
 
 
-    def liftOff(self,step=0.1,timeStep=5):
+    def liftOff(self,xInit,yInit,step=0.1,timeStep=5):
         path = nav_msgs.msg.Path()
 
         offset = rospy.get_param("/firefly/cable_length")
 
         n = offset // step
 
-        # for i in range(0,int(n+1)):   # correct code
-        for i in range(0,11):     # test code
+        for i in range(0,int(n+1)):   # correct code
+        # for i in range(0,11):     # test code
             path.poses.append(geometry_msgs.msg.PoseStamped())
-            path.poses[i].pose.position.z = step * (i+1) - offset
+            path.poses[i].pose.position.z = step * (i+1)
+            path.poses[i].pose.position.x = xInit
+            path.poses[i].pose.position.y = yInit
             path.poses[i].header.stamp.secs    = timeStep * (i)
 
         return path.poses
@@ -88,7 +119,6 @@ class BarReferencePublisher():
         return latestTime
 
 
-
     def addPoseStamped(self,x,y,z,psi,theta,currentPath,timeOffset):
         latestTime = self.getTime(currentPath)
         newTime = latestTime + timeOffset
@@ -101,6 +131,20 @@ class BarReferencePublisher():
 
         return currentPath
 
+
+    def change_flight_mode_client(self, mode=str):
+        rospy.wait_for_service('/firefly/change_flight_mode')
+        rospy.wait_for_service('/firefly_2/change_flight_mode')
+
+        try :
+            change_uav_1_mode_to = rospy.ServiceProxy('/firefly/change_flight_mode',ChangeFlightMode)
+            response_1 = change_uav_1_mode_to(mode)
+            change_uav_2_mode_to = rospy.ServiceProxy('/firefly/change_flight_mode',ChangeFlightMode)
+            response_2 = change_uav_2_mode_to(mode)
+            print 'Flight mode changed to: %s' %(mode)
+            return
+        except rospy.ServiceException:
+            pass
 
 
 if __name__ == '__main__':
