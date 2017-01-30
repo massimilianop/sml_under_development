@@ -61,6 +61,7 @@ add_message_files(
 # Generate services in the 'srv' folder
 add_service_files(
   FILES
+  ChangeFlightMode.srv
   SaveData.srv
   StartSim.srv
   SrvTrajectoryDesired.srv
