@@ -157,9 +157,36 @@ class SimplePIDController(Controller):
 
         self.t_old  = 0.0
 
+        # Discrete integrator variables
         self.errIntegral = 0.0
         self.errIntUpper = 2.0
         self.errIntLower = -2.0
+
+        # Proportional gains
+        self.kpx     = 1.0
+        self.kpy     = 1.0
+        self.kpz     = 3.0 #1.6
+
+        # Derivative gains
+        self.kdx     = 2.0
+        self.kdy     = 2.0
+        self.kdz     = 3.4 #1.8
+
+        # Integral gain
+        self.ki      = 0.3
+
+        # Proportional gains for the dampening term
+        self.kCpx     = -2 * self.kpx
+        self.kCpy     = -2 * self.kpy
+        self.kCpz     = -2 * self.kpz
+
+        # Derivative gains for the dampening term
+        self.kCdx     = 0
+        self.kCdy     = 0
+        self.kCdz     = 0
+
+        self.output = self.output_barRef
+
 
     def get_total_weight(self):
         return self.MASS*self.GRAVITY
@@ -184,12 +211,13 @@ class SimplePIDController(Controller):
         string += "\nDerivative gain xy: " + str(self.derivative_gain_xy)
         return string
 
-    def output(self, 
+    def output_barRef(self, 
         time_instant = 0.0,
         uav_odometry = nav_msgs.msg.Odometry(),
         partner_uav_odometry = nav_msgs.msg.Odometry(),
         bar_odometry = nav_msgs.msg.Odometry(),
-        reference = nav_msgs.msg.Path()):
+        uav_reference = nav_msgs.msg.Path(),
+        bar_reference = nav_msgs.msg.Path()):
 
         # Useful values
         e3 = numpy.array([0.0,0.0,1.0])     # Third canonical basis vector
@@ -249,7 +277,7 @@ class SimplePIDController(Controller):
         #ref_pose = geometry_msgs.msg.Pose()
 
         # This FOR decides which pose in the path is the current destination
-        for pose_stamped in reference.poses :            
+        for pose_stamped in bar_reference.poses :            
             # Confront the current time with the time associated to each pose
             if rospy.get_time() >= pose_stamped.header.stamp.to_sec() :
                 ref_pose = pose_stamped.pose
@@ -322,46 +350,15 @@ class SimplePIDController(Controller):
 
     def ucl_i(self,ep,ev,p_Bi,v_Bi,p_i,v_i,omega_bar,v_bar):
 
-        # Proportional gains
-        #kp      = 1.0
-        kpx     = 1.0
-        kpy     = 1.0
-        kpz     = 3.0 #1.6
-
-        # Derivative gains
-        #kd      = 3.0
-        kdx     = 2.0
-        kdy     = 2.0
-        kdz     = 3.4 #1.8
-
-        # Integral gain
-        ki      = 0.3
-
-        # # Gains for the corrective term
-        # kv      = 1.0
-
-        # Proportional gains for the cab term
-        #kCp      = 1.0
-        kCpx     = -2 * kpx
-        kCpy     = -2 * kpy
-        kCpz     = -2 * kpz
-
-        # Derivative gains for the cab term
-        #kCd      = 3.0
-        kCdx     = 0 * kdx
-        kCdy     = 0 * kdy
-        kCdz     = 0 * kdz
-
-
         # Equilibrium term of the control law
         u_EQ    = numpy.array([0.0,0.0,0.0])
         u_EQ[2] = (self.MASS + 0.5 * self.mL ) * self.GRAVITY
 
         # PD term of the control law
         u_PD    = numpy.array([0.0,0.0,0.0])
-        u_PD[0] = kpx*ep[0] + kdx*ev[0]
-        u_PD[1] = kpy*ep[1] + kdy*ev[1]
-        u_PD[2] = kpz*ep[2] + kdz*ev[2]
+        u_PD[0] = self.kpx*ep[0] + self.kdx*ev[0]
+        u_PD[1] = self.kpy*ep[1] + self.kdy*ev[1]
+        u_PD[2] = self.kpz*ep[2] + self.kdz*ev[2]
 
         # I term of the control law (Forward Euler method)
         delta_time = rospy.get_time() - self.t_old
@@ -373,13 +370,8 @@ class SimplePIDController(Controller):
         elif self.errIntegral > self.errIntUpper :
             self.errIntegral = self.errIntUpper
 
-        u_Iz = ki * self.errIntegral
+        u_Iz = self.ki * self.errIntegral
         u_I    = numpy.array([0.0,0.0,u_Iz])
-
-
-        # Oscillation term of the control law
-        #u_osc   = kv * v_Bi
-        # u_osc  = numpy.array([0.0,0.0,0.0])
 
         # Dampening term of the control law
         e_Li    = numpy.array([0.0,0.0,self.l_i])
@@ -389,9 +381,14 @@ class SimplePIDController(Controller):
 
         # u_cab   = - kCp * (p_i - p_Bi - e_Li) - kCd * (v_i - v_Bi)
         u_cab    = numpy.array([0.0,0.0,0.0])
-        u_cab[0] = kCpx * epB[0] + kCdx * evB[0]
-        u_cab[1] = kCpy * epB[1] + kCdy * evB[1]
-        u_cab[2] = kCpz * epB[2] + kCdz * evB[2]
+        u_cab[0] = self.kCpx * epB[0] + self.kCdx * evB[0]
+        u_cab[1] = self.kCpy * epB[1] + self.kCdy * evB[1]
+        u_cab[2] = self.kCpz * epB[2] + self.kCdz * evB[2]
+
+        # TESTING other possible options for the dapening term
+        # u_cab[0] = kCpx * evB[0]
+        # u_cab[1] = kCpy * evB[1]
+        # u_cab[2] = kCpz * evB[2]
 
         #u = u_EQ + u_PD + u_osc
         u = u_EQ + u_PD + u_I + u_cab
@@ -420,4 +417,95 @@ class SimplePIDController(Controller):
 
     def reset_estimate_z(self):
         self.disturbance_estimate[2] = 0.0
-        return         
+        return
+
+    ##################################################################################################################
+    ############################################## WORK IN PROGRESS !!! ##############################################
+    ##################################################################################################################
+
+    def output_uavRef(self, 
+        time_instant = 0.0,
+        uav_odometry = nav_msgs.msg.Odometry(),
+        partner_uav_odometry = nav_msgs.msg.Odometry(),
+        bar_odometry = nav_msgs.msg.Odometry(),
+        uav_reference = nav_msgs.msg.Path(),
+        bar_reference = nav_msgs.msg.Path()):
+
+        # ---------------------------- CURRENT ODOMETRY ----------------------------
+
+        # Position and velocity of the UAV
+        p_i,v_i = position_and_velocity_from_odometry(uav_odometry)
+
+
+        # -------------------------- CURRENT DESTINATION --------------------------
+
+        # This FOR decides which pose in the path is the current destination
+        for pose_stamped in uav_reference.poses :            
+            # Confront the current time with the time associated to each pose
+            if rospy.get_time() >= pose_stamped.header.stamp.to_sec() :
+                ref_pose = pose_stamped.pose
+
+        r = ref_pose.position
+
+        p_ref = np.array([r.x,r.y,r.z])
+
+        v_i_ref = np.array([0.0,0.0,0.0])
+        a_i_ref = np.array([0.0,0.0,0.0])
+
+        # Position error and velocity error of the UAV
+        ep = p_i_ref - p_i
+        ev = v_i_ref - v_i
+
+        # Equilibrium term of the control law
+        u_EQ    = numpy.array([0.0,0.0,0.0])
+        u_EQ[2] = (self.MASS + 0.5 * self.mL ) * self.GRAVITY
+
+        # PD term of the control law
+        u_PD    = numpy.array([0.0,0.0,0.0])
+        u_PD[0] = self.kpx*ep[0] + self.kdx*ev[0]
+        u_PD[1] = self.kpy*ep[1] + self.kdy*ev[1]
+        u_PD[2] = self.kpz*ep[2] + self.kdz*ev[2]
+
+        # I term of the control law (Forward Euler method)
+        delta_time = rospy.get_time() - self.t_old
+        self.errIntegral = self.errIntegral  + delta_time * ep[2]
+
+        # Anti wind-up
+        if self.errIntegral < self.errIntLower :
+            self.errIntegral = self.errIntLower
+        elif self.errIntegral > self.errIntUpper :
+            self.errIntegral = self.errIntUpper
+
+        u_Iz = self.ki * self.errIntegral
+        u_I    = numpy.array([0.0,0.0,u_Iz])
+
+        u = u_EQ + u_PD + u_I
+
+        # Update time instant (for the discrete intergator)
+        self.t_old = rospy.get_time()
+
+        Full_actuation = u + self.MASS*a_i_ref
+
+        print "output_uavRef is being used"
+
+        return Full_actuation
+
+
+    def uav2bar(self):
+        self.output = self.output_barRef
+        return
+
+    def bar2uav(self):
+        self.output = self.output_uavRef
+        return
+
+    def change_flight_mode(self, mode) :
+
+        uav_reference_modes = ['lift_off', 'landing', 'emergency']
+        bar_reference_modes = ['normal']
+
+        if mode in uav_reference_modes :
+            self.bar2uav()
+        elif mode in bar_reference_modes :
+            self.uav2bar()
+        return

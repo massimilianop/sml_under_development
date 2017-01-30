@@ -15,6 +15,8 @@ import rospy
 import nav_msgs.msg
 import geometry_msgs.msg
 
+from quad_control.srv import ChangeFlightMode
+
 #node will subscribe to uav_odometry measurements
 from nav_msgs.msg import Odometry
 
@@ -443,13 +445,19 @@ class BarLiftingUAV(Mission):
             callback   = self.update_bar_reference_pose_path)
         self.bar_reference_pose_path = nav_msgs.msg.Path()
         self.bar_reference_pose_path.poses = [geometry_msgs.msg.PoseStamped()]
-        # print('TESTING: print bar reference')
-        # print(self.bar_reference_pose_path)
-        # print('TESTING: print length of poses vector')
-        # print(len(self.bar_reference_pose_path.poses))
-        # print('TESTING: print timestamp   '),
-        # print(self.bar_reference_pose_path.poses[0].header.stamp.to_sec())
 
+        self.sub_uav_reference_path = rospy.Subscriber(
+            name       = 'uav_reference_path',
+            data_class = nav_msgs.msg.Path,
+            callback   = self.update_uav_reference_path)
+        self.uav_reference_path = nav_msgs.msg.Path()
+        self.uav_reference_path.poses = [geometry_msgs.msg.PoseStamped()]
+
+        # Starting the change_flight_mode service
+        # self.change_flight_mode_server()
+
+
+    # Callback functions
     def update_bar_odometry(self,msg = nav_msgs.msg.Odometry()):
         self.bar_odometry = msg
 
@@ -458,8 +466,21 @@ class BarLiftingUAV(Mission):
 
     def update_bar_reference_pose_path(self,msg = nav_msgs.msg.Path()):
         self.bar_reference_pose_path = msg
-        # print('print bar reference')
-        # print(self.bar_reference_pose_path)
+
+    def update_uav_reference_path(self,msg = nav_msgs.msg.Path()):
+        self.uav_reference_path = msg
+
+
+    # Change flight mode service
+    def change_flight_mode_server(self):
+
+        serv = rospy.Service('change_flight_mode', ChangeFlightMode, self.handle_change_flight_mode)
+        rospy.spin()
+
+    def handle_change_flight_mode(self,request):
+        self.controller.change_flight_mode(request.mode)
+        return
+
 
     def object_description(self):
         string = """No parameters"""
@@ -504,7 +525,8 @@ class BarLiftingUAV(Mission):
             uav_odometry = uav_odometry,
             partner_uav_odometry = self.partner_uav_odometry,
             bar_odometry = self.bar_odometry,
-            reference = self.bar_reference_pose_path)
+            uav_reference = self.uav_reference_path,
+            bar_reference = self.bar_reference_pose_path)
 
         return desired_3d_force
 
