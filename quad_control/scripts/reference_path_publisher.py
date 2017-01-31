@@ -57,15 +57,19 @@ class BarReferencePublisher():
 
             # Lift-off sequence
             self.change_flight_mode_client('lift_off')
-            uav1_path.poses = self.liftOff(1,0,0.1,5)
-            uav2_path.poses = self.liftOff(-1,0,0.1,5)
+            uav1_path.poses = self.liftOff(xInit=1,yInit=0)
+            uav2_path.poses = self.liftOff(xInit=-1,yInit=0)
+
+            # print "uav1 path is:"
+            # print uav1_path
+            # print ""
+            # print ""
+            # print ""
+            # print "uav2 path is:"
+            # print uav2_path
 
             self.publish_uav_1_reference.publish(uav1_path)
             self.publish_uav_2_reference.publish(uav2_path)
-
-
-
-
 
             # self.publish_bar_reference.publish(message_instance)
 
@@ -73,15 +77,13 @@ class BarReferencePublisher():
             self.rate.sleep()
 
 
-    def liftOff(self,xInit,yInit,step=0.1,timeStep=5):
+    def liftOff(self,xInit,yInit,step=0.05,timeStep=2,n_iterations=16):
         path = nav_msgs.msg.Path()
 
-        offset = rospy.get_param("/firefly/cable_length")
-
-        n = offset // step
-
-        for i in range(0,int(n+1)):   # correct code
-        # for i in range(0,11):     # test code
+        # offset = rospy.get_param("/firefly/cable_length")
+        # n = offset // step
+        # for i in range(0,int(n+1)):
+        for i in range(0,n_iterations):
             path.poses.append(geometry_msgs.msg.PoseStamped())
             path.poses[i].pose.position.z = step * (i+1)
             path.poses[i].pose.position.x = xInit
@@ -131,20 +133,29 @@ class BarReferencePublisher():
 
         return currentPath
 
-
+    # Clients for the ChangeFlightMode service
     def change_flight_mode_client(self, mode=str):
-        rospy.wait_for_service('/firefly/change_flight_mode')
-        rospy.wait_for_service('/firefly_2/change_flight_mode')
+        self.change_uav_1_mode_client(mode)
+        self.change_uav_2_mode_client(mode)
 
+    def change_uav_1_mode_client(self, mode=str):
+        rospy.wait_for_service('/firefly/change_flight_mode')
         try :
             change_uav_1_mode_to = rospy.ServiceProxy('/firefly/change_flight_mode',ChangeFlightMode)
             response_1 = change_uav_1_mode_to(mode)
-            change_uav_2_mode_to = rospy.ServiceProxy('/firefly/change_flight_mode',ChangeFlightMode)
-            response_2 = change_uav_2_mode_to(mode)
-            print 'Flight mode changed to: %s' %(mode)
             return
         except rospy.ServiceException:
             pass
+
+    def change_uav_2_mode_client(self, mode=str):
+        rospy.wait_for_service('/firefly_2/change_flight_mode')
+        try :
+            change_uav_2_mode_to = rospy.ServiceProxy('/firefly_2/change_flight_mode',ChangeFlightMode)
+            response_2 = change_uav_2_mode_to(mode)
+            return
+        except rospy.ServiceException:
+            pass
+
 
 
 if __name__ == '__main__':

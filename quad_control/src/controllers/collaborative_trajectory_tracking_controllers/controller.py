@@ -186,6 +186,7 @@ class SimplePIDController(Controller):
         self.kCdz     = 0
 
         self.output = self.output_barRef
+        # self.output = self.output_uavRef
 
 
     def get_total_weight(self):
@@ -336,7 +337,7 @@ class SimplePIDController(Controller):
         np.set_printoptions(suppress=True)
         # print "Current position of UAV_%i: " %(self.uav_id),
         # print p_i
-        print "UAV_%i position error: " %(self.uav_id),
+        print "BAR_REF: UAV_%i position error: " %(self.uav_id),
         print ep
         print ""
 
@@ -447,7 +448,7 @@ class SimplePIDController(Controller):
 
         r = ref_pose.position
 
-        p_ref = np.array([r.x,r.y,r.z])
+        p_i_ref = np.array([r.x,r.y,r.z])
 
         v_i_ref = np.array([0.0,0.0,0.0])
         a_i_ref = np.array([0.0,0.0,0.0])
@@ -486,7 +487,11 @@ class SimplePIDController(Controller):
 
         Full_actuation = u + self.MASS*a_i_ref
 
-        print "output_uavRef is being used"
+        print "UAV_REF: UAV_%i desired position: " %(self.uav_id),
+        print p_i_ref
+        print "UAV_REF: UAV_%i position error: " %(self.uav_id),
+        print ep
+        print ""
 
         return Full_actuation
 
@@ -508,4 +513,7 @@ class SimplePIDController(Controller):
             self.bar2uav()
         elif mode in bar_reference_modes :
             self.uav2bar()
+
+        print "UAV_%i mode: %s " % (self.uav_id,mode)
+
         return

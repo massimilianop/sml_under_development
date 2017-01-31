@@ -454,7 +454,7 @@ class BarLiftingUAV(Mission):
         self.uav_reference_path.poses = [geometry_msgs.msg.PoseStamped()]
 
         # Starting the change_flight_mode service
-        # self.change_flight_mode_server()
+        self.change_flight_mode_server()
 
 
     # Callback functions
@@ -473,9 +473,8 @@ class BarLiftingUAV(Mission):
 
     # Change flight mode service
     def change_flight_mode_server(self):
-
         serv = rospy.Service('change_flight_mode', ChangeFlightMode, self.handle_change_flight_mode)
-        rospy.spin()
+        #rospy.spin()
 
     def handle_change_flight_mode(self,request):
         self.controller.change_flight_mode(request.mode)
