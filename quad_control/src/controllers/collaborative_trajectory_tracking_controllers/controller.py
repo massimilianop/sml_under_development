@@ -302,10 +302,10 @@ class SimplePIDController(Controller):
 
         nB_ref = intermediate_orientation(n_bar,nB_ref_Temp)
 
-        # TEST #############################
-        #p_ref = np.array([-1.0,-1.0,2])
-        #nB_ref = np.array([1.0,0.0,0.0])
-        # ##################################
+        # ########### Ignore INPUT REFERENCE for TESTING purposes ###########
+        p_ref = np.array([0.0,0.0,0.5])                                     #
+        #nB_ref = np.array([1.0,0.0,0.0])                                    #
+        # ###################################################################
 
         # TODO : maybe allow different nCi other than e3?
         nCi_ref = e3
@@ -420,9 +420,6 @@ class SimplePIDController(Controller):
         self.disturbance_estimate[2] = 0.0
         return
 
-    ##################################################################################################################
-    ############################################## WORK IN PROGRESS !!! ##############################################
-    ##################################################################################################################
 
     def output_uavRef(self, 
         time_instant = 0.0,
