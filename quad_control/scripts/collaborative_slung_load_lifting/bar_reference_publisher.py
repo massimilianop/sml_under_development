@@ -10,7 +10,7 @@ from std_msgs.msg import Bool
 from utilities import utility_functions as uts
 from utilities import utility_functions
 
-from quad_control.srv import ChangeFlightMode
+import change_flight_mode_client as cfm
 
 
 class BarReferencePublisher():
@@ -52,24 +52,22 @@ class BarReferencePublisher():
     def cycle(self):
         while not rospy.is_shutdown():
 
-            uav1_path = nav_msgs.msg.Path()
-            uav2_path = nav_msgs.msg.Path()
+            # Paths initialization
+            uav1_path   = nav_msgs.msg.Path()
+            uav2_path   = nav_msgs.msg.Path()
+            bar_path    = nav_msgs.msg.Path() 
 
             # Lift-off sequence
-            self.change_flight_mode_client('lift_off')
+            cfm.change_flight_mode_client('lift_off')
             uav1_path.poses = self.liftOff(xInit=1,yInit=0)
             uav2_path.poses = self.liftOff(xInit=-1,yInit=0)
 
-            # print "uav1 path is:"
-            # print uav1_path
-            # print ""
-            # print ""
-            # print ""
-            # print "uav2 path is:"
-            # print uav2_path
-
             self.publish_uav_1_reference.publish(uav1_path)
             self.publish_uav_2_reference.publish(uav2_path)
+
+            # Switch to normal flight mode
+            # ISSUE: the command below is executed immediately, effectively making the quads ignore the uav_reference path!!
+            #self.change_flight_mode_client('normal')
 
             # self.publish_bar_reference.publish(message_instance)
 
@@ -132,29 +130,6 @@ class BarReferencePublisher():
         currentPath.poses.append(poseStampd)
 
         return currentPath
-
-    # Clients for the ChangeFlightMode service
-    def change_flight_mode_client(self, mode=str):
-        self.change_uav_1_mode_client(mode)
-        self.change_uav_2_mode_client(mode)
-
-    def change_uav_1_mode_client(self, mode=str):
-        rospy.wait_for_service('/firefly/change_flight_mode')
-        try :
-            change_uav_1_mode_to = rospy.ServiceProxy('/firefly/change_flight_mode',ChangeFlightMode)
-            response_1 = change_uav_1_mode_to(mode)
-            return
-        except rospy.ServiceException:
-            pass
-
-    def change_uav_2_mode_client(self, mode=str):
-        rospy.wait_for_service('/firefly_2/change_flight_mode')
-        try :
-            change_uav_2_mode_to = rospy.ServiceProxy('/firefly_2/change_flight_mode',ChangeFlightMode)
-            response_2 = change_uav_2_mode_to(mode)
-            return
-        except rospy.ServiceException:
-            pass
 
 
 
