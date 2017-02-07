@@ -181,9 +181,9 @@ class SimplePIDController(Controller):
         self.kCpz     = -2 * self.kpz
 
         # Derivative gains for the dampening term
-        self.kCdx     = 0
-        self.kCdy     = 0
-        self.kCdz     = 0
+        self.kCdx     = -1.0
+        self.kCdy     = -1.0
+        self.kCdz     = -1.0
 
         self.output = self.output_barRef
         # self.output = self.output_uavRef
@@ -337,9 +337,9 @@ class SimplePIDController(Controller):
         np.set_printoptions(suppress=True)
         # print "Current position of UAV_%i: " %(self.uav_id),
         # print p_i
-        print "BAR_REF: UAV_%i position error: " %(self.uav_id),
-        print ep
-        print ""
+        # print "BAR_REF: UAV_%i position error: " %(self.uav_id),
+        # print ep
+        # print ""
 
         u = self.ucl_i(ep,ev,p_Bi,v_Bi,p_i,v_i,omega_bar,v_bar)
         # u = self.ucl_i_Old(ep,ev,d_i,n_Ci,omega_Ci,n_bar,omega_bar)
@@ -382,22 +382,63 @@ class SimplePIDController(Controller):
 
         # u_cab   = - kCp * (p_i - p_Bi - e_Li) - kCd * (v_i - v_Bi)
         u_cab    = numpy.array([0.0,0.0,0.0])
+
+        #TESTING possible options for the dapening term
+
+        # Test 1
+        # u_cab[0] = self.kCpx * epB[0]
+        # u_cab[1] = self.kCpy * epB[1]
+        # u_cab[2] = self.kCpz * epB[2]
+
+        # Test 2
+        # u_cab[0] = self.kCpx * evB[0]
+        # u_cab[1] = self.kCpy * evB[1]
+        # u_cab[2] = self.kCpz * evB[2]
+
+        # Test 3
+        # u_cab[0] = self.kCpx * v_Bi[0]
+        # u_cab[1] = self.kCpy * v_Bi[1]
+        # u_cab[2] = self.kCpz * v_Bi[2]
+
+        # Test 4
+        # sn = np.sign(np.dot(epB,v_Bi))
+        # u_cab[0] = self.kCpx * epB[0] * sn
+        # u_cab[1] = self.kCpy * epB[1] * sn
+        # u_cab[2] = self.kCpz * epB[2] * sn
+
+        # Test 5
+        # u_cab[0] = self.kCpx * min(epB[0],v_Bi[0])
+        # u_cab[1] = self.kCpy * min(epB[1],v_Bi[1])
+        # u_cab[2] = self.kCpz * min(epB[2],v_Bi[2])
+
+        # Test 6
+        # u_cab[0] = self.kCpx * max(epB[0],v_Bi[0])
+        # u_cab[1] = self.kCpy * max(epB[1],v_Bi[1])
+        # u_cab[2] = self.kCpz * max(epB[2],v_Bi[2])
+
+        # Test 7
+        # if abs(ep[0])<0.1 and abs(ep[1])<0.1 :
+        #     u_cab[0] = self.kCpx * v_Bi[0]
+        #     u_cab[1] = self.kCpy * v_Bi[1]
+        #     u_cab[2] = self.kCpz * v_Bi[2]
+        # else :
+        #     u_cab[0] = self.kCpx * epB[0]
+        #     u_cab[1] = self.kCpy * epB[1]
+        #     u_cab[2] = self.kCpz * epB[2]
+
+        # Test 8
         u_cab[0] = self.kCpx * epB[0] + self.kCdx * evB[0]
         u_cab[1] = self.kCpy * epB[1] + self.kCdy * evB[1]
         u_cab[2] = self.kCpz * epB[2] + self.kCdz * evB[2]
 
-        # TESTING other possible options for the dapening term
-        # u_cab[0] = kCpx * evB[0]
-        # u_cab[1] = kCpy * evB[1]
-        # u_cab[2] = kCpz * evB[2]
-
-        #u = u_EQ + u_PD + u_osc
         u = u_EQ + u_PD + u_I + u_cab
 
         # print "u_cab ",
         # print u_cab
         # print "epB ",
         # print epB
+
+
 
         # if abs(ep[0])<0.1 and abs(ep[1])<0.1 and abs(v_bar[0])<0.05 and abs(v_bar[1])<0.05 and abs(omega_bar[2])<0.05:
         #     u = u_EQ + u_PD + u_I + u_cab
