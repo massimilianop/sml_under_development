@@ -12,6 +12,10 @@ from utilities import utility_functions
 
 import change_flight_mode_client as cfm
 
+from math import radians
+from math import cos
+from math import sin
+
 
 class BarReferencePublisher():
 
@@ -50,29 +54,47 @@ class BarReferencePublisher():
 
 
     def cycle(self):
-        while not rospy.is_shutdown():
 
-            # Paths initialization
-            uav1_path   = nav_msgs.msg.Path()
-            uav2_path   = nav_msgs.msg.Path()
-            bar_path    = nav_msgs.msg.Path() 
+        # Paths initialization
+        uav1_path   = nav_msgs.msg.Path()
+        uav2_path   = nav_msgs.msg.Path()
+        bar_path    = nav_msgs.msg.Path()
 
-            # Lift-off sequence
-            cfm.change_flight_mode_client('lift_off')
-            uav1_path.poses = self.liftOff(xInit=1,yInit=0)
-            uav2_path.poses = self.liftOff(xInit=-1,yInit=0)
+        # Lift-off sequence
+        cfm.change_flight_mode_client('lift_off')
+        uav1_path.poses = self.liftOff(xInit=1,yInit=0)
+        uav2_path.poses = self.liftOff(xInit=-1,yInit=0)
 
+        liftOff_time = self.getTime(uav1_path)
+
+        while not rospy.is_shutdown() and rospy.get_time() < liftOff_time :
             self.publish_uav_1_reference.publish(uav1_path)
             self.publish_uav_2_reference.publish(uav2_path)
 
-            # Switch to normal flight mode
-            # ISSUE: the command below is executed immediately, effectively making the quads ignore the uav_reference path!!
-            #self.change_flight_mode_client('normal')
+        # Switch to normal flight mode
+        cfm.change_flight_mode_client('normal')
 
-            # self.publish_bar_reference.publish(message_instance)
+        # The first bar reference is where the bar already is
+        bar_path.poses.append(geometry_msgs.msg.PoseStamped())
+        bar_path.poses[0].pose.position.z = 0.1
+        bar_path.poses[0].header.stamp.secs = liftOff_time
 
-            # go to sleep
-            self.rate.sleep()
+        # Custom path for the bar
+
+        bar_path = self.addPoseStamped(0,0,0.5,0,0,bar_path,5)
+        # bar_path = self.addPoseStamped(-1,1,1,0,0,bar_path,5)
+        #bar_path = self.addPoseStamped(0,0,0.5,radians(90),0,bar_path,5)
+
+        bar_path = self.demo_circumference([0,0,0.5],2,bar_path,5)
+
+        while not rospy.is_shutdown() and rospy.get_time() >= liftOff_time :
+            self.publish_bar_reference.publish(bar_path)
+
+
+
+
+        #     # go to sleep
+        #     self.rate.sleep()
 
 
     def liftOff(self,xInit,yInit,step=0.05,timeStep=2,n_iterations=16):
@@ -132,6 +154,34 @@ class BarReferencePublisher():
         return currentPath
 
 
+    # --------------- DEMO PATHS ---------------
+
+    def demo_circumference(self,center,radius,currentPath,timeOffset):
+
+        path = currentPath
+
+        cx = center[0]
+        cy = center[1]
+        cz = center[2]
+
+        angle_step = 30
+        nTot = 360 / angle_step + 1
+
+        alpha = radians(angle_step+0.1)
+
+        for i in range(0,nTot):
+
+            psi_i = i * alpha
+            target_x = cx + radius * cos(psi_i)
+            target_y = cy + radius * sin(psi_i)
+            target_z = cz
+
+            # Add the position to the path
+            path = self.addPoseStamped(target_x,target_y,target_z,psi_i,0,path,2)
+
+        return path
+
+
 
 if __name__ == '__main__':
     bar_reference_publisher = BarReferencePublisher()
@@ -139,5 +189,3 @@ if __name__ == '__main__':
         bar_reference_publisher.cycle()
     except rospy.ROSInterruptException:
         pass
-
-
