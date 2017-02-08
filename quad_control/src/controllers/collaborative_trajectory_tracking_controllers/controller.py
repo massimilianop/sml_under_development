@@ -178,7 +178,7 @@ class SimplePIDController(Controller):
         # Proportional gains for the dampening term
         self.kCpx     = -2 * self.kpx
         self.kCpy     = -2 * self.kpy
-        self.kCpz     = -2 * self.kpz
+        self.kCpz     = -2
 
         # Derivative gains for the dampening term
         self.kCdx     = -1.0
@@ -278,7 +278,7 @@ class SimplePIDController(Controller):
         #ref_pose = geometry_msgs.msg.Pose()
 
         # This FOR decides which pose in the path is the current destination
-        for pose_stamped in bar_reference.poses :            
+        for pose_stamped in bar_reference.poses :
             # Confront the current time with the time associated to each pose
             if rospy.get_time() >= pose_stamped.header.stamp.to_sec() :
                 ref_pose = pose_stamped.pose
@@ -303,8 +303,8 @@ class SimplePIDController(Controller):
         nB_ref = intermediate_orientation(n_bar,nB_ref_Temp)
 
         # ########### Ignore INPUT REFERENCE for TESTING purposes ###########
-        p_ref = np.array([0.0,0.0,0.5])                                     #
-        #nB_ref = np.array([1.0,0.0,0.0])                                    #
+        # p_ref = np.array([0.0,0.0,0.5])                                     #
+        # nB_ref = np.array([0.0,1.0,0.0])                                    #
         # ###################################################################
 
         # TODO : maybe allow different nCi other than e3?
@@ -479,7 +479,7 @@ class SimplePIDController(Controller):
         # -------------------------- CURRENT DESTINATION --------------------------
 
         # This FOR decides which pose in the path is the current destination
-        for pose_stamped in uav_reference.poses :            
+        for pose_stamped in uav_reference.poses :
             # Confront the current time with the time associated to each pose
             if rospy.get_time() >= pose_stamped.header.stamp.to_sec() :
                 ref_pose = pose_stamped.pose
@@ -525,11 +525,11 @@ class SimplePIDController(Controller):
 
         Full_actuation = u + self.MASS*a_i_ref
 
-        print "UAV_REF: UAV_%i desired position: " %(self.uav_id),
-        print p_i_ref
-        print "UAV_REF: UAV_%i position error: " %(self.uav_id),
-        print ep
-        print ""
+        # print "UAV_REF: UAV_%i desired position: " %(self.uav_id),
+        # print p_i_ref
+        # print "UAV_REF: UAV_%i position error: " %(self.uav_id),
+        # print ep
+        # print ""
 
         return Full_actuation
 
