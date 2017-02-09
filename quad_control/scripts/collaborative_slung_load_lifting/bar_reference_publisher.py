@@ -62,12 +62,12 @@ class BarReferencePublisher():
 
         # Lift-off sequence
         cfm.change_flight_mode_client('lift_off')
-        uav1_path.poses = self.liftOff(xInit=1,yInit=0)
-        uav2_path.poses = self.liftOff(xInit=-1,yInit=0)
+        uav1_path.poses = self.liftOff(xInit=0.9,yInit=0)
+        uav2_path.poses = self.liftOff(xInit=-0.9,yInit=0)
 
         liftOff_time = self.getTime(uav1_path)
 
-        while not rospy.is_shutdown() and rospy.get_time() < liftOff_time :
+        while not rospy.is_shutdown() and rospy.get_time() < liftOff_time and not self.emergency_button:
             self.publish_uav_1_reference.publish(uav1_path)
             self.publish_uav_2_reference.publish(uav2_path)
 
@@ -81,16 +81,47 @@ class BarReferencePublisher():
 
         # Custom path for the bar
 
-        bar_path = self.addPoseStamped(0,0,0.5,0,0,bar_path,5)
-        # bar_path = self.addPoseStamped(-1,1,1,0,0,bar_path,5)
-        #bar_path = self.addPoseStamped(0,0,0.5,radians(90),0,bar_path,5)
+        # Lift to z=0.5
+        bar_path = self.addPoseStamped([0,0,0.5],0,0,bar_path,5)
+        # Cicle around the arena
+        arena_radius = 2.0
+        bar_path = self.demo_circumference([0,0,0.5],arena_radius,bar_path,5)
+        # Move along x
+        bar_path = self.addPoseStamped([-arena_radius,0,0.5],0,0,bar_path,10)
+        # Move diagonally
+        bar_path = self.addPoseStamped([0.0,arena_radius,0.5],0,0,bar_path,10)
+        # Move along y
+        bar_path = self.addPoseStamped([0.0,-arena_radius,0.5],0,0,bar_path,10)
+        # Back to the center
+        bar_path = self.addPoseStamped([0,0,0.5],0,0,bar_path,10)
+        # Changes to the theta angle
+        bar_path = self.addPoseStamped([0,0,0.5],0,radians(30),bar_path,5)s
+        bar_path = self.addPoseStamped([0,0,0.5],0,radians(-30),bar_path,5)
+        bar_path = self.addPoseStamped([0,0,0.5],0,0,bar_path,5)
+        # Changes to the psi angle
+        bar_path = self.addPoseStamped([0,0,0.5],radians(85),0,bar_path,5)
+        ar_path = self.addPoseStamped([0,0,0.5],radians(185),0,bar_path,5)
+        bar_path = self.addPoseStamped([0,0,0.5],radians(275),0,bar_path,5)
+        bar_path = self.addPoseStamped([0,0,0.5],0,0,bar_path,5)
 
-        bar_path = self.demo_circumference([0,0,0.5],2,bar_path,5)
+        demo_time = self.getTime(bar_path) + 5
 
-        while not rospy.is_shutdown() and rospy.get_time() >= liftOff_time :
+        while not rospy.is_shutdown() and rospy.get_time() >= liftOff_time and rospy.get_time() < demo_time and not self.emergency_button:
             self.publish_bar_reference.publish(bar_path)
 
+        # Landing 
+        cfm.change_flight_mode_client('landing')
+        uav1_path = self.addPoseStamped([0.9,0,0],0,0,uav1_path,demo_time - liftOff_time)
+        uav2_path = self.addPoseStamped([-0.9,0,0],0,0,uav2_path,demo_time - liftOff_time)
 
+        while not rospy.is_shutdown() and rospy.get_time() >= demo_time and not self.emergency_button:
+            self.publish_uav_1_reference.publish(uav1_path)
+            self.publish_uav_2_reference.publish(uav2_path)
+
+
+        if emergency_button :
+            cfm.change_flight_mode_client('emergency')
+            # Emergency landing
 
 
         #     # go to sleep
@@ -141,7 +172,10 @@ class BarReferencePublisher():
         return latestTime
 
 
-    def addPoseStamped(self,x,y,z,psi,theta,currentPath,timeOffset):
+    def addPoseStamped(self,position,psi,theta,currentPath,timeOffset):
+        x=position[0]
+        y=position[1]
+        z=position[2]
         latestTime = self.getTime(currentPath)
         newTime = latestTime + timeOffset
 
@@ -167,7 +201,7 @@ class BarReferencePublisher():
         angle_step = 30
         nTot = 360 / angle_step + 1
 
-        alpha = radians(angle_step+0.1)
+        alpha = radians(angle_step+0.1) # the +0.1 was added to avoid singularities
 
         for i in range(0,nTot):
 
@@ -177,7 +211,7 @@ class BarReferencePublisher():
             target_z = cz
 
             # Add the position to the path
-            path = self.addPoseStamped(target_x,target_y,target_z,psi_i,0,path,2)
+            path = self.addPoseStamped([target_x,target_y,target_z],psi_i,0,path,2)
 
         return path
 
