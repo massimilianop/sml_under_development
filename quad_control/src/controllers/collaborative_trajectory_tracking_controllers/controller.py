@@ -303,7 +303,7 @@ class SimplePIDController(Controller):
         nB_ref = intermediate_orientation(n_bar,nB_ref_Temp)
 
         # ########### Ignore INPUT REFERENCE for TESTING purposes ###########
-        # p_ref = np.array([0.0,0.0,0.5])                                     #
+        p_ref = np.array([0.0,0.0,0.5])                                     #
         # nB_ref = np.array([0.0,1.0,0.0])                                    #
         # ###################################################################
 
@@ -380,56 +380,32 @@ class SimplePIDController(Controller):
         epB     = p_Bi + e_Li - p_i
         evB     = v_Bi - v_i
 
-        # u_cab   = - kCp * (p_i - p_Bi - e_Li) - kCd * (v_i - v_Bi)
-        u_cab    = numpy.array([0.0,0.0,0.0])
 
         #TESTING possible options for the dapening term
+        # u_cab   = - kCp * (p_i - p_Bi - e_Li) - kCd * (v_i - v_Bi)
 
-        # Test 1
+        # C0 : Only the PID
+        u_cab    = numpy.array([0.0,0.0,0.0])
+
+        # C1_P : P term on epB
         # u_cab[0] = self.kCpx * epB[0]
         # u_cab[1] = self.kCpy * epB[1]
         # u_cab[2] = self.kCpz * epB[2]
 
-        # Test 2
-        # u_cab[0] = self.kCpx * evB[0]
-        # u_cab[1] = self.kCpy * evB[1]
-        # u_cab[2] = self.kCpz * evB[2]
+        # C1_D : D term on d/dt epB = evB
+        # u_cab[0] = self.kCdx * evB[0]
+        # u_cab[1] = self.kCdy * evB[1]
+        # u_cab[2] = self.kCdz * evB[2]
 
-        # Test 3
+        # C1_PD : P term on epB + D term on evB
+        # u_cab[0] = self.kCpx * epB[0] + self.kCdx * evB[0]
+        # u_cab[1] = self.kCpy * epB[1] + self.kCdy * evB[1]
+        # u_cab[2] = self.kCpz * epB[2] + self.kCdz * evB[2]
+
+        # C2 : P term on vBi
         # u_cab[0] = self.kCpx * v_Bi[0]
         # u_cab[1] = self.kCpy * v_Bi[1]
         # u_cab[2] = self.kCpz * v_Bi[2]
-
-        # Test 4
-        # sn = np.sign(np.dot(epB,v_Bi))
-        # u_cab[0] = self.kCpx * epB[0] * sn
-        # u_cab[1] = self.kCpy * epB[1] * sn
-        # u_cab[2] = self.kCpz * epB[2] * sn
-
-        # Test 5
-        # u_cab[0] = self.kCpx * min(epB[0],v_Bi[0])
-        # u_cab[1] = self.kCpy * min(epB[1],v_Bi[1])
-        # u_cab[2] = self.kCpz * min(epB[2],v_Bi[2])
-
-        # Test 6
-        # u_cab[0] = self.kCpx * max(epB[0],v_Bi[0])
-        # u_cab[1] = self.kCpy * max(epB[1],v_Bi[1])
-        # u_cab[2] = self.kCpz * max(epB[2],v_Bi[2])
-
-        # Test 7
-        # if abs(ep[0])<0.1 and abs(ep[1])<0.1 :
-        #     u_cab[0] = self.kCpx * v_Bi[0]
-        #     u_cab[1] = self.kCpy * v_Bi[1]
-        #     u_cab[2] = self.kCpz * v_Bi[2]
-        # else :
-        #     u_cab[0] = self.kCpx * epB[0]
-        #     u_cab[1] = self.kCpy * epB[1]
-        #     u_cab[2] = self.kCpz * epB[2]
-
-        # Test 8
-        u_cab[0] = self.kCpx * epB[0] + self.kCdx * evB[0]
-        u_cab[1] = self.kCpy * epB[1] + self.kCdy * evB[1]
-        u_cab[2] = self.kCpz * epB[2] + self.kCdz * evB[2]
 
         u = u_EQ + u_PD + u_I + u_cab
 
