@@ -24,6 +24,9 @@ class BarReferencePublisher():
 
         self.emergency_button = False
 
+        self.uav1_position = geometry_msgs.msg.Point()
+        self.uav2_position = geometry_msgs.msg.Point()
+
         rospy.init_node('bar_reference_publisher', anonymous=True)
 
         self.publish_bar_reference = rospy.Publisher(
@@ -48,9 +51,24 @@ class BarReferencePublisher():
             data_class = Bool,
             callback =self.callback_sub_emergency_button)
 
+        self.subscribe_uav1_position = rospy.Subscriber(
+            name = '/firefly/ground_truth/position',
+            data_class = geometry_msgs.msg.PointStamped,
+            callback =self.callback_sub_uav1_position)
+
+        self.subscribe_uav2_position = rospy.Subscriber(
+            name = '/firefly_2/ground_truth/position',
+            data_class = geometry_msgs.msg.PointStamped,
+            callback =self.callback_sub_uav2_position)
 
     def callback_sub_emergency_button(self, msg):
         self.emergency_button = msg.data
+
+    def callback_sub_uav1_position(self,msg):
+        self.uav1_position = msg.point
+
+    def callback_sub_uav2_position(self,msg):
+        self.uav2_position = msg.point
 
 
     def cycle(self):
@@ -95,8 +113,8 @@ class BarReferencePublisher():
         # Back to the center
         bar_path = self.addPoseStamped([0,0,0.5],0,0,bar_path,10)
         # Changes to the theta angle
-        bar_path = self.addPoseStamped([0,0,0.5],0,radians(30),bar_path,5)s
-        bar_path = self.addPoseStamped([0,0,0.5],0,radians(-30),bar_path,5)
+        bar_path = self.addPoseStamped([0,0,0.5],0,radians(10),bar_path,5)
+        bar_path = self.addPoseStamped([0,0,0.5],0,radians(-10),bar_path,5)
         bar_path = self.addPoseStamped([0,0,0.5],0,0,bar_path,5)
         # Changes to the psi angle
         bar_path = self.addPoseStamped([0,0,0.5],radians(85),0,bar_path,5)
@@ -118,10 +136,29 @@ class BarReferencePublisher():
             self.publish_uav_1_reference.publish(uav1_path)
             self.publish_uav_2_reference.publish(uav2_path)
 
-
+        # Emergency landing
         if emergency_button :
+
+            # Clear the reference path
+            uav1_path.poses = []
+            uav2_path.poses = []
+
+            uav1_path.poses.append(geometry_msgs.msg.PoseStamped())
+            uav2_path.poses.append(geometry_msgs.msg.PoseStamped())
+
+            uav1_path.poses[0].pose.position.x = self.uav1_position.x
+            uav1_path.poses[0].pose.position.y = self.uav1_position.y
+            uav1_path.poses[0].pose.position.z = 0
+
+            uav2_path.poses[0].pose.position.x = self.uav2_position.x
+            uav2_path.poses[0].pose.position.y = self.uav2_position.y
+            uav2_path.poses[0].pose.position.z = 0
+
             cfm.change_flight_mode_client('emergency')
-            # Emergency landing
+
+            while not rospy.is_shutdown():
+                self.publish_uav_1_reference.publish(uav1_path)
+                self.publish_uav_2_reference.publish(uav2_path)
 
 
         #     # go to sleep
