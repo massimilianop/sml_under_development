@@ -303,7 +303,7 @@ class SimplePIDController(Controller):
         nB_ref = intermediate_orientation(n_bar,nB_ref_Temp)
 
         # ########### Ignore INPUT REFERENCE for TESTING purposes ###########
-        p_ref = np.array([0.0,0.0,0.5])                                     #
+        # p_ref = np.array([0.0,0.0,0.5])                                     #
         # nB_ref = np.array([0.0,1.0,0.0])                                    #
         # ###################################################################
 
