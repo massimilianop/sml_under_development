@@ -116,11 +116,11 @@ class BarReferencePublisher():
         bar_path = self.addPoseStamped([0,0,0.5],0,radians(10),bar_path,5)
         bar_path = self.addPoseStamped([0,0,0.5],0,radians(-10),bar_path,5)
         bar_path = self.addPoseStamped([0,0,0.5],0,0,bar_path,5)
-        # Changes to the psi angle
-        bar_path = self.addPoseStamped([0,0,0.5],radians(85),0,bar_path,5)
-        ar_path = self.addPoseStamped([0,0,0.5],radians(185),0,bar_path,5)
-        bar_path = self.addPoseStamped([0,0,0.5],radians(275),0,bar_path,5)
-        bar_path = self.addPoseStamped([0,0,0.5],0,0,bar_path,5)
+        # # Changes to the psi angle
+        # bar_path = self.addPoseStamped([0,0,0.5],radians(85),0,bar_path,5)
+        # bar_path = self.addPoseStamped([0,0,0.5],radians(185),0,bar_path,5)
+        # bar_path = self.addPoseStamped([0,0,0.5],radians(275),0,bar_path,5)
+        # bar_path = self.addPoseStamped([0,0,0.5],0,0,bar_path,5)
 
         demo_time = self.getTime(bar_path) + 5
 
